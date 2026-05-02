@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { useDoctors } from "@/hooks/useDoctors";
 import { usePatient } from "@/hooks/usePatient";
-import { saveDoctorNotes } from "@/lib/apiClient";
+import { saveDoctorNotes, triggerUiAction } from "@/lib/apiClient";
 
 export function PatientDetail(props: { id: string }) {
   const patientQ = usePatient(props.id);
@@ -22,6 +22,84 @@ export function PatientDetail(props: { id: string }) {
   const [heartRate, setHeartRate] = useState("");
   const [assessment, setAssessment] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [messages, setMessages] = useState<Array<{ role: "assistant" | "doctor"; content: string }>>([
+    {
+      role: "assistant",
+      content: "Hello, I'm your MedBridge AI assistant. How can I help with this patient's care?",
+    },
+  ]);
+
+  const handleSave = async (status: "draft" | "signed") => {
+    if (!patientQ.data?.patient.id) return;
+    setSaveState("saving");
+    setActionFeedback(null);
+
+    const res = await saveDoctorNotes({
+      patientId: patientQ.data.patient.id,
+      doctorId: doctor?.id ?? null,
+      subjective,
+      bp: bp.trim() ? bp.trim() : null,
+      heartRate: heartRate.trim() ? heartRate.trim() : null,
+      assessment,
+      status,
+    });
+
+    setSaveState(res.ok ? "saved" : "error");
+  };
+
+  const handleSendChat = async () => {
+    const trimmed = chatInput.trim();
+    if (!trimmed) return;
+
+    setMessages((current) => [...current, { role: "doctor", content: trimmed }]);
+    setChatInput("");
+    setChatLoading(true);
+
+    const res = await fetch("/api/agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ symptom: trimmed, followUpAnswer: "Doctor requested support from patient detail." }),
+    });
+    const data = res.ok ? ((await res.json()) as { summary?: string; recommendation?: string; question?: string }) : null;
+
+    setMessages((current) => [
+      ...current,
+      {
+        role: "assistant",
+        content: data
+          ? [data.summary, data.recommendation, data.question].filter(Boolean).join(" ")
+          : "I could not reach the assistant endpoint. Please try again.",
+      },
+    ]);
+
+    setChatLoading(false);
+  };
+
+  const handleOrderLab = async () => {
+    setActionLoading(true);
+    setActionFeedback(null);
+    const res = await triggerUiAction("doctor_order_lab", {
+      patientId: patientQ.data?.patient.id ?? null,
+      doctorId: doctor?.id ?? null,
+    });
+    setActionLoading(false);
+    setActionFeedback(res.ok ? (res.data.message ?? "Lab order created and queued for review.") : "Could not create lab order.");
+  };
+
+  const handleAddPrescription = async () => {
+    setActionLoading(true);
+    setActionFeedback(null);
+    const res = await triggerUiAction("doctor_add_prescription", {
+      patientId: patientQ.data?.patient.id ?? null,
+      doctorId: doctor?.id ?? null,
+    });
+    setActionLoading(false);
+    setActionFeedback(res.ok ? (res.data.message ?? "Prescription draft created.") : "Could not create prescription draft.");
+  };
 
   return (
     <div className="grid gap-8 lg:grid-cols-12">
@@ -102,40 +180,14 @@ export function PatientDetail(props: { id: string }) {
             <div className="flex justify-end gap-3">
               <button
                 type="button"
-                onClick={async () => {
-                  if (!patientQ.data?.patient.id) return;
-                  setSaveState("saving");
-                  const res = await saveDoctorNotes({
-                    patientId: patientQ.data.patient.id,
-                    doctorId: doctor?.id ?? null,
-                    subjective,
-                    bp: bp.trim() ? bp.trim() : null,
-                    heartRate: heartRate.trim() ? heartRate.trim() : null,
-                    assessment,
-                    status: "draft",
-                  });
-                  setSaveState(res.ok ? "saved" : "error");
-                }}
+                onClick={() => handleSave("draft")}
                 className="rounded-lg border border-sahara-border px-6 py-3 text-xs font-bold uppercase tracking-widest text-sahara-muted"
               >
                 Save Draft
               </button>
               <button
                 type="button"
-                onClick={async () => {
-                  if (!patientQ.data?.patient.id) return;
-                  setSaveState("saving");
-                  const res = await saveDoctorNotes({
-                    patientId: patientQ.data.patient.id,
-                    doctorId: doctor?.id ?? null,
-                    subjective,
-                    bp: bp.trim() ? bp.trim() : null,
-                    heartRate: heartRate.trim() ? heartRate.trim() : null,
-                    assessment,
-                    status: "signed",
-                  });
-                  setSaveState(res.ok ? "saved" : "error");
-                }}
+                onClick={() => handleSave("signed")}
                 className="rounded-lg bg-sahara-primary px-6 py-3 text-xs font-bold uppercase tracking-widest text-white"
               >
                 Authorize & Sign

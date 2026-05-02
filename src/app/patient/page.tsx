@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { differenceInYears, format } from "date-fns";
 import { AlertTriangle, Camera, HeartPulse, Pill, Sparkles } from "lucide-react";
+import { useRef, useState } from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/Badge";
@@ -13,6 +14,8 @@ import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 
 export default function PatientDashboardPage() {
   const summary = useDashboardSummary();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [visualFeedback, setVisualFeedback] = useState<string | null>(null);
   const currentPatient = summary.currentPatient;
   const currentDoctor = summary.currentDoctor;
   const nextAppointment = summary.nextAppointment;
@@ -85,7 +88,7 @@ export default function PatientDashboardPage() {
               </div>
               <div className="rounded-3xl border border-sahara-border/60 bg-white p-6">
                 <p className="text-xs font-bold uppercase tracking-wider text-sahara-muted">Next Appointment</p>
-                <p className="mt-2 font-serif text-3xl">{nextAppointment ? format(new Date(nextAppointment.startTime), "p") : "—"}</p>
+                <p className="mt-2 font-serif text-3xl">{nextAppointment ? format(new Date(nextAppointment.startTime), "p") : "-"}</p>
                 <p className="mt-2 text-sm text-sahara-muted">
                   {nextAppointment ? format(new Date(nextAppointment.startTime), "PP") : "No scheduled appointment"}
                 </p>
@@ -100,10 +103,33 @@ export default function PatientDashboardPage() {
               <p className="mt-2 text-sahara-muted">
                 Upload a skin or eye photo for instant pre-screening insights.
               </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) setVisualFeedback(`${file.name} is ready. Open AI Scanners to run full image analysis.`);
+                }}
+              />
               <div className="mt-6 flex gap-3">
-                <button className="rounded-xl bg-sahara-fg px-5 py-3 text-sm font-semibold text-white">Upload Photo</button>
-                <button className="rounded-xl border border-sahara-border px-5 py-3 text-sm font-semibold">View History</button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-xl bg-sahara-fg px-5 py-3 text-sm font-semibold text-white"
+                >
+                  Upload Photo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisualFeedback("No previous visual analysis uploads found for this demo profile.")}
+                  className="rounded-xl border border-sahara-border px-5 py-3 text-sm font-semibold"
+                >
+                  View History
+                </button>
               </div>
+              {visualFeedback ? <p className="mt-4 text-sm text-sahara-muted">{visualFeedback}</p> : null}
             </CardContent>
           </Card>
 
@@ -152,13 +178,11 @@ export default function PatientDashboardPage() {
               <p className="mt-2 text-sm text-sahara-muted">Before sharing sensitive data, verify the provider.</p>
               <Link
                 href="/provider/verification"
-                className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-sahara-primary px-6 py-3 text-sm font-semibold text-white hover:bg-sahara-primary-2 transition-colors"
+                className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-sahara-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-sahara-primary-2"
               >
                 Verify Provider
               </Link>
-              <p className="mt-4 text-xs text-sahara-muted">
-                Synced appointment count: {summary.appointmentCount}
-              </p>
+              <p className="mt-4 text-xs text-sahara-muted">Synced appointment count: {summary.appointmentCount}</p>
             </CardContent>
           </Card>
         </div>
@@ -166,4 +190,3 @@ export default function PatientDashboardPage() {
     </AppShell>
   );
 }
-

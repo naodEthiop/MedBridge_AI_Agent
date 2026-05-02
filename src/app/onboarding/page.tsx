@@ -2,12 +2,17 @@
 
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Shield } from "lucide-react";
+import { useState } from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
+import { triggerUiAction } from "@/lib/apiClient";
 
 export default function OnboardingPage() {
   const summary = useDashboardSummary();
+  const [step, setStep] = useState(1);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   return (
     <AppShell title="Patient Onboarding" subtitle="Stitch screen: Patient Onboarding">
@@ -21,9 +26,9 @@ export default function OnboardingPage() {
           </div>
           <div className="space-y-6">
             {[
-              { step: 1, title: "Personal Details", active: true },
-              { step: 2, title: "Physical Metrics", active: false },
-              { step: 3, title: "Medical History", active: false },
+              { step: 1, title: "Personal Details", active: step === 1 },
+              { step: 2, title: "Physical Metrics", active: step === 2 },
+              { step: 3, title: "Medical History", active: step === 3 },
             ].map((item) => (
               <div key={item.step} className={`flex items-center gap-4 ${item.active ? "" : "opacity-50"}`}>
                 <div
@@ -35,7 +40,7 @@ export default function OnboardingPage() {
                 </div>
                 <div>
                   <p className={`text-sm ${item.active ? "font-bold text-sahara-primary" : "font-medium"}`}>{item.title}</p>
-                  <p className="text-xs text-sahara-muted">{item.active ? "Step 1 of 3" : "Upcoming"}</p>
+                  <p className="text-xs text-sahara-muted">{item.active ? `Step ${step} of 3` : item.step < step ? "Complete" : "Upcoming"}</p>
                 </div>
               </div>
             ))}
@@ -51,8 +56,10 @@ export default function OnboardingPage() {
 
         <section className="space-y-8 lg:col-span-8">
           <div className="space-y-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-sahara-primary">Step One</span>
-            <h1 className="font-serif text-5xl">Personal Details</h1>
+            <span className="text-xs font-bold uppercase tracking-widest text-sahara-primary">Step {step}</span>
+            <h1 className="font-serif text-5xl">
+              {step === 1 ? "Personal Details" : step === 2 ? "Physical Metrics" : "Medical History"}
+            </h1>
             <p className="max-w-lg text-sahara-muted">
               Provide basic information so we can customize your health insights and dashboard experience.
             </p>
@@ -88,18 +95,45 @@ export default function OnboardingPage() {
             </div>
 
             <div className="flex flex-col items-center justify-between gap-4 border-t border-sahara-border/40 pt-6 md:flex-row">
-              <button type="button" className="inline-flex items-center gap-2 font-bold text-sahara-muted hover:text-sahara-primary">
+              <button
+                type="button"
+                onClick={() => {
+                  setFeedback(null);
+                  setStep((current) => Math.max(1, current - 1));
+                }}
+                className="inline-flex items-center gap-2 font-bold text-sahara-muted hover:text-sahara-primary"
+              >
                 <ArrowLeft className="size-4" />
                 Back
               </button>
               <button
                 type="button"
+                onClick={() => {
+                  if (step < 3) {
+                    setStep((current) => current + 1);
+                    setFeedback(null);
+                    return;
+                  }
+                  setSaving(true);
+                  setFeedback(null);
+                  triggerUiAction("onboarding_complete")
+                    .then((res) => {
+                      setFeedback(
+                        res.ok
+                          ? (res.data.message ?? "Onboarding details saved. Your profile is ready for dashboard review.")
+                          : "Unable to save onboarding details right now.",
+                      );
+                    })
+                    .finally(() => setSaving(false));
+                }}
+                disabled={saving}
                 className="inline-flex items-center gap-2 rounded-lg bg-sahara-primary px-10 py-4 font-bold text-white"
               >
-                Continue
+                {saving ? "Saving..." : step === 3 ? "Finish" : "Continue"}
                 <ArrowRight className="size-4" />
               </button>
             </div>
+            {feedback ? <p className="text-sm text-emerald-700">{feedback}</p> : null}
           </form>
 
           <div className="grid grid-cols-2 gap-4">

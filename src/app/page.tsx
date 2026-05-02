@@ -7,13 +7,13 @@ export default function Home() {
       <nav className="fixed top-0 z-50 flex w-full items-center justify-between border-b border-sahara-border/60 bg-sahara-bg px-8 py-4 shadow-ambient">
         <div className="text-2xl font-serif font-bold text-sahara-primary">MedBridge</div>
         <div className="hidden items-center space-x-8 md:flex">
-          <a className="cursor-pointer text-sm text-sahara-muted transition-colors hover:text-sahara-primary active:scale-95" href="#">
+          <a className="cursor-pointer text-sm text-sahara-muted transition-colors hover:text-sahara-primary active:scale-95" href="#solutions">
             Solutions
           </a>
-          <a className="cursor-pointer text-sm text-sahara-muted transition-colors hover:text-sahara-primary active:scale-95" href="#">
+          <a className="cursor-pointer text-sm text-sahara-muted transition-colors hover:text-sahara-primary active:scale-95" href="#providers">
             For Providers
           </a>
-          <a className="cursor-pointer text-sm text-sahara-muted transition-colors hover:text-sahara-primary active:scale-95" href="#">
+          <a className="cursor-pointer text-sm text-sahara-muted transition-colors hover:text-sahara-primary active:scale-95" href="#technology">
             Technology
           </a>
         </div>
@@ -73,7 +73,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-sahara-surface-low py-24">
+        <section id="solutions" className="bg-sahara-surface-low py-24">
           <div className="mx-auto max-w-7xl px-8">
             <div className="mb-16 space-y-4 text-center">
               <h2 className="font-serif text-4xl font-bold lg:text-5xl">The MedBridge Advantage</h2>
@@ -82,7 +82,7 @@ export default function Home() {
               </p>
             </div>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-              <div className="rounded-xl border border-sahara-border/60 bg-white p-10 shadow-ambient md:col-span-2">
+              <div id="technology" className="rounded-xl border border-sahara-border/60 bg-white p-10 shadow-ambient md:col-span-2">
                 <div className="grid items-center gap-8 lg:grid-cols-2">
                   <div className="space-y-4">
                     <Brain className="size-9 text-sahara-primary" />
@@ -140,7 +140,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-8 py-24">
+        <section id="providers" className="mx-auto max-w-7xl px-8 py-24">
           <div className="relative flex flex-col items-center justify-between gap-12 overflow-hidden rounded-3xl bg-[#e6e0d6] p-12 lg:flex-row lg:p-20">
             <div className="z-10 space-y-6 text-center lg:max-w-xl lg:text-left">
               <h2 className="font-serif text-4xl font-bold lg:text-5xl">Are you a healthcare professional?</h2>
@@ -187,13 +187,13 @@ export default function Home() {
       <footer className="mt-auto flex w-full flex-col items-center justify-between gap-4 border-t border-sahara-border/60 bg-sahara-bg px-8 py-6 md:flex-row">
         <div className="text-xs text-sahara-muted">© 2024 MedBridge AI. Sun-baked simplicity for modern care.</div>
         <div className="flex space-x-6 text-xs text-sahara-muted">
-          <a className="transition-colors hover:text-sahara-primary" href="#">
+          <a className="transition-colors hover:text-sahara-primary" href="/login">
             Privacy Policy
           </a>
-          <a className="transition-colors hover:text-sahara-primary" href="#">
+          <a className="transition-colors hover:text-sahara-primary" href="/login">
             Terms of Service
           </a>
-          <a className="transition-colors hover:text-sahara-primary" href="#">
+          <a className="transition-colors hover:text-sahara-primary" href="/doctor/assistant">
             Contact Support
           </a>
         </div>

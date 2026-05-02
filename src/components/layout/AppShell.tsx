@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   Activity,
   Bell,
@@ -25,13 +26,22 @@ const navItems = [
   { href: "/patient/scanners", label: "Scanners", icon: FlaskConical },
   { href: "/patient/care-finder", label: "Emergency", icon: LocateFixed },
   { href: "/patient/health-card", label: "Health Card", icon: ShieldCheck },
-  { href: "/doctor", label: "Clinical Dashboard", icon: Activity },
-  { href: "/doctor/patients/pat_1", label: "Patient Detail", icon: Users },
+  { href: "/doctor/dashboard", label: "Clinical Dashboard", icon: Activity },
+  { href: "/doctor/patients", label: "Patient List", icon: Users },
+  { href: "/doctor/assistant", label: "Assistant", icon: Search },
+  { href: "/doctor/settings", label: "Settings", icon: Settings },
   { href: "/provider/verification", label: "Provider Verify", icon: ShieldCheck },
 ];
 
 export function AppShell(props: { title: string; subtitle?: string; children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const handleSupport = () => router.push("/doctor/settings");
+  const handleHelp = () => router.push("/doctor/assistant");
+  const handleLogout = () => router.push("/");
 
   return (
     <div className="flex min-h-[calc(100vh-0px)] w-full flex-col lg:flex-row">
@@ -69,15 +79,27 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
           ))}
         </nav>
         <div className="mt-auto px-6">
-          <button className="w-full rounded-xl bg-sahara-primary py-3 text-sm font-semibold text-white hover:bg-sahara-primary-2">
+          <button
+            type="button"
+            onClick={handleSupport}
+            className="w-full rounded-xl bg-sahara-primary py-3 text-sm font-semibold text-white hover:bg-sahara-primary-2"
+          >
             Get Support
           </button>
           <div className="mt-5 border-t border-sahara-border/60 pt-4">
-            <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-sm text-sahara-muted hover:text-sahara-primary">
+            <button
+              type="button"
+              onClick={handleHelp}
+              className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-sm text-sahara-muted hover:text-sahara-primary"
+            >
               <CircleUserRound className="size-4" />
               Help
             </button>
-            <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-sm text-sahara-muted hover:text-sahara-tertiary">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-sm text-sahara-muted hover:text-sahara-tertiary"
+            >
               <LogOut className="size-4" />
               Logout
             </button>
@@ -91,17 +113,31 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
             <div className="hidden w-full max-w-md items-center gap-2 rounded-lg border border-sahara-border/70 bg-white px-3 py-2 sm:flex">
               <Search className="size-4 text-sahara-muted" />
               <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && search.trim()) router.push(`/doctor/patients?search=${encodeURIComponent(search.trim())}`);
+                }}
                 placeholder="Search medical records..."
                 className="w-full border-0 bg-transparent p-0 text-sm outline-none placeholder:text-sahara-muted"
               />
+              {search ? (
+                <button type="button" onClick={() => router.push(`/doctor/patients?search=${encodeURIComponent(search.trim())}`)} className="text-xs font-bold text-sahara-primary">
+                  Search
+                </button>
+              ) : null}
             </div>
             <div>
               <p className="text-xs font-semibold tracking-wide text-sahara-muted">{props.subtitle}</p>
               <h1 className="mt-1 font-serif text-xl tracking-tight sm:text-2xl">{props.title}</h1>
             </div>
             <div className="flex items-center gap-3 text-sahara-muted">
-              <Bell className="size-5" />
-              <Settings className="size-5" />
+              <button type="button" onClick={() => setNotice("No unread notifications right now.")} aria-label="Notifications">
+                <Bell className="size-5" />
+              </button>
+              <button type="button" onClick={() => router.push("/doctor/settings")} aria-label="Settings">
+                <Settings className="size-5" />
+              </button>
               <div className="hidden items-center gap-2 border-l border-sahara-border/60 pl-3 sm:flex">
                 <div className="size-9 rounded-full bg-sahara-surface-low ring-1 ring-sahara-border/60" />
                 <span className="text-xs font-medium">Dr. Aris</span>
@@ -134,6 +170,13 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
           </nav>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">{props.children}</main>
+        {notice ? (
+          <div className="fixed bottom-6 right-6 z-50 rounded-2xl border border-sahara-border bg-white px-5 py-3 text-sm text-sahara-muted shadow-ambient">
+            <button type="button" onClick={() => setNotice(null)} className="font-semibold text-sahara-primary">
+              {notice}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

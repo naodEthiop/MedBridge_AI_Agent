@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Bot, Mic, PlusCircle, Send } from "lucide-react";
-
-import { triageSymptom } from "@/lib/apiClient";
 
 export function SymptomCheckerClient(props: {
   onResultChange?: (result: Record<string, unknown> | null) => void;
@@ -13,6 +11,8 @@ export function SymptomCheckerClient(props: {
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toolFeedback, setToolFeedback] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,11 +45,10 @@ export function SymptomCheckerClient(props: {
           </div>
           <div className="max-w-[80%] rounded-2xl rounded-tl-none border border-stone-100 bg-white p-6 shadow-ambient">
             <p className="leading-relaxed text-sahara-fg">
-              Hello. I am your MedBridge assistant. Could you confirm if the pain is localized in the lower right area
-              of your abdomen?
+              Hello. I am your MedBridge assistant. Tell me where the symptom is and how severe it feels.
             </p>
             <p className="mt-4 leading-relaxed text-sahara-fg">
-              It also helps to know if the pain feels sharp or dull and whether it moved since it started.
+              It also helps to know when it started and whether anything makes it better or worse.
             </p>
           </div>
         </div>
@@ -63,26 +62,12 @@ export function SymptomCheckerClient(props: {
                 className="h-full w-full object-contain opacity-80 mix-blend-multiply"
                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuBa65wu9xEZbPeCIguuzlPfckJBQbAon6PL-y7wAa-rQOYjyxFBEYifLRssx4TU0Elvk-JoJ_X3Mb62goYa3ZmYt08YWejzFlRwjlrITlkgU11ovrSUwZpz47pucA7fLZOk7Udw-j1OKt3cZoDIIW2tMkIMDGKXxWPAjhYi3ck4gYwWRAok_PKdYkiIjvQ50En08EwyJLr8WzlK1eZxjOWlDPZjm2Y0a4s4Rt2BlIfMegH8RO-BAqLkmjdT8uahfgikP9ckDeOdboo"
               />
-              <div className="absolute bottom-1/4 right-1/4 size-12 animate-pulse rounded-full bg-sahara-primary/30 shadow-[0_0_12px_rgba(194,101,42,0.6)]" />
+              <div className="absolute bottom-1/4 right-1/4 size-12 animate-pulse rounded-full bg-sahara-primary/30" />
               <div className="absolute bottom-1/4 right-1/4 size-4 rounded-full bg-sahara-primary" />
             </div>
             <span className="mt-4 text-center text-xs font-semibold uppercase tracking-widest text-sahara-primary">
-              Area Identified: Lower Right Quadrant
+              Area Identified: {props.bodyPart ?? "Select a body area"}
             </span>
-          </div>
-        </div>
-
-        <div className="mb-8 flex items-end justify-end gap-4">
-          <div className="max-w-[80%] rounded-2xl rounded-tr-none bg-sahara-primary p-6 text-white shadow-md">
-            Yes, it is there. It started as a dull ache around my belly button, then moved and feels sharper when I
-            move.
-          </div>
-          <div className="size-10 shrink-0 overflow-hidden rounded-full border-2 border-white bg-stone-200">
-            <img
-              alt="User profile"
-              className="h-full w-full object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxAjij5FIu3ubIaOlW8nliD3WAm2AV-5G77uJE7Ry-RVcnwqfl6W-eSamNm7lWFKLiqKvBtXzFAWTCzlN6f4xA9w3QHlfG4p-K_E4DlL8JN-VgbahkXenSrxELVdOtIeH4lHa60I_-Vuzu6j5QU9ONyKiYaMOOd7FPRnaanf5qQw-VcRarq6v3alwii31B3LOBuB5EDapC8CX2fcVFblD7GmpvQqvJtfGXnV-VVp9Se8DjupIBsVQYNk4OdZOSkX_yTxnQufVb7-s"
-            />
           </div>
         </div>
       </div>
@@ -90,7 +75,21 @@ export function SymptomCheckerClient(props: {
       <div className="sticky bottom-0 bg-sahara-bg/80 pb-2 pt-4 backdrop-blur-md">
         <form onSubmit={onSubmit} className="mx-auto w-full max-w-4xl">
           <div className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
-            <button type="button" className="p-2 text-stone-400 transition-colors hover:text-sahara-primary">
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) setToolFeedback(`${file.name} attached to this symptom note.`);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 text-stone-400 transition-colors hover:text-sahara-primary"
+              aria-label="Attach file"
+            >
               <PlusCircle className="size-5" />
             </button>
             <input
@@ -100,12 +99,18 @@ export function SymptomCheckerClient(props: {
               placeholder="Type your symptoms here..."
               type="text"
             />
-            <button type="button" className="p-2 text-stone-400 transition-colors hover:text-sahara-primary">
+            <button
+              type="button"
+              onClick={() => setToolFeedback("Voice capture started. Speak your symptoms, then type the summary here.")}
+              className="p-2 text-stone-400 transition-colors hover:text-sahara-primary"
+              aria-label="Start voice capture"
+            >
               <Mic className="size-5" />
             </button>
             <button
-              disabled={loading}
+              disabled={loading || !message.trim()}
               className="rounded-xl bg-sahara-primary px-4 py-2 text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              aria-label="Send symptoms"
             >
               <Send className="size-5" />
             </button>
@@ -113,6 +118,7 @@ export function SymptomCheckerClient(props: {
           <p className="mt-2 text-center text-[10px] italic text-stone-400">
             MedBridge AI provides guidance and does not replace professional medical advice.
           </p>
+          {toolFeedback ? <p className="mt-2 text-center text-xs text-sahara-muted">{toolFeedback}</p> : null}
         </form>
       </div>
 
@@ -131,11 +137,9 @@ export function SymptomCheckerClient(props: {
               <span className="font-semibold">Red flags:</span> {result.redFlags.join(", ")}
             </p>
           ) : null}
-          {result.nearestHospital && typeof result.nearestHospital === "object" ? (
+          {Array.isArray(result.nextSteps) && result.nextSteps.length ? (
             <p className="text-sm">
-              <span className="font-semibold">Nearest hospital:</span>{" "}
-              {(result.nearestHospital as { name?: string }).name ?? "Unknown"} (
-              {(result.nearestHospital as { distanceKm?: number }).distanceKm ?? "?"} km)
+              <span className="font-semibold">Next steps:</span> {result.nextSteps.join(", ")}
             </p>
           ) : null}
         </div>
@@ -143,4 +147,3 @@ export function SymptomCheckerClient(props: {
     </div>
   );
 }
-

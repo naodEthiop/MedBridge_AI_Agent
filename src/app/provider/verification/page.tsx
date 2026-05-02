@@ -1,7 +1,15 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 import { AppShell } from "@/components/layout/AppShell";
 import { ProviderVerificationClient } from "@/components/views/ProviderVerificationClient";
 
 export default function ProviderVerificationPage() {
+  const router = useRouter();
+  const [providerType, setProviderType] = useState<"physician" | "specialist">("physician");
+
   return (
     <AppShell title="Provider Verification" subtitle="Stitch screen: Provider Verification">
       <div className="space-y-10">
@@ -22,19 +30,48 @@ export default function ProviderVerificationPage() {
           <section className="space-y-8 lg:col-span-7">
             <div className="space-y-6 rounded-xl border border-sahara-border/40 bg-sahara-surface-low p-8">
               <div className="grid gap-4 sm:grid-cols-2">
-                <button className="rounded-lg border-2 border-sahara-primary bg-sahara-primary/5 px-6 py-4 font-bold text-sahara-primary">
+                <button
+                  type="button"
+                  onClick={() => setProviderType("physician")}
+                  className={`rounded-lg border-2 px-6 py-4 font-bold ${
+                    providerType === "physician"
+                      ? "border-sahara-primary bg-sahara-primary/5 text-sahara-primary"
+                      : "border-sahara-border bg-white text-sahara-muted"
+                  }`}
+                >
                   Physician (MD/DO)
                 </button>
-                <button className="rounded-lg border-2 border-sahara-border bg-white px-6 py-4 font-medium text-sahara-muted">
+                <button
+                  type="button"
+                  onClick={() => setProviderType("specialist")}
+                  className={`rounded-lg border-2 px-6 py-4 font-bold ${
+                    providerType === "specialist"
+                      ? "border-sahara-primary bg-sahara-primary/5 text-sahara-primary"
+                      : "border-sahara-border bg-white text-sahara-muted"
+                  }`}
+                >
                   Specialist / Resident
                 </button>
               </div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-sahara-muted">
+                Selected path: {providerType === "physician" ? "Physician" : "Specialist / Resident"}
+              </p>
               <ProviderVerificationClient />
             </div>
 
             <div className="flex items-center justify-between gap-6">
-              <button className="font-bold text-sahara-muted hover:text-sahara-primary">Back to Identity</button>
-              <button className="rounded-lg bg-sahara-primary px-10 py-4 text-lg font-bold text-white shadow-lg">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="font-bold text-sahara-muted hover:text-sahara-primary"
+              >
+                Back to Identity
+              </button>
+              <button
+                type="submit"
+                form="provider-verification-form"
+                className="rounded-lg bg-sahara-primary px-10 py-4 text-lg font-bold text-white shadow-lg"
+              >
                 Submit for Verification
               </button>
             </div>
@@ -68,7 +105,7 @@ export default function ProviderVerificationPage() {
                 <h5 className="text-sm font-bold uppercase tracking-widest">Review Time</h5>
                 <p className="text-xs text-sahara-muted">Average turnaround: 24-48 hours</p>
               </div>
-              <span className="text-sahara-muted">{"›"}</span>
+              <span className="text-sahara-muted">{">"}</span>
             </div>
             <p className="text-xs text-sahara-muted">Live verification endpoint is already connected via API route.</p>
           </aside>
@@ -77,4 +114,3 @@ export default function ProviderVerificationPage() {
     </AppShell>
   );
 }
-

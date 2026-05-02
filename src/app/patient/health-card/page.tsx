@@ -1,11 +1,15 @@
 "use client";
 
 import { Download, RefreshCw, Share2, ShieldAlert } from "lucide-react";
+import { useState } from "react";
 
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import { usePatient } from "@/hooks/usePatient";
+import { triggerUiAction } from "@/lib/apiClient";
 
 export default function HealthCardPage() {
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const summary = useDashboardSummary();
   const patientId = summary.currentPatient?.id ?? "pat_1";
   const patientQuery = usePatient(patientId);
@@ -15,6 +19,14 @@ export default function HealthCardPage() {
   const displayId = patient?.id ?? "MB-8829-QX";
   const sex = patient?.sex ? patient.sex[0].toUpperCase() + patient.sex.slice(1) : "Male";
   const conditions = patient?.conditions?.length ? patient.conditions : ["Type 1 Diabetes", "Mild Asthma"];
+
+  async function runAction(action: string) {
+    setActionLoading(true);
+    setFeedback(null);
+    const res = await triggerUiAction(action, { patientId });
+    setActionLoading(false);
+    setFeedback(res.ok ? (res.data.message ?? "Action completed.") : "Action failed. Please try again.");
+  }
 
   return (
     <div className="min-h-screen bg-sahara-bg text-sahara-fg lg:pl-64">
@@ -114,15 +126,26 @@ export default function HealthCardPage() {
             </div>
 
             <div className="mt-8 flex flex-wrap justify-center gap-4 lg:justify-start">
-              <button className="flex items-center gap-2 rounded-lg bg-sahara-primary px-6 py-3 font-bold text-white shadow-md transition-all hover:brightness-110 active:scale-95">
+              <button
+                type="button"
+                onClick={() => runAction("health_card_download_pdf")}
+                disabled={actionLoading}
+                className="flex items-center gap-2 rounded-lg bg-sahara-primary px-6 py-3 font-bold text-white shadow-md transition-all hover:brightness-110 active:scale-95"
+              >
                 <Download className="size-5" />
                 Download as PDF
               </button>
-              <button className="flex items-center gap-2 rounded-lg border border-sahara-border bg-white px-6 py-3 font-bold text-sahara-fg transition-all hover:bg-sahara-surface-low active:scale-95">
+              <button
+                type="button"
+                onClick={() => runAction("health_card_share_access")}
+                disabled={actionLoading}
+                className="flex items-center gap-2 rounded-lg border border-sahara-border bg-white px-6 py-3 font-bold text-sahara-fg transition-all hover:bg-sahara-surface-low active:scale-95"
+              >
                 <Share2 className="size-5" />
                 Share Access
               </button>
             </div>
+            {feedback ? <p className="mt-4 text-sm text-sahara-muted">{feedback}</p> : null}
           </div>
 
           <aside className="space-y-6 lg:col-span-4">
@@ -138,7 +161,12 @@ export default function HealthCardPage() {
               <p className="px-4 text-sm font-medium text-sahara-muted">
                 This code expires in <span className="font-bold text-sahara-primary">14:59</span>
               </p>
-              <button className="mt-6 flex items-center gap-2 text-sm font-bold text-sahara-primary hover:underline">
+              <button
+                type="button"
+                onClick={() => runAction("health_card_refresh_qr")}
+                disabled={actionLoading}
+                className="mt-6 flex items-center gap-2 text-sm font-bold text-sahara-primary hover:underline"
+              >
                 <RefreshCw className="size-4" />
                 Refresh Code
               </button>

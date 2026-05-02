@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { scanPrescription } from "@/lib/apiClient";
 
@@ -9,6 +9,8 @@ export function ScannerClient() {
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,7 +31,38 @@ export function ScannerClient() {
   return (
     <div className="grid gap-4">
       <form onSubmit={onSubmit} className="grid gap-3 rounded-2xl border border-sahara-border/60 bg-white p-4">
-        <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => galleryInputRef.current?.click()}
+            className="rounded-xl border border-sahara-border/70 px-3 py-2 text-sm font-semibold text-sahara-fg"
+          >
+            Select from Gallery
+          </button>
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            className="rounded-xl border border-sahara-border/70 px-3 py-2 text-sm font-semibold text-sahara-fg"
+          >
+            Take Photo
+          </button>
+          {file ? <p className="self-center text-xs text-sahara-muted">Selected: {file.name}</p> : null}
+        </div>
         <button
           disabled={!file || loading}
           className="inline-flex w-fit rounded-xl bg-sahara-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-70"

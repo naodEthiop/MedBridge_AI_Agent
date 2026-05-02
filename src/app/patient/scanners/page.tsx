@@ -1,7 +1,51 @@
+"use client";
+
 import { AppShell } from "@/components/layout/AppShell";
 import { ScannerClient } from "@/components/views/ScannerClient";
+import { analyzeImage, triggerUiAction } from "@/lib/apiClient";
+import { useRef, useState } from "react";
 
 export default function ScannersPage() {
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [dermFile, setDermFile] = useState<File | null>(null);
+  const [dermLoading, setDermLoading] = useState(false);
+  const [dermResult, setDermResult] = useState<Record<string, unknown> | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  async function toBase64(file: File) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary);
+  }
+
+  async function analyzeDermScan() {
+    if (!dermFile) return;
+    setDermLoading(true);
+    setFeedback(null);
+    const res = await analyzeImage({
+      kind: "derm",
+      mimeType: dermFile.type || "image/jpeg",
+      base64Data: await toBase64(dermFile),
+      hintText: `Filename: ${dermFile.name}`,
+    });
+    setDermLoading(false);
+    if (!res.ok) {
+      setFeedback("Dermatology scan failed. Please try another image.");
+      setDermResult(null);
+      return;
+    }
+    const payload = (res.data as { result?: Record<string, unknown> }).result ?? (res.data as Record<string, unknown>);
+    setDermResult(payload);
+    setFeedback("Dermatology scan analyzed with Gemini successfully.");
+  }
+
+  async function runAction(action: string) {
+    const res = await triggerUiAction(action, { source: "dermatology-scanner" });
+    setFeedback(res.ok ? (res.data.message ?? "Action completed.") : "Action failed. Please retry.");
+  }
+
   return (
     <AppShell title="AI Scanners" subtitle="Stitch screen: Patient: AI Scanners">
       <div className="space-y-8">
@@ -49,20 +93,72 @@ export default function ScannersPage() {
             </div>
 
             <div className="space-y-4">
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => setDermFile(event.target.files?.[0] ?? null)}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(event) => setDermFile(event.target.files?.[0] ?? null)}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="rounded-xl border border-sahara-border bg-white px-4 py-3 text-sm font-bold text-sahara-fg"
+                >
+                  Select from Gallery
+                </button>
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="rounded-xl border border-sahara-border bg-white px-4 py-3 text-sm font-bold text-sahara-fg"
+                >
+                  Take Photo
+                </button>
+              </div>
+              <button
+                type="button"
+                disabled={!dermFile || dermLoading}
+                onClick={analyzeDermScan}
+                className="w-full rounded-xl bg-sahara-primary px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+              >
+                {dermLoading ? "Analyzing..." : "Analyze Dermatology Scan"}
+              </button>
+              {dermFile ? <p className="text-xs text-sahara-muted">Selected: {dermFile.name}</p> : null}
               <div className="rounded-xl border border-sahara-tertiary/20 bg-[#fce0e0] p-4">
                 <p className="text-xs font-bold uppercase tracking-widest text-[#6e3030]">Primary Category</p>
-                <p className="mt-1 font-serif text-2xl text-[#3a2020]">Contact Dermatitis</p>
+                <p className="mt-1 font-serif text-2xl text-[#3a2020]">
+                  {String(dermResult?.medicationName ?? dermResult?.summary ?? "Awaiting analysis")}
+                </p>
               </div>
               <p className="rounded-xl border-l-4 border-sahara-tertiary bg-white p-4 text-sm text-sahara-muted">
-                Clinical insight: localized inflammatory response. Recommend specialist consultation and irritant
-                avoidance.
+                Clinical insight: {String(dermResult?.summary ?? "Upload an image and run Gemini analysis for insights.")}
               </p>
               <div className="grid grid-cols-2 gap-3">
-                <button className="rounded-xl border border-sahara-primary px-4 py-3 text-sm font-bold text-sahara-primary">
+                <button
+                  type="button"
+                  onClick={() => runAction("dermatology_book_specialist")}
+                  className="rounded-xl border border-sahara-primary px-4 py-3 text-sm font-bold text-sahara-primary"
+                >
                   Book Specialist
                 </button>
-                <button className="rounded-xl bg-sahara-fg px-4 py-3 text-sm font-bold text-white">Save Report</button>
+                <button
+                  type="button"
+                  onClick={() => runAction("dermatology_save_report")}
+                  className="rounded-xl bg-sahara-fg px-4 py-3 text-sm font-bold text-white"
+                >
+                  Save Report
+                </button>
               </div>
+              {feedback ? <p className="text-sm text-sahara-muted">{feedback}</p> : null}
             </div>
           </section>
         </div>

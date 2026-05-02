@@ -21,7 +21,11 @@ export function ProviderVerificationClient() {
 
   return (
     <div className="grid gap-4">
-      <form onSubmit={onSubmit} className="grid gap-3 rounded-2xl border border-sahara-border/60 bg-white p-5 sm:grid-cols-2">
+      <form
+        id="provider-verification-form"
+        onSubmit={onSubmit}
+        className="grid gap-3 rounded-2xl border border-sahara-border/60 bg-white p-5 sm:grid-cols-2"
+      >
         <input
           value={providerName}
           onChange={(e) => setProviderName(e.target.value)}

@@ -130,3 +130,13 @@ export async function verifyProvider(payload: { providerName: string; licenseNum
   return { ok: true as const, data: await res.json() };
 }
 
+export async function triggerUiAction(action: string, payload?: Record<string, unknown>) {
+  const res = await fetch(url("/api/actions"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ action, payload: payload ?? {} }),
+  });
+  if (!res.ok) return { ok: false as const, error: await res.text(), status: res.status };
+  return { ok: true as const, data: await res.json() as { message?: string } };
+}
+
