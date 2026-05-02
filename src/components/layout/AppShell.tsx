@@ -41,7 +41,14 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
 
   const handleSupport = () => router.push("/doctor/settings");
   const handleHelp = () => router.push("/doctor/assistant");
-  const handleLogout = () => router.push("/");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      /* ignore */
+    }
+    router.push("/login");
+  };
 
   return (
     <div className="flex min-h-[calc(100vh-0px)] w-full flex-col lg:flex-row">

@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const envSchema = z.object({
+  AUTH_SESSION_SECRET: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
   NEXT_PUBLIC_BACKEND_API_BASE_URL: z.string().optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
@@ -18,6 +19,7 @@ const envSchema = z.object({
 });
 
 export const env = envSchema.parse({
+  AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   NEXT_PUBLIC_BACKEND_API_BASE_URL: process.env.NEXT_PUBLIC_BACKEND_API_BASE_URL,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,

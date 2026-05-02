@@ -1,277 +1,727 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ShieldCheck, X } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowRight,
+  HeartPulse,
+  Lock,
+  Mail,
+  Menu,
+  Stethoscope,
+  UserRound,
+  X,
+} from "lucide-react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 
 type Role = "patient" | "doctor";
-type ModalKind = "forgot" | "signup" | "privacy" | "terms" | "help" | null;
+type AuthTab = "login" | "signup";
+type ModalKind = "forgot" | "privacy" | "terms" | "help" | null;
+
+const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "Unknown"] as const;
 
 const modalCopy: Record<Exclude<ModalKind, null>, { title: string; content: string }> = {
   forgot: {
     title: "Reset Password",
-    content: "Enter your registered email, then continue. A reset link will be sent by the auth service when it is connected.",
-  },
-  signup: {
-    title: "Join MedBridge AI",
-    content: "Patient onboarding is available now. Provider onboarding starts with professional verification.",
+    content:
+      "Enter your registered email on the sign-in form, then contact your administrator or use your organization’s SSO reset flow when connected.",
   },
   privacy: {
     title: "Privacy Policy",
-    content: "MedBridge keeps health data scoped to care workflows and provider verification.",
+    content:
+      "MedBridge processes health data only for care coordination and verified clinical workflows. Data is encrypted in transit and access is role-restricted.",
   },
   terms: {
     title: "Terms of Service",
-    content: "Use MedBridge for care coordination support. Clinical decisions remain with licensed professionals.",
+    content:
+      "MedBridge provides decision support and coordination tools. Licensed clinicians remain responsible for diagnosis and treatment decisions.",
   },
   help: {
     title: "Help Center",
-    content: "For patient help, continue to the patient dashboard. For clinical support, open the doctor assistant.",
+    content: "Patients can continue to the dashboard after sign-in. Clinical staff can use the AI assistant from the doctor portal.",
   },
 };
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next");
+  const expired = searchParams.get("expired");
+
+  const [authTab, setAuthTab] = useState<AuthTab>("login");
   const [role, setRole] = useState<Role>("patient");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [fullName, setFullName] = useState("");
+  const [age, setAge] = useState("");
+  const [sex, setSex] = useState<"female" | "male" | "other">("male");
+  const [heightCm, setHeightCm] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [bloodType, setBloodType] = useState<string>("O+");
+
+  const [specialty, setSpecialty] = useState("");
+  const [experienceYears, setExperienceYears] = useState("");
+  const [clinicName, setClinicName] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(expired ? "Your session expired. Please sign in again." : null);
   const [modal, setModal] = useState<ModalKind>(null);
 
-  const destination = role === "doctor" ? "/doctor/dashboard" : "/patient";
+  useEffect(() => {
+    if (searchParams.get("google") === "unavailable") {
+      setError(
+        "Google sign-in needs Supabase: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then enable the Google provider in Supabase Auth. You can still use email and password.",
+      );
+    } else if (searchParams.get("error") === "oauth") {
+      setError("Google sign-in was cancelled or could not complete. Please try again.");
+    } else if (searchParams.get("error") === "sync") {
+      setError("Google sign-in worked, but syncing your MedBridge session failed. Try again or use email login.");
+    }
+  }, [searchParams]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleGoogleLogin() {
     setError(null);
-    if (!email.includes("@")) {
-      setError("Please enter a valid email address.");
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !anon) {
+      setError(
+        "Google sign-in requires Supabase. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, enable Google in Supabase Auth, then try again.",
+      );
       return;
     }
+    setGoogleLoading(true);
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(url, anon, {
+        auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true },
+      });
+      const nextQ = nextPath && nextPath.startsWith("/") ? `?next=${encodeURIComponent(nextPath)}` : "";
+      const redirectTo = `${window.location.origin}/auth/callback${nextQ}`;
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+      if (oauthError) {
+        setError(oauthError.message);
+        return;
+      }
+      if (data.url) {
+        window.location.assign(data.url);
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
+
+  function redirectForUser(r: Role) {
+    if (nextPath && nextPath.startsWith("/")) {
+      router.push(nextPath);
+      return;
+    }
+    router.push(r === "doctor" ? "/doctor/dashboard" : "/patient");
+  }
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+      const data = (await res.json()) as { error?: string; user?: { role: Role } };
+      if (!res.ok) {
+        setError(data.error ?? "Sign-in failed.");
+        return;
+      }
+      if (data.user?.role) redirectForUser(data.user.role);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRegister(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
     if (password.length < 6) {
-      setError("Password must be at least 6 characters for this demo login.");
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    router.push(destination);
-  }
+    try {
+      const body =
+        role === "patient"
+          ? {
+              role: "patient" as const,
+              email: email.trim(),
+              password,
+              confirmPassword,
+              patient: {
+                fullName: fullName.trim(),
+                age: Number(age),
+                sex,
+                heightCm: Number(heightCm),
+                weightKg: Number(weightKg),
+                bloodType,
+              },
+            }
+          : {
+              role: "doctor" as const,
+              email: email.trim(),
+              password,
+              confirmPassword,
+              doctor: {
+                fullName: fullName.trim(),
+                specialty: specialty.trim(),
+                experienceYears: Number(experienceYears),
+                clinicName: clinicName.trim(),
+              },
+            };
 
-  async function handleGoogleLogin() {
-    setGoogleLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    router.push(destination);
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = (await res.json()) as { error?: string; user?: { role: Role } };
+      if (!res.ok) {
+        setError(data.error ?? "Registration failed.");
+        return;
+      }
+      if (data.user?.role) redirectForUser(data.user.role);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const activeModal = modal ? modalCopy[modal] : null;
 
   return (
-    <main className="flex min-h-screen flex-col bg-sahara-bg text-sahara-fg">
-      <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
-        <section className="relative hidden overflow-hidden bg-sahara-surface-low md:flex md:w-1/2">
-          <div className="absolute inset-0 z-0">
-            <img
-              className="h-full w-full object-cover opacity-80 mix-blend-multiply"
-              alt="AI medical assistant interface"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMREo5qDfL3Py_BqaeC79b5J96p_Z7hK4wen9dJBNq8H1pd6_08D5HEmK9ZAtlC71CseUQSqvhnBy-9RAknqZaYRxLpeYKp_uDgAHE9qvwa0bpd-GpaZ0ifz58pzdDIUTS0BrC0dzg9MrrdImlquYxXpjZNK7IZON7ToH5ff6D213bqVqYFC7qBHeewdBEvZ6vnRSBzw033XHCp-7dPDPoXFB1YBHAfhUAKoO56XXIFNmxnYCOZ1lXmobWEtQMVEGehvo2s1AgYy4"
-            />
-            <div className="absolute inset-0 bg-gradient-to-tr from-sahara-bg/90 via-sahara-bg/40 to-transparent" />
+    <div className="flex min-h-screen flex-col bg-sahara-bg text-sahara-fg">
+      <header className="sticky top-0 z-40 border-b border-sahara-border/60 bg-sahara-bg/95 shadow-ambient backdrop-blur-sm">
+        <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 md:px-12">
+          <Link href="/" className="font-serif text-2xl italic text-sahara-primary">
+            MedBridge
+          </Link>
+          <div className="hidden items-center gap-8 md:flex">
+            <button
+              type="button"
+              onClick={() => setModal("help")}
+              className="text-sm font-semibold tracking-wide text-sahara-muted transition-colors hover:text-sahara-primary"
+            >
+              Support
+            </button>
+            <Link
+              href="/provider/verification"
+              className="text-sm font-semibold tracking-wide text-sahara-muted transition-colors hover:text-sahara-primary"
+            >
+              Resources
+            </Link>
+            <a
+              href="mailto:support@medbridge.ai"
+              className="rounded-lg bg-sahara-primary px-6 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              Contact Us
+            </a>
           </div>
-          <div className="relative z-10 flex h-full w-full flex-col justify-between p-16">
-            <div>
-              <h1 className="font-serif text-3xl font-bold tracking-tight text-sahara-primary">MedBridge</h1>
-              <div className="mt-4 h-px w-full bg-gradient-to-r from-transparent via-sahara-primary/30 to-transparent" />
+          <button
+            type="button"
+            className="text-sahara-primary md:hidden"
+            aria-label="Open menu"
+            onClick={() => setMobileNavOpen((v) => !v)}
+          >
+            <Menu className="size-6" />
+          </button>
+        </nav>
+        {mobileNavOpen ? (
+          <div className="border-t border-sahara-border/60 bg-sahara-bg px-6 py-4 md:hidden">
+            <div className="flex flex-col gap-3">
+              <button type="button" className="text-left text-sm font-semibold text-sahara-muted" onClick={() => setModal("help")}>
+                Support
+              </button>
+              <Link href="/provider/verification" className="text-sm font-semibold text-sahara-muted">
+                Resources
+              </Link>
+              <a href="mailto:support@medbridge.ai" className="text-sm font-semibold text-sahara-primary">
+                Contact Us
+              </a>
             </div>
-            <div className="max-w-md">
-              <h2 className="mb-6 font-serif text-6xl leading-tight text-sahara-fg">Your AI Health Companion</h2>
-              <p className="text-xl font-light tracking-wide text-sahara-muted">
-                Smart, safe, always available care coordination.
+          </div>
+        ) : null}
+      </header>
+
+      <main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-4 py-12 md:py-20">
+        <div className="pointer-events-none absolute -right-[5%] top-[-10%] size-96 rounded-full bg-sahara-primary/5 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-[-10%] left-[-5%] size-80 rounded-full bg-sahara-tertiary/5 blur-3xl" />
+
+        <div className="relative z-10 w-full max-w-xl">
+          <div className="rounded-2xl border border-sahara-border/40 bg-sahara-card p-8 shadow-ambient md:p-12">
+            <div className="mb-10 text-center">
+              <h1 className="mb-2 font-serif text-4xl font-light tracking-tight text-sahara-fg md:text-5xl">
+                {authTab === "login" ? "Welcome Back" : "Create Your Account"}
+              </h1>
+              <p className="text-sm tracking-wide text-sahara-muted">
+                {authTab === "login"
+                  ? "Enter your credentials to access your clinical dashboard."
+                  : "Register with your role. Patient profiles include vitals for your health record."}
               </p>
             </div>
-            <div className="flex items-center gap-4 text-sahara-primary">
-              <ShieldCheck className="size-8" />
-              <span className="text-sm font-semibold uppercase tracking-widest">Trusted by care teams</span>
-            </div>
-          </div>
-        </section>
 
-        <section className="flex w-full items-center justify-center bg-sahara-bg p-6 md:w-1/2 md:p-12 lg:p-24">
-          <div className="w-full max-w-md">
-            <div className="mb-12 text-center md:hidden">
-              <h1 className="font-serif text-3xl font-bold text-sahara-primary">MedBridge</h1>
-            </div>
-            <div className="rounded-3xl border border-sahara-border/40 bg-white p-8 shadow-ambient md:p-10">
-              <div className="mb-10 text-center">
-                <h3 className="mb-2 font-serif text-3xl text-sahara-fg">Welcome Back</h3>
-                <p className="text-sm text-sahara-muted">
-                  {role === "patient" ? "Please enter your patient credentials." : "Medical professional portal."}
-                </p>
-              </div>
-
-              <div className="mb-8 flex rounded-xl bg-sahara-surface-low p-1">
-                {(["patient", "doctor"] as const).map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setRole(item)}
-                    className={`flex-1 rounded-lg py-2 text-sm font-semibold capitalize transition-all duration-300 ${
-                      role === item ? "bg-white text-sahara-primary shadow-sm" : "text-sahara-muted hover:text-sahara-fg"
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-
-              {error ? (
-                <div className="mb-6 rounded-xl border border-red-300/30 bg-red-100/40 p-4 text-sm text-red-900">
-                  {error}
-                </div>
-              ) : null}
-
-              <form className="space-y-6" onSubmit={handleSubmit}>
-                <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-sahara-muted">
-                    Email Address
-                  </span>
-                  <input
-                    className="w-full rounded-xl border border-sahara-border/60 bg-sahara-bg px-4 py-3 text-sahara-fg outline-none transition-all placeholder:text-sahara-muted/60 focus:border-sahara-primary focus:ring-1 focus:ring-sahara-primary"
-                    placeholder="name@example.com"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    required
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 flex justify-between">
-                    <span className="text-xs font-bold uppercase tracking-widest text-sahara-muted">Password</span>
-                    <button
-                      className="text-xs font-semibold text-sahara-primary hover:underline"
-                      type="button"
-                      onClick={() => setModal("forgot")}
-                    >
-                      Forgot Password?
-                    </button>
-                  </span>
-                  <span className="relative block">
-                    <input
-                      className="w-full rounded-xl border border-sahara-border/60 bg-sahara-bg px-4 py-3 pr-12 text-sahara-fg outline-none transition-all placeholder:text-sahara-muted/60 focus:border-sahara-primary focus:ring-1 focus:ring-sahara-primary"
-                      placeholder="Password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      required
-                    />
-                    <button
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-sahara-muted/60 hover:text-sahara-primary"
-                      type="button"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                      onClick={() => setShowPassword((value) => !value)}
-                    >
-                      {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
-                    </button>
-                  </span>
-                </label>
-
-                <button
-                  className="w-full rounded-xl bg-sahara-primary py-4 font-bold tracking-wide text-white shadow-lg shadow-sahara-primary/10 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-70"
-                  type="submit"
-                  disabled={loading}
-                >
-                  {loading ? "Signing in..." : `Continue as ${role}`}
-                </button>
-              </form>
-
-              <div className="relative my-10">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-sahara-border/60" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-white px-4 font-medium uppercase tracking-widest text-sahara-muted">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
+            <div className="mb-8 flex border-b border-sahara-border/80">
               <button
                 type="button"
-                onClick={handleGoogleLogin}
-                disabled={googleLoading}
-                className="flex w-full items-center justify-center gap-3 rounded-xl border border-sahara-border bg-white px-4 py-3.5 transition-all duration-300 hover:bg-sahara-surface-low disabled:opacity-60"
+                onClick={() => {
+                  setAuthTab("login");
+                  setError(null);
+                }}
+                className={`flex-1 pb-4 text-sm font-semibold tracking-wide transition-colors ${
+                  authTab === "login"
+                    ? "border-b-2 border-sahara-primary text-sahara-primary"
+                    : "text-sahara-muted hover:text-sahara-fg"
+                }`}
               >
-                <span className="text-sm font-semibold text-sahara-fg">
-                  {googleLoading ? "Connecting to Google..." : "Continue with Google"}
-                </span>
+                Log In
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab("signup");
+                  setError(null);
+                }}
+                className={`flex-1 pb-4 text-sm font-semibold tracking-wide transition-colors ${
+                  authTab === "signup"
+                    ? "border-b-2 border-sahara-primary text-sahara-primary"
+                    : "text-sahara-muted hover:text-sahara-fg"
+                }`}
+              >
+                Sign Up
+              </button>
+            </div>
 
-              <div className="mt-10 text-center">
-                <p className="text-sm text-sahara-muted">
-                  New to MedBridge AI?
+            {error ? (
+              <div className="mb-6 rounded-xl border border-red-300/40 bg-red-100/35 p-4 text-sm text-red-900">{error}</div>
+            ) : null}
+
+            {authTab === "login" ? (
+              <>
+                <form className="space-y-6" onSubmit={handleLogin}>
+                  <div className="space-y-2">
+                    <label className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Email Address</label>
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-sahara-muted/70" />
+                      <input
+                        className="w-full rounded-xl border border-sahara-border/80 bg-white py-3 pl-12 pr-4 text-sahara-fg outline-none transition-all placeholder:text-sahara-muted/50 focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+                        placeholder="you@medbridge.ai"
+                        type="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1">
+                      <label className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">Password</label>
+                      <button type="button" className="text-xs font-semibold text-sahara-primary hover:underline" onClick={() => setModal("forgot")}>
+                        Forgot?
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-sahara-muted/70" />
+                      <input
+                        className="w-full rounded-xl border border-sahara-border/80 bg-white py-3 pl-12 pr-4 text-sahara-fg outline-none transition-all placeholder:text-sahara-muted/50 focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+                        placeholder="••••••••"
+                        type="password"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
                   <button
-                    type="button"
-                    className="ml-1 font-bold text-sahara-primary hover:underline"
-                    onClick={() => setModal("signup")}
+                    type="submit"
+                    disabled={loading || googleLoading}
+                    className="w-full rounded-xl bg-sahara-primary py-4 text-sm font-bold uppercase tracking-widest text-white shadow-md shadow-sahara-primary/10 transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-60"
                   >
-                    Create Account
+                    {loading ? "Signing in..." : "Log In"}
                   </button>
-                </p>
+                </form>
+
+                <div className="mt-8 flex items-center gap-4">
+                  <div className="h-px flex-1 bg-sahara-border/60" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-sahara-muted">Or continue with</span>
+                  <div className="h-px flex-1 bg-sahara-border/60" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading || googleLoading}
+                  className="mt-6 flex w-full items-center justify-center gap-3 rounded-xl border border-sahara-border/80 bg-white py-3.5 text-sm font-semibold text-sahara-fg shadow-sm transition-all hover:bg-sahara-surface-low disabled:opacity-60"
+                >
+                  <svg className="size-5 shrink-0" viewBox="0 0 24 24" aria-hidden>
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  {googleLoading ? "Redirecting to Google…" : "Continue with Google"}
+                </button>
+              </>
+            ) : null}
+
+            {authTab === "signup" ? (
+              <form className="space-y-6" onSubmit={handleRegister}>
+                <div>
+                  <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-sahara-muted">Join as</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setRole("patient")}
+                      className={`flex flex-col items-center rounded-2xl border p-6 transition-all ${
+                        role === "patient"
+                          ? "border-sahara-primary bg-sahara-primary/5 shadow-lg shadow-sahara-primary/5"
+                          : "border-sahara-border/80 hover:border-sahara-primary/40"
+                      }`}
+                    >
+                      <div
+                        className={`mb-3 flex size-12 items-center justify-center rounded-full ${
+                          role === "patient" ? "bg-sahara-primary text-white" : "bg-sahara-surface-low text-sahara-muted"
+                        }`}
+                      >
+                        <UserRound className="size-6" />
+                      </div>
+                      <span
+                        className={`text-xs font-bold uppercase tracking-widest ${
+                          role === "patient" ? "text-sahara-primary" : "text-sahara-muted"
+                        }`}
+                      >
+                        Patient
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole("doctor")}
+                      className={`flex flex-col items-center rounded-2xl border p-6 transition-all ${
+                        role === "doctor"
+                          ? "border-sahara-primary bg-sahara-primary/5 shadow-lg shadow-sahara-primary/5"
+                          : "border-sahara-border/80 hover:border-sahara-primary/40"
+                      }`}
+                    >
+                      <div
+                        className={`mb-3 flex size-12 items-center justify-center rounded-full ${
+                          role === "doctor" ? "bg-sahara-primary text-white" : "bg-sahara-surface-low text-sahara-muted"
+                        }`}
+                      >
+                        <Stethoscope className="size-6" />
+                      </div>
+                      <span
+                        className={`text-xs font-bold uppercase tracking-widest ${
+                          role === "doctor" ? "text-sahara-primary" : "text-sahara-muted"
+                        }`}
+                      >
+                        Doctor
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {role === "patient" ? (
+                  <div className="space-y-4 rounded-2xl border border-sahara-border/50 bg-sahara-surface-low/50 p-5">
+                    <h2 className="font-serif text-xl font-light text-sahara-fg">Patient profile</h2>
+                    <p className="text-xs text-sahara-muted">Demographics and vitals for your digital health record.</p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="space-y-2 sm:col-span-2">
+                        <span className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Full name</span>
+                        <input
+                          className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sm outline-none focus:border-sahara-primary"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="Jordan Lee"
+                          required
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Age</span>
+                        <input
+                          className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sm outline-none focus:border-sahara-primary"
+                          type="number"
+                          min={1}
+                          max={130}
+                          value={age}
+                          onChange={(e) => setAge(e.target.value)}
+                          required
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Sex</span>
+                        <select
+                          className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sm outline-none focus:border-sahara-primary"
+                          value={sex}
+                          onChange={(e) => setSex(e.target.value as "female" | "male" | "other")}
+                        >
+                          <option value="female">Female</option>
+                          <option value="male">Male</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </label>
+                      <label className="space-y-2">
+                        <span className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Height (cm)</span>
+                        <input
+                          className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sm outline-none focus:border-sahara-primary"
+                          type="number"
+                          min={50}
+                          max={280}
+                          value={heightCm}
+                          onChange={(e) => setHeightCm(e.target.value)}
+                          required
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Weight (kg)</span>
+                        <input
+                          className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sm outline-none focus:border-sahara-primary"
+                          type="number"
+                          min={15}
+                          max={400}
+                          value={weightKg}
+                          onChange={(e) => setWeightKg(e.target.value)}
+                          required
+                        />
+                      </label>
+                      <label className="space-y-2 sm:col-span-2">
+                        <span className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Blood type</span>
+                        <select
+                          className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sm outline-none focus:border-sahara-primary"
+                          value={bloodType}
+                          onChange={(e) => setBloodType(e.target.value)}
+                        >
+                          {BLOOD_TYPES.map((bt) => (
+                            <option key={bt} value={bt}>
+                              {bt}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 rounded-2xl border border-sahara-border/50 bg-sahara-surface-low/50 p-5">
+                    <h2 className="font-serif text-xl font-light text-sahara-fg">Professional profile</h2>
+                    <p className="text-xs text-sahara-muted">Tell us about your medical practice.</p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="space-y-2 sm:col-span-2">
+                        <span className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Full name</span>
+                        <input
+                          className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sm outline-none focus:border-sahara-primary"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="Dr. Julianne Vane"
+                          required
+                        />
+                      </label>
+                      <label className="space-y-2 sm:col-span-2">
+                        <span className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Specialty</span>
+                        <input
+                          className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sm outline-none focus:border-sahara-primary"
+                          value={specialty}
+                          onChange={(e) => setSpecialty(e.target.value)}
+                          placeholder="Neurology"
+                          required
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Experience (years)</span>
+                        <input
+                          className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sm outline-none focus:border-sahara-primary"
+                          type="number"
+                          min={0}
+                          max={80}
+                          value={experienceYears}
+                          onChange={(e) => setExperienceYears(e.target.value)}
+                          required
+                        />
+                      </label>
+                      <label className="space-y-2">
+                        <span className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Clinic name</span>
+                        <input
+                          className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sm outline-none focus:border-sahara-primary"
+                          value={clinicName}
+                          onChange={(e) => setClinicName(e.target.value)}
+                          placeholder={"St. Mary's General"}
+                          required
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Email Address</label>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-sahara-muted/70" />
+                    <input
+                      className="w-full rounded-xl border border-sahara-border/80 bg-white py-3 pl-12 pr-4 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Password</label>
+                  <div className="relative">
+                    <Lock className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-sahara-muted/70" />
+                    <input
+                      className="w-full rounded-xl border border-sahara-border/80 bg-white py-3 pl-12 pr-4 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+                      type="password"
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Confirm password</label>
+                  <div className="relative">
+                    <Lock className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-sahara-muted/70" />
+                    <input
+                      className="w-full rounded-xl border border-sahara-border/80 bg-white py-3 pl-12 pr-4 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+                      type="password"
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-sahara-fg py-4 text-sm font-bold uppercase tracking-widest text-sahara-bg transition-all hover:opacity-90 disabled:opacity-60"
+                >
+                  {loading ? "Creating account..." : "Complete enrollment"}
+                  <ArrowRight className="size-4" />
+                </button>
+              </form>
+            ) : null}
+
+            {authTab === "login" ? (
+              <p className="mt-8 text-center text-xs text-sahara-muted">
+                New to MedBridge?{" "}
+                <button type="button" className="font-bold text-sahara-primary hover:underline" onClick={() => setAuthTab("signup")}>
+                  Create an account
+                </button>
+              </p>
+            ) : null}
+          </div>
+
+          <div className="mt-12 overflow-hidden rounded-2xl border border-sahara-border/40 shadow-ambient">
+            <div className="relative h-64 w-full">
+              <img
+                alt="Warm, professional care environment"
+                className="absolute inset-0 size-full object-cover transition-transform duration-700 hover:scale-105"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJkNoyV112hwP8KOIiNc_E0pDZiuIheTpeXPQz-f8qtSEm2Z5W86jR90OE0eKKm-i0JKnFu2VAwLb2sSSL5Gfjmd6igmjn_ya76bUYjl-ziS5LASd1CyZl-7pp0fRGCoKASclYdVU7TDG3GmB617OBAhS9Y01o3PZQVnMouyfeeQ8pU2hPRtzpZg8JbKxYpyW_zNbYdEhUVTNzZT_PWt6huTldsrKTidaWR9sabXZF5NK4KjCvOIiHVdsM3s3dJhQkxhD5HIkFk1Q"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-sahara-fg/80 to-transparent" />
+              <div className="relative flex h-full flex-col justify-end p-8">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-sahara-primary-2">Our mission</p>
+                <h3 className="font-serif text-2xl font-light tracking-wide text-white">
+                  Bridging the gap between AI and human care.
+                </h3>
               </div>
             </div>
-
-            <footer className="mt-8 flex justify-center gap-6">
-              <button className="text-[10px] font-bold uppercase tracking-widest text-sahara-muted/60 hover:text-sahara-primary" type="button" onClick={() => setModal("privacy")}>
-                Privacy Policy
-              </button>
-              <button className="text-[10px] font-bold uppercase tracking-widest text-sahara-muted/60 hover:text-sahara-primary" type="button" onClick={() => setModal("terms")}>
-                Terms of Service
-              </button>
-              <button className="text-[10px] font-bold uppercase tracking-widest text-sahara-muted/60 hover:text-sahara-primary" type="button" onClick={() => setModal("help")}>
-                Help Center
-              </button>
-            </footer>
-
-            <div className="mt-10 text-center">
-              <Link className="text-xs text-sahara-muted hover:text-sahara-primary" href="/">
-                Back to Welcome
-              </Link>
-            </div>
           </div>
-        </section>
-      </div>
+
+          <p className="mt-8 text-center text-xs text-sahara-muted">
+            <Link href="/" className="font-semibold text-sahara-primary hover:underline">
+              Back to welcome
+            </Link>
+            <span className="mx-2 text-sahara-border">·</span>
+            <span className="inline-flex items-center gap-1">
+              <HeartPulse className="size-3.5 text-sahara-tertiary" />
+              Role-based routing after sign-in
+            </span>
+          </p>
+        </div>
+      </main>
+
+      <footer className="mt-auto border-t border-sahara-border/60 bg-sahara-bg py-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-8 md:flex-row">
+          <div className="text-xs uppercase tracking-widest text-sahara-muted">© {new Date().getFullYear()} MedBridge Healthcare AI</div>
+          <div className="flex flex-wrap justify-center gap-8">
+            <button type="button" className="text-xs uppercase tracking-widest text-sahara-muted hover:text-sahara-fg" onClick={() => setModal("privacy")}>
+              Privacy Policy
+            </button>
+            <button type="button" className="text-xs uppercase tracking-widest text-sahara-muted hover:text-sahara-fg" onClick={() => setModal("terms")}>
+              Terms of Service
+            </button>
+            <span className="text-xs uppercase tracking-widest text-sahara-muted">HIPAA-minded design</span>
+          </div>
+        </div>
+      </footer>
 
       {activeModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-sahara-border bg-white p-8 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl border border-sahara-border bg-white p-8 shadow-2xl">
             <div className="mb-5 flex items-start justify-between gap-4">
               <h3 className="font-serif text-2xl">{activeModal.title}</h3>
-              <button type="button" onClick={() => setModal(null)} className="text-sahara-muted hover:text-sahara-primary">
+              <button type="button" onClick={() => setModal(null)} className="text-sahara-muted hover:text-sahara-primary" aria-label="Close">
                 <X className="size-5" />
               </button>
             </div>
             <p className="text-sm leading-6 text-sahara-muted">{activeModal.content}</p>
-            <div className="mt-6 grid gap-3">
-              {modal === "signup" ? (
-                <>
-                  <Link href="/onboarding" className="rounded-xl bg-sahara-primary px-4 py-3 text-center text-sm font-bold text-white">
-                    Start Patient Onboarding
-                  </Link>
-                  <Link href="/provider/verification" className="rounded-xl border border-sahara-border px-4 py-3 text-center text-sm font-bold">
-                    Verify as Provider
-                  </Link>
-                </>
-              ) : null}
-              <button type="button" onClick={() => setModal(null)} className="rounded-xl bg-sahara-surface-low px-4 py-3 text-sm font-bold">
-                Understood
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setModal(null)}
+              className="mt-6 w-full rounded-xl bg-sahara-surface-low px-4 py-3 text-sm font-bold text-sahara-fg"
+            >
+              Understood
+            </button>
           </div>
         </div>
       ) : null}
-    </main>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-sahara-bg font-serif text-sahara-muted">Loading…</div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }
