@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { getRepositories } from "@/lib/server/repositories";
+import { env, hasSupabasePublicEnv } from "@/lib/env";
 
 export async function GET() {
-  const repos = getRepositories();
   return NextResponse.json({
     ok: true,
-    source: repos.source,
+    supabaseConfigured: hasSupabasePublicEnv,
+    geoapifyConfigured: !!env.GEOAPIFY_API_KEY,
   });
 }
 
