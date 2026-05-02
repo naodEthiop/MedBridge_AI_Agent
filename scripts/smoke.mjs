@@ -15,7 +15,7 @@ const routes = [
   "/provider/verification",
 ];
 
-const apiRoutes = ["/api/health", "/api/patients", "/api/doctors", "/api/appointments", "/api/patients/pat_1"];
+const apiRoutes = ["/api/health"];
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -84,6 +84,12 @@ async function main() {
 
   // Wait until the app is actually accepting requests.
   await assertStatus(`${base}/api/health`);
+
+  const health = await (await fetch(`${base}/api/health`)).json();
+  const supabaseConfigured = Boolean(health?.supabaseConfigured);
+  if (supabaseConfigured) {
+    apiRoutes.push("/api/patients", "/api/doctors", "/api/appointments", "/api/patients/pat_1");
+  }
 
   for (const route of routes) {
     await assertStatus(`${base}${route}`);

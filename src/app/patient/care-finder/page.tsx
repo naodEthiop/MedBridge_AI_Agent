@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
+import { NearbyMedicalMap } from "@/components/patient/NearbyMedicalMap";
 import { CareFinderClient } from "@/components/views/CareFinderClient";
 
 export default function CareFinderPage() {
@@ -34,36 +35,12 @@ export default function CareFinderPage() {
               <CareFinderClient />
             </div>
 
-            <div className="space-y-4">
-              {[
-                { name: "St. Mary's General Hospital", distance: "1.2 miles away", state: "Open 24/7" },
-                { name: "Sahara Urgent Care Center", distance: "2.4 miles away", state: "Wait: 15m" },
-              ].map((facility) => (
-                <div key={facility.name} className="rounded-2xl border border-sahara-border/40 bg-white p-6">
-                  <div className="mb-2 flex items-start justify-between">
-                    <h4 className="font-serif text-xl">{facility.name}</h4>
-                    <span className="rounded bg-green-100 px-2 py-1 text-xs font-bold uppercase text-green-700">
-                      {facility.state}
-                    </span>
-                  </div>
-                  <p className="text-sm text-sahara-muted">{facility.distance}</p>
-                </div>
-              ))}
+            <div className="rounded-2xl border border-sahara-border/40 bg-white p-6">
+              <NearbyMedicalMap />
             </div>
           </div>
 
-          <div className="relative min-h-[680px] overflow-hidden rounded-[2rem] border border-sahara-border/40 bg-sahara-surface-low lg:col-span-7">
-            <img
-              alt="Map"
-              className="h-full w-full object-cover opacity-55 mix-blend-multiply"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGxy1q3GH5LtnliO4_Inpr0p2k_MmsYMpENLpyyF1Dax_pPniW5G2KJ9E4iXU4123JIi6Mx2R9QS0C6xLEHyCNVBqKa2i6dCup3wwQSU8RHEM1m9kdVukdl-ear6DPJQqYU1892hkssDEjkZoLwOz0jne2p2ew7dE2E1S6-g1wTdBCCTg2p2cadzSTWIODbd4JblGKZw3M-yJCaaXraYExDHNzFA2zEUGyRTWEzSpP9Yn7ye2FnlHsyUgJkv-r4gPtDTPRd74MTg4"
-            />
-            <div className="absolute bottom-8 left-8 right-8 rounded-3xl border border-white/20 bg-white/90 p-6 shadow-2xl backdrop-blur-md">
-              <h5 className="font-serif text-xl">St. Mary's General Hospital</h5>
-              <p className="text-sm text-sahara-muted">1200 Health Pkwy, Phoenix, AZ</p>
-              <p className="mt-2 text-sm font-bold text-sahara-primary">Travel time: 6 mins</p>
-            </div>
-          </div>
+          <div className="relative min-h-[680px] overflow-hidden rounded-[2rem] border border-sahara-border/40 bg-sahara-surface-low lg:col-span-7" />
         </section>
       </div>
     </AppShell>
