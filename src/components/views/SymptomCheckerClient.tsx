@@ -18,10 +18,10 @@ export function SymptomCheckerClient(props: {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const res = await fetch("/api/mcp", {
+    const res = await fetch("/api/symptoms/triage", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ tool: "symptom_checker", input: { message, bodyPart: props.bodyPart ?? null } }),
+      body: JSON.stringify({ message, bodyPart: props.bodyPart ?? null }),
     });
     const dataText = await res.text();
     setLoading(false);
@@ -31,7 +31,10 @@ export function SymptomCheckerClient(props: {
       return;
     }
     const parsed = JSON.parse(dataText) as Record<string, unknown>;
-    const resultObj = (parsed.result as Record<string, unknown>) ?? parsed;
+    const resultObj =
+      (parsed.triage as Record<string, unknown>) ??
+      (parsed.result as Record<string, unknown>) ??
+      parsed;
     setResult(resultObj);
     props.onResultChange?.(resultObj);
   }
