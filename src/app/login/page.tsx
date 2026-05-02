@@ -1,6 +1,11 @@
 "use client";
 
 import Link from "next/link";
+<<<<<<< HEAD
+=======
+import { Eye, EyeOff, ShieldCheck, X } from "lucide-react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+>>>>>>> 55794be (refactor: remove middleware and enhance auth pages with Suspense)
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
@@ -719,6 +724,20 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-sahara-bg font-serif text-sahara-muted">Loading…</div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-sahara-bg text-sahara-fg">
+          <p className="text-sm text-sahara-muted">Loading...</p>
+        </main>
       }
     >
       <LoginPageContent />

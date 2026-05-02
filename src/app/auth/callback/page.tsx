@@ -2,8 +2,21 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { useRouter, useSearchParams } from "next/navigation";
+<<<<<<< HEAD
 import { Suspense, useEffect, useState } from "react";
 
+=======
+import { Suspense, useEffect } from "react";
+
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import {
+  normalizeAppRole,
+  postLoginPathForRole,
+  SELECTED_ROLE_STORAGE_KEY,
+  upsertUserRoleRow,
+} from "@/lib/supabase/persistUserRole";
+
+>>>>>>> 55794be (refactor: remove middleware and enhance auth pages with Suspense)
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -76,6 +89,23 @@ export default function AuthCallbackPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-sahara-bg text-sahara-muted">Loading…</div>
+      }
+    >
+      <AuthCallbackContent />
+    </Suspense>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-sahara-bg px-6 text-sahara-fg">
+          <div className="w-full max-w-md rounded-2xl border border-sahara-border/50 bg-white p-8 shadow-ambient">
+            <h1 className="mb-3 text-center font-serif text-2xl">Signing you in...</h1>
+            <p className="text-center text-sm text-sahara-muted">Loading...</p>
+          </div>
+        </main>
       }
     >
       <AuthCallbackContent />

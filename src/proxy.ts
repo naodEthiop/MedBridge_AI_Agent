@@ -1,5 +1,10 @@
+<<<<<<< HEAD:src/middleware.ts
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+=======
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+>>>>>>> 55794be (refactor: remove middleware and enhance auth pages with Suspense):src/proxy.ts
 
 import { readSessionFromCookieValue, SESSION_COOKIE } from "@/lib/auth/session-core";
 
@@ -13,7 +18,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
+<<<<<<< HEAD:src/middleware.ts
   const user = await readSessionFromCookieValue(token);
+=======
+export async function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  const user = await getAuthUserFromRequest(req);
+
+  // Supabase browser sessions live in localStorage by default; middleware cannot see them.
+  // Only enforce role rules when we have a server-visible token (cookies / Authorization).
+>>>>>>> 55794be (refactor: remove middleware and enhance auth pages with Suspense):src/proxy.ts
   if (!user) {
     const login = new URL("/login", request.url);
     login.searchParams.set("expired", "1");
