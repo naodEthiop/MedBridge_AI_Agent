@@ -45,7 +45,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col gap-4 pt-4 sm:flex-row">
               <Link
-                href="/login"
+                href="/login?from=welcome"
                 className="group inline-flex items-center justify-center gap-2 rounded-lg bg-sahara-primary px-8 py-4 font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-[0.98]"
               >
                 Continue to Login
