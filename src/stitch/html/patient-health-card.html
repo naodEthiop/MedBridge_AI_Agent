@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Eb+Garamond:wght@400;500;600;700;800&amp;family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface-variant": "#605850",
+                    "surface-container-low": "#f6f0e8",
+                    "surface-container-high": "#ece6dc",
+                    "on-tertiary-container": "#3a2020",
+                    "tertiary-fixed-dim": "#e8a0a0",
+                    "tertiary-fixed": "#fce0e0",
+                    "tertiary": "#8c3c3c",
+                    "on-error-container": "#7a1a10",
+                    "primary-fixed-dim": "#f0a878",
+                    "surface-container-highest": "#e6e0d6",
+                    "on-tertiary-fixed": "#2e1515",
+                    "surface-variant": "#ece6dc",
+                    "primary-fixed": "#fbe8d8",
+                    "on-background": "#3a302a",
+                    "inverse-on-surface": "#faf5ee",
+                    "inverse-surface": "#3a302a",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#c2652a",
+                    "on-secondary": "#ffffff",
+                    "outline": "#9a9088",
+                    "secondary-fixed": "#eae2da",
+                    "on-primary-fixed-variant": "#8a4518",
+                    "surface-bright": "#faf5ee",
+                    "surface": "#faf5ee",
+                    "on-error": "#ffffff",
+                    "outline-variant": "#d8d0c8",
+                    "on-tertiary": "#ffffff",
+                    "surface-dim": "#dcd6cc",
+                    "tertiary-container": "#d47070",
+                    "background": "#faf5ee",
+                    "on-secondary-fixed-variant": "#504840",
+                    "primary-container": "#e08850",
+                    "primary": "#c2652a",
+                    "on-surface": "#3a302a",
+                    "error": "#c0392b",
+                    "secondary-container": "#eae2da",
+                    "on-secondary-fixed": "#2a2420",
+                    "secondary-fixed-dim": "#cec6be",
+                    "error-container": "#fce4e0",
+                    "on-tertiary-fixed-variant": "#6e3030",
+                    "on-primary-container": "#fbe8d8",
+                    "inverse-primary": "#f0a878",
+                    "on-secondary-container": "#605850",
+                    "on-primary-fixed": "#401a08",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#f2ece4",
+                    "secondary": "#78706a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Eb Garamond"],
+                    "display": ["Eb Garamond"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #faf5ee;
+        }
+        .font-serif {
+            font-family: 'Eb Garamond', serif;
+        }
+    </style>
+</head>
+<body class="bg-[#faf5ee] text-on-surface">
+<!-- SideNavBar -->
+<aside class="w-64 fixed left-0 h-screen border-r border-[#d8d0c8]/60 bg-[#faf5ee] z-50 hidden md:flex flex-col py-6 px-4 space-y-2">
+<div class="mb-8 px-4">
+<h1 class="text-xl font-serif font-bold text-[#c2652a]">MedBridge</h1>
+<p class="text-xs text-stone-500 font-medium">Healthcare AI</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-orange-50/50 transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-orange-50/50 transition-all" href="#">
+<span class="material-symbols-outlined">stethoscope</span>
+<span class="text-sm font-medium">Symptom Checker</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-orange-50/50 transition-all" href="#">
+<span class="material-symbols-outlined">document_scanner</span>
+<span class="text-sm font-medium">Scanners</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-orange-50/50 transition-all" href="#">
+<span class="material-symbols-outlined">emergency</span>
+<span class="text-sm font-medium">Emergency</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-500 hover:bg-orange-50/50 transition-all" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="text-sm font-medium">Map</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#c2652a] font-bold border-r-2 border-[#c2652a] bg-orange-50/50" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">contact_page</span>
+<span class="text-sm font-medium">Health Card</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-[#d8d0c8]/60 px-4">
+<div class="flex items-center gap-3">
+<img alt="User profile" class="w-10 h-10 rounded-full border border-outline-variant" data-alt="A professional studio portrait of a doctor or medical professional with a warm, empathetic expression. The background is a soft, sun-baked cream color reflecting the Sahara brand aesthetic. High-key lighting highlights the clean textures of a modern white coat, maintaining a sense of luxurious warmth and medical authority." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDC0WAKScr4aIk3kVMauZzrCb2D3rgenborwoqPoi2FIxZeiTex-dtV5uOq24LyI2kNZ8z-nt07GKMnOUjBeHoe7c5JYAZztHBgRSAN2PVXmHzwqTBl2mQxHuA4PCd4GPHK4IGs2ds6z99FObiVM3yJjA1nli75VgvzBRBIpFfRkHngtFnH4dTstqZSA-AeZrwZBD6Bp9BlX9RT9IexGCiZ2QwAaUHBfdfxxNPex-JqxSgZTij4ukYUah6qlQ3gekGWGynE6jX8B2Y"/>
+<div>
+<p class="text-sm font-bold">Julian Vane</p>
+<p class="text-[10px] text-stone-500 uppercase tracking-wider">Premium Member</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- TopNavBar (Mobile Only) -->
+<header class="md:hidden flex justify-between items-center w-full px-8 py-4 bg-[#faf5ee] border-b border-[#d8d0c8]/60 shadow-[0_2px_16px_rgba(58,48,42,0.04)] sticky top-0 z-50">
+<h1 class="text-2xl font-serif font-bold text-[#c2652a]">MedBridge</h1>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#c2652a]">notifications</span>
+<img alt="User profile" class="w-8 h-8 rounded-full border border-outline-variant" data-alt="A sharp, clear profile picture of a patient in a light-filled room. The warm sunset light filters through a window, casting golden hues on their professional attire. The overall mood is calm, modern, and aligned with a high-end digital health experience." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvKW6opPcAVTgBx1FcNQ8qktVg-0u-t6mtUE69NvUTmvrgnlmEVeygvjEJD_LAvGV_HwBd52EuRaQwMg9qh7KfFsygCKWqpapGlsAfnrcQvblHA-2Ms_nUcrUz0OYLv40gKHe4GvyMeVSAXcdHEsANio6jWBvZnH3FjdQawVgTGmNvuJwSDowsxiuue5q9v9H5XqSEVltsOEEVg1DDAPIdj257vU8IvXH8LjEHLEJUd9rRw-YfzAnaEljL4KlLEtQIaMoq0jNi0QI"/>
+</div>
+</header>
+<main class="lg:pl-64 min-h-screen flex flex-col">
+<!-- Content Area -->
+<section class="flex-1 p-8 lg:p-12 max-w-5xl mx-auto w-full">
+<div class="mb-10 text-center lg:text-left">
+<h2 class="text-4xl lg:text-5xl font-headline font-bold text-on-surface mb-3 leading-tight">Your Digital Health Card</h2>
+<p class="text-on-surface-variant font-body max-w-xl">A secure, portable summary of your medical identity. Present this QR code to any MedBridge certified provider for instant, secure synchronization of your health records.</p>
+</div>
+<!-- Health Card Container -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- The Actual Card -->
+<div class="lg:col-span-8 group">
+<div class="relative bg-surface-container-lowest rounded-[2rem] p-1 shadow-2xl overflow-hidden aspect-[1.58/1] max-w-2xl mx-auto lg:mx-0">
+<!-- Decorative Background -->
+<div class="absolute inset-0 bg-gradient-to-br from-surface-container-low via-surface-container-lowest to-primary-fixed opacity-40"></div>
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+<div class="relative h-full w-full border border-outline-variant rounded-[1.8rem] p-8 flex flex-col">
+<!-- Header of Card -->
+<div class="flex justify-between items-start mb-8">
+<div>
+<h3 class="text-2xl font-serif font-bold text-[#c2652a] tracking-tight">MedBridge</h3>
+<p class="text-[10px] font-body text-primary tracking-[0.2em] font-bold uppercase">Universal Health Identity</p>
+</div>
+<div class="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">Active Status</div>
+</div>
+<!-- Main Card Content -->
+<div class="flex gap-8 flex-1">
+<!-- Photo -->
+<div class="shrink-0">
+<div class="w-32 h-40 rounded-xl overflow-hidden border border-outline-variant shadow-sm bg-surface-container-high">
+<img alt="Cardholder" class="w-full h-full object-cover grayscale-[0.2] contrast-125" data-alt="A crisp, high-quality ID-style portrait of a male patient. The lighting is bright and soft, with a warm linen-colored backdrop. The visual style is elegant and professional, reminiscent of a high-end luxury membership card, with subtle warm tones throughout." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5-IKqTXvUTbe4S2F95imEmgfxEKep5sVj0exoHX0tu3uvM0XZsJ6AnWeP1E8dd0A4I-aRzgZAkIVfVz6Cha01EidMSbZcp5a7wVcXFUOnWcWyK3DGBbmOKOv8Z8pmlc3IqGLj2YKlf-gS30GxUztJte0IIGjz6cZj3W_PWpbIusz68_DowhfIeTpi1aqwbb4F6lZ3UA6ZuzEYXNU2TPtTEdksRTB3FhMwqjCu2_5ZjcfZzv3WfFxjnQyYIen1VM_MlvsQjI9KRZs"/>
+</div>
+</div>
+<!-- Details Grid -->
+<div class="flex-1 grid grid-cols-2 gap-y-6 gap-x-4">
+<div>
+<p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mb-1">Full Name</p>
+<p class="text-lg font-serif font-bold text-on-surface">Julian Vane</p>
+</div>
+<div>
+<p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mb-1">Patient ID</p>
+<p class="text-lg font-serif font-bold text-on-surface">MB-8829-QX</p>
+</div>
+<div class="grid grid-cols-3 col-span-2 gap-4">
+<div>
+<p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mb-1">Age</p>
+<p class="text-base font-bold">34</p>
+</div>
+<div>
+<p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mb-1">Sex</p>
+<p class="text-base font-bold">Male</p>
+</div>
+<div>
+<p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mb-1">Blood Type</p>
+<p class="text-base font-bold text-tertiary">O Negative</p>
+</div>
+</div>
+<div class="col-span-2">
+<p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest mb-1">Known Conditions</p>
+<div class="flex gap-2">
+<span class="text-xs px-2 py-0.5 bg-surface-container-high rounded-full border border-outline-variant text-on-surface-variant font-medium">Type 1 Diabetes</span>
+<span class="text-xs px-2 py-0.5 bg-surface-container-high rounded-full border border-outline-variant text-on-surface-variant font-medium">Mild Asthma</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Card -->
+<div class="mt-auto pt-6 flex justify-between items-end">
+<div class="flex gap-8">
+<div>
+<p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Height</p>
+<p class="text-sm font-semibold">182 cm</p>
+</div>
+<div>
+<p class="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Weight</p>
+<p class="text-sm font-semibold">78 kg</p>
+</div>
+</div>
+<div class="text-[8px] text-stone-400 font-medium text-right leading-tight max-w-[120px]">
+                                    Issued by MedBridge AI Systems. Secure blockchain verified identity.
+                                </div>
+</div>
+</div>
+</div>
+<!-- Actions Bar Below Card -->
+<div class="mt-8 flex flex-wrap gap-4 justify-center lg:justify-start">
+<button class="flex items-center gap-2 bg-[#c2652a] text-white px-6 py-3 rounded-lg font-bold hover:brightness-110 active:scale-95 transition-all shadow-md">
+<span class="material-symbols-outlined text-xl">download</span>
+                            Download as PDF
+                        </button>
+<button class="flex items-center gap-2 bg-white text-on-surface border border-outline-variant px-6 py-3 rounded-lg font-bold hover:bg-surface-container-low active:scale-95 transition-all">
+<span class="material-symbols-outlined text-xl">share</span>
+                            Share Access
+                        </button>
+</div>
+</div>
+<!-- Side Panel: QR & Quick Access -->
+<div class="lg:col-span-4 space-y-6">
+<!-- QR Code Card -->
+<div class="bg-surface-container-low rounded-3xl p-8 border border-outline-variant flex flex-col items-center text-center shadow-sm">
+<h4 class="font-serif text-xl font-bold mb-6 text-on-surface">Quick Scan Provider Access</h4>
+<div class="bg-white p-4 rounded-2xl border border-outline-variant shadow-inner mb-6 relative">
+<img alt="QR Code" class="w-40 h-40 object-cover opacity-80" data-alt="A minimalist, high-contrast QR code rendered on a clean white surface within a luxury medical app context. The QR code is framed by subtle, warm-toned graphic elements and has a high-tech yet organic feel, consistent with the Sahara sun-baked simplicity theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkRdR45MhttQaVjMsmhfEnZig-eRqtG5zILYbsTopJXIbZooUypKPkCb9WHUf07sUJ3kqrCj8nC09dDdPcMnbmCYlR8Kw-qASBZGOOeKrwlLPkD2QtE2wFXTDhDxvRPp2g-dmfFfug5Ob39OuMI8wn98DO7mvCKiFMYGjm_2Gk-8oyL-gonotAsKD7-rTtriP0Fz2BzZ6t4f92GOfDX_UCiRrXnMIdSuTn3JXkXjBNB3WBQ31Hi1zR_4qkG8br7anBnQoCYy97N_Y"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="bg-white p-1 rounded-lg">
+<span class="material-symbols-outlined text-[#c2652a] text-4xl">medical_information</span>
+</div>
+</div>
+</div>
+<p class="text-sm text-on-surface-variant font-medium px-4">This code expires in <span class="text-[#c2652a] font-bold">14:59</span></p>
+<button class="mt-6 text-[#c2652a] text-sm font-bold flex items-center gap-2 hover:underline">
+<span class="material-symbols-outlined text-base">refresh</span>
+                            Refresh Code
+                        </button>
+</div>
+<!-- Emergency Access -->
+<div class="bg-error-container/30 rounded-3xl p-6 border border-error/10 flex items-start gap-4">
+<div class="bg-error-container p-2 rounded-xl text-error shrink-0">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">emergency_home</span>
+</div>
+<div>
+<h5 class="font-bold text-on-error-container text-sm">Emergency Protocols</h5>
+<p class="text-xs text-on-error-container/70 mt-1">If this device is locked, responders can access your blood type and allergies by triple-tapping the power button.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="flex flex-col md:flex-row justify-between items-center px-8 py-6 mt-auto lg:pl-72 border-t border-[#d8d0c8]/60 bg-[#faf5ee]">
+<p class="text-stone-400 text-xs font-medium">© 2024 MedBridge AI. Sun-baked simplicity for modern care.</p>
+<div class="flex gap-6 mt-4 md:mt-0">
+<a class="text-stone-400 hover:text-[#c2652a] text-xs transition-colors" href="#">Privacy Policy</a>
+<a class="text-stone-400 hover:text-[#c2652a] text-xs transition-colors" href="#">Terms of Service</a>
+<a class="text-stone-400 hover:text-[#c2652a] text-xs transition-colors" href="#">Contact Support</a>
+</div>
+</footer>
+</main>
+<!-- Floating Action Button -->
+<!-- FAB Suppressed for Profile/Health Card page as per instruction -->
+</body></html>

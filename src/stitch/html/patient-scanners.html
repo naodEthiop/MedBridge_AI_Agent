@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedBridge Diagnostic Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&amp;family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#605850",
+                        "on-primary-fixed": "#401a08",
+                        "on-tertiary-container": "#3a2020",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#7a1a10",
+                        "error": "#c0392b",
+                        "secondary-fixed-dim": "#cec6be",
+                        "on-tertiary-fixed-variant": "#6e3030",
+                        "on-primary-fixed-variant": "#8a4518",
+                        "on-secondary-fixed": "#2a2420",
+                        "tertiary-fixed": "#fce0e0",
+                        "inverse-on-surface": "#faf5ee",
+                        "secondary-container": "#eae2da",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#3a302a",
+                        "on-background": "#3a302a",
+                        "outline-variant": "#d8d0c8",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#e8a0a0",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#fbe8d8",
+                        "on-secondary-container": "#605850",
+                        "inverse-primary": "#f0a878",
+                        "tertiary-container": "#d47070",
+                        "surface-tint": "#c2652a",
+                        "primary": "#c2652a",
+                        "surface": "#faf5ee",
+                        "secondary": "#78706a",
+                        "surface-variant": "#ece6dc",
+                        "surface-container-high": "#ece6dc",
+                        "primary-container": "#e08850",
+                        "inverse-surface": "#3a302a",
+                        "surface-container-highest": "#e6e0d6",
+                        "secondary-fixed": "#eae2da",
+                        "surface-bright": "#faf5ee",
+                        "outline": "#9a9088",
+                        "surface-container": "#f2ece4",
+                        "surface-container-low": "#f6f0e8",
+                        "on-secondary-fixed-variant": "#504840",
+                        "surface-dim": "#dcd6cc",
+                        "on-tertiary-fixed": "#2e1515",
+                        "primary-fixed": "#fbe8d8",
+                        "tertiary": "#8c3c3c",
+                        "primary-fixed-dim": "#f0a878",
+                        "background": "#faf5ee",
+                        "error-container": "#fce4e0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.8px",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["EB Garamond", "serif"],
+                        "display": ["EB Garamond", "serif"],
+                        "body": ["Manrope", "sans-serif"],
+                        "label": ["Manrope", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #faf5ee;
+            color: #3a302a;
+        }
+    </style>
+</head>
+<body class="font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="w-full top-0 sticky bg-[#faf5ee] dark:bg-stone-950 border-b border-stone-200/60 dark:border-stone-800/60 shadow-[0_2px_16px_rgba(58,48,42,0.04)] z-50">
+<div class="flex justify-between items-center px-8 h-20 max-w-[1920px] mx-auto">
+<div class="flex items-center gap-12">
+<span class="text-2xl font-serif italic text-[#c2652a]">MedBridge AI</span>
+<div class="hidden md:flex gap-8 items-center">
+<a class="text-stone-500 dark:text-stone-400 font-sans hover:text-[#c2652a] transition-colors duration-200 cursor-pointer active:opacity-70" href="#">Dashboard</a>
+<a class="text-[#c2652a] font-bold border-b-2 border-[#c2652a] pb-1 font-serif cursor-pointer active:opacity-70" href="#">Scanners</a>
+<a class="text-stone-500 dark:text-stone-400 font-sans hover:text-[#c2652a] transition-colors duration-200 cursor-pointer active:opacity-70" href="#">Patient List</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-stone-600 cursor-pointer hover:text-[#c2652a]" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-stone-600 cursor-pointer hover:text-[#c2652a]" data-icon="settings">settings</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-secondary-container overflow-hidden border border-outline-variant">
+<img alt="User profile" data-alt="A professional medical professional portrait with soft, warm sunlight hitting one side of their face. The background is a clean, minimalist clinic setting with warm linen-colored walls and soft wooden textures, maintaining a high-key and serene atmosphere that aligns with a warm minimalist healthcare aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCT55_o7zLFKBlNzljFk7BTaAGWjzO09Viu19DIG2DOujxdhiZyHI6qRoPYT8CFk4360KZ3OzbwxOcIw8h_NEtZowH0LX2lCWl-m9tVldairX9PW1vWQXr8kEJoqYRQGVCAmW-9eNGZgFGWX3_-a79qYS2PwZ4iDHp9RoSbtqOKPq77yHfRXhJNklhpngv39l8JRKiqYvMfjfGgIvMkzg7ecVlYABuoujAhXvXRF3stISi-w0-VHS10FyYnN2QSkfUNu2hBP2oCCeo"/>
+</div>
+</div>
+</div>
+</nav>
+<div class="flex">
+<!-- SideNavBar -->
+<aside class="hidden md:flex h-screen w-72 left-0 sticky top-20 bg-[#faf5ee] dark:bg-stone-950 border-r border-stone-200/60 dark:border-stone-800/60 flex-col py-8 overflow-y-auto">
+<div class="px-6 mb-8">
+<h3 class="font-serif text-xl text-[#c2652a]">Diagnostic Center</h3>
+<p class="font-sans text-xs tracking-widest uppercase text-on-surface-variant opacity-70">Healthcare Portal</p>
+</div>
+<nav class="flex-1 space-y-1 px-4">
+<div class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-sans text-sm tracking-wide">Dashboard</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="monitor_heart">monitor_heart</span>
+<span class="font-sans text-sm tracking-wide">Symptoms</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded-lg bg-stone-100/50 dark:bg-stone-900/50 text-[#c2652a] font-semibold border-r-4 border-[#c2652a] transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="biotech">biotech</span>
+<span class="font-sans text-sm tracking-wide">Scanners</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="emergency">emergency</span>
+<span class="font-sans text-sm tracking-wide">Emergency</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-sans text-sm tracking-wide">Map</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-sans text-sm tracking-wide">Clinical Dashboard</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded-lg text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-sans text-sm tracking-wide">Patient List</span>
+</div>
+</nav>
+<div class="px-6 mt-auto pt-8 border-t border-stone-200/60">
+<button class="w-full py-3 bg-primary text-white rounded-lg font-sans text-sm font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="support_agent">support_agent</span>
+                    Get Support
+                </button>
+<div class="mt-6 flex flex-col gap-2">
+<div class="flex items-center gap-3 px-2 py-2 text-on-surface-variant hover:text-primary transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-xl" data-icon="help">help</span>
+<span class="text-xs font-sans">Help Center</span>
+</div>
+<div class="flex items-center gap-3 px-2 py-2 text-on-surface-variant hover:text-error transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-xl" data-icon="logout">logout</span>
+<span class="text-xs font-sans">Logout</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 min-h-screen bg-surface p-6 md:p-12">
+<header class="max-w-6xl mx-auto mb-12">
+<h1 class="font-display text-5xl md:text-6xl text-on-surface leading-tight mb-4">Unified AI Analysis</h1>
+<p class="font-body text-lg text-on-surface-variant max-w-2xl leading-relaxed">
+                    Harness advanced computer vision for immediate drug verification and dermatological triage. Powered by MedBridge AI's diagnostic core.
+                </p>
+</header>
+<div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+<!-- Section 1: Medication Scanner -->
+<section class="bg-surface-container-low rounded-[32px] p-8 shadow-[0_2px_16px_rgba(58,48,42,0.04)] border border-outline-variant/30">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="pill">pill</span>
+</div>
+<h2 class="font-display text-3xl text-on-surface">Medication Scanner</h2>
+</div>
+<span class="px-3 py-1 bg-primary-container text-on-primary-fixed text-xs font-bold rounded-full uppercase tracking-widest">Active</span>
+</div>
+<!-- Camera Placeholder Area -->
+<div class="relative aspect-video bg-surface-container-highest rounded-2xl overflow-hidden mb-8 border-2 border-dashed border-outline-variant flex items-center justify-center group cursor-pointer transition-colors hover:border-primary/50">
+<div class="absolute inset-0 bg-gradient-to-t from-stone-900/40 to-transparent"></div>
+<img alt="Medicine Bottle" class="w-full h-full object-cover opacity-60 mix-blend-multiply" data-alt="A macro close-up of a white medicine bottle resting on a warm linen-textured surface. The lighting is soft and directional, creating gentle shadows. The camera focus is sharp on the label area, while the background is a creamy, warm blur. The overall mood is sterile yet comforting and high-end." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1g_SyQv7Wsn0WKvBMbyWQpY7DgO-xTuUV916wcD5tsNelYZdjJYOhZoPcgbKXRLbquCEd0jkecj9MBTtOX0QsX4Vs660ALQj5ZzZcBTN9BgOk2AlEWazK_CBCgjhjE5eX1IZ6r4aRMphqUm_2YUlZWqFcv5WMH304p5n-lEuP_I2uFxcrUiYkVJ9IL7GJ13-9gMWtky7c0wXuDdTdyiXNoaFEHmXqSRcjf06PyUi3YBjiT0jnQxxtZ96PLKsuejk2E48HdXpCIPA"/>
+<div class="relative z-10 flex flex-col items-center gap-3">
+<div class="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="photo_camera">photo_camera</span>
+</div>
+<p class="text-white font-sans font-medium text-sm">Align label within the frame</p>
+</div>
+<!-- Scanning State Overlay -->
+<div class="absolute inset-x-0 top-0 h-1 bg-primary/30 overflow-hidden">
+<div class="h-full bg-primary w-1/3 shadow-[0_0_15px_rgba(194,101,42,0.8)] animate-[scan_2s_linear_infinite]"></div>
+</div>
+</div>
+<!-- Scan Results -->
+<div class="space-y-6">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="sync" style="font-variation-settings: 'wght' 600;">sync</span>
+<span class="text-sm font-sans font-semibold text-primary">Scanning...</span>
+</div>
+<div class="grid grid-cols-1 gap-4">
+<div class="p-5 bg-white/60 rounded-2xl border border-outline-variant/40">
+<p class="text-[10px] font-sans font-bold uppercase tracking-widest text-on-surface-variant mb-1">Drug Name</p>
+<p class="font-display text-2xl text-on-surface">Lisinopril</p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-5 bg-white/60 rounded-2xl border border-outline-variant/40">
+<p class="text-[10px] font-sans font-bold uppercase tracking-widest text-on-surface-variant mb-1">Purpose</p>
+<p class="font-body text-base font-semibold text-on-surface">Blood Pressure</p>
+</div>
+<div class="p-5 bg-white/60 rounded-2xl border border-outline-variant/40">
+<p class="text-[10px] font-sans font-bold uppercase tracking-widest text-on-surface-variant mb-1">Dosage</p>
+<p class="font-body text-base font-semibold text-on-surface">10mg</p>
+</div>
+</div>
+</div>
+<button class="w-full py-4 bg-primary text-white rounded-xl font-sans font-bold tracking-wide hover:opacity-90 active:scale-[0.98] transition-all">
+                            Verify &amp; Save to Records
+                        </button>
+</div>
+</section>
+<!-- Section 2: Dermatology AI -->
+<section class="bg-surface-container-low rounded-[32px] p-8 shadow-[0_2px_16px_rgba(58,48,42,0.04)] border border-outline-variant/30">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-tertiary/10 rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary" data-icon="flare">flare</span>
+</div>
+<h2 class="font-display text-3xl text-on-surface">Dermatology AI</h2>
+</div>
+<span class="px-3 py-1 bg-tertiary-container text-white text-xs font-bold rounded-full uppercase tracking-widest">Visual Analysis</span>
+</div>
+<!-- Upload State -->
+<div class="aspect-square bg-white rounded-2xl border border-outline-variant p-2 mb-8 relative overflow-hidden group">
+<img alt="Skin Concern" class="w-full h-full object-cover rounded-xl" data-alt="A medically framed close-up of a skin surface showing a mild rash, presented with professional medical lighting and neutral, warm tones. The composition is clean and focused, avoiding clinical gore while maintaining diagnostic clarity. The background consists of soft linen textures and warm beige surfaces, adhering to the Sahara warm minimalist aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiN3gY9ME11z_aCcPrMvfUcRG4APfelk7rwt8MwzZ0bE_ReV1hNbjujPijPpmjRBPrMnwIKRA_c58LvTJps-agupFi87XJwBXQSolcOtRL4PLkNRjd9JePQIURlSuMbQzmyD5ie_iIiIuBn8_psxX1ELiM22m4WBEWXQFX7nnrBq3Q4NyQFySV0oss-iATG8BT7n-aocThAZezkli4xTiMoLmliqXui-zxcCJleGF3OgLWj_dZweUCkQCqS868RX0enxmyWljWtJo"/>
+<div class="absolute bottom-6 right-6">
+<button class="w-12 h-12 bg-primary rounded-full shadow-xl flex items-center justify-center text-white hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="upload">upload</span>
+</button>
+</div>
+</div>
+<!-- AI Analysis Report -->
+<div class="space-y-6">
+<div class="flex items-center justify-between border-b border-outline-variant/40 pb-4">
+<h4 class="font-sans font-bold text-sm text-on-surface-variant uppercase tracking-widest">AI Assessment Report</h4>
+<span class="text-xs font-sans text-on-surface-variant italic">Confidence: 94%</span>
+</div>
+<div class="space-y-4">
+<div class="flex items-start justify-between p-4 bg-tertiary-fixed rounded-xl border border-tertiary-container/20">
+<div>
+<p class="text-xs font-sans font-bold text-on-tertiary-fixed-variant uppercase tracking-tight mb-1">Primary Category</p>
+<p class="font-display text-xl text-on-tertiary-container">Contact Dermatitis</p>
+</div>
+<span class="material-symbols-outlined text-tertiary text-2xl" data-icon="verified_user">verified_user</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-white/60 rounded-xl border border-outline-variant/40">
+<div>
+<p class="text-xs font-sans font-bold text-on-surface-variant uppercase tracking-tight mb-1">Severity Level</p>
+<div class="flex gap-1 mt-1">
+<div class="h-2 w-8 rounded-full bg-tertiary"></div>
+<div class="h-2 w-8 rounded-full bg-tertiary"></div>
+<div class="h-2 w-8 rounded-full bg-secondary-container"></div>
+</div>
+</div>
+<span class="font-sans font-bold text-tertiary">Moderate</span>
+</div>
+</div>
+<div class="p-4 bg-surface rounded-xl border-l-4 border-tertiary">
+<p class="text-xs font-sans leading-relaxed text-on-surface-variant">
+<strong class="text-on-surface">Clinical Insight:</strong> Presentation consistent with localized inflammatory response. Recommend dermatologist consultation and avoidance of potential irritants in the affected area.
+                            </p>
+</div>
+<div class="flex gap-4 pt-2">
+<button class="flex-1 py-3 border border-primary text-primary rounded-xl font-sans font-bold text-sm hover:bg-primary/5 transition-colors">
+                                Book Specialist
+                            </button>
+<button class="flex-1 py-3 bg-on-surface text-surface rounded-xl font-sans font-bold text-sm hover:opacity-90 transition-opacity">
+                                Save Report
+                            </button>
+</div>
+</div>
+</section>
+</div>
+<!-- Footer Meta Info -->
+<footer class="max-w-6xl mx-auto mt-20 pt-12 border-t border-outline-variant/40 flex flex-col md:flex-row justify-between items-center gap-8 text-on-surface-variant/60">
+<p class="text-sm font-sans">© 2024 MedBridge AI Diagnostic Engine. All analysis is for informational purposes only.</p>
+<div class="flex gap-8">
+<a class="text-xs font-sans hover:text-primary uppercase tracking-widest transition-colors" href="#">Privacy Protocol</a>
+<a class="text-xs font-sans hover:text-primary uppercase tracking-widest transition-colors" href="#">Data Encryption</a>
+<a class="text-xs font-sans hover:text-primary uppercase tracking-widest transition-colors" href="#">Clinical Standards</a>
+</div>
+</footer>
+</main>
+</div>
+<!-- Floating Action Button (FAB) - Suppression Logic Applied: Not shown on diagnostic detail view per instructions, but kept as hidden placeholder if needed for main dashboard context -->
+<style>
+        @keyframes scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(300%); }
+        }
+    </style>
+</body></html>

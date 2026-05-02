@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedBridge - Patient Onboarding</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&amp;family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#605850",
+                        "surface-container-low": "#f6f0e8",
+                        "surface-container-high": "#ece6dc",
+                        "on-tertiary-container": "#3a2020",
+                        "tertiary-fixed-dim": "#e8a0a0",
+                        "tertiary-fixed": "#fce0e0",
+                        "tertiary": "#8c3c3c",
+                        "on-error-container": "#7a1a10",
+                        "primary-fixed-dim": "#f0a878",
+                        "surface-container-highest": "#e6e0d6",
+                        "on-tertiary-fixed": "#2e1515",
+                        "surface-variant": "#ece6dc",
+                        "primary-fixed": "#fbe8d8",
+                        "on-background": "#3a302a",
+                        "inverse-on-surface": "#faf5ee",
+                        "inverse-surface": "#3a302a",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#c2652a",
+                        "on-secondary": "#ffffff",
+                        "outline": "#9a9088",
+                        "secondary-fixed": "#eae2da",
+                        "on-primary-fixed-variant": "#8a4518",
+                        "surface-bright": "#faf5ee",
+                        "surface": "#faf5ee",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#d8d0c8",
+                        "on-tertiary": "#ffffff",
+                        "surface-dim": "#dcd6cc",
+                        "tertiary-container": "#d47070",
+                        "background": "#faf5ee",
+                        "on-secondary-fixed-variant": "#504840",
+                        "primary-container": "#e08850",
+                        "primary": "#c2652a",
+                        "on-surface": "#3a302a",
+                        "error": "#c0392b",
+                        "secondary-container": "#eae2da",
+                        "on-secondary-fixed": "#2a2420",
+                        "secondary-fixed-dim": "#cec6be",
+                        "error-container": "#fce4e0",
+                        "on-tertiary-fixed-variant": "#6e3030",
+                        "on-primary-container": "#fbe8d8",
+                        "inverse-primary": "#f0a878",
+                        "on-secondary-container": "#605850",
+                        "on-primary-fixed": "#401a08",
+                        "on-primary": "#ffffff",
+                        "surface-container": "#f2ece4",
+                        "secondary": "#78706a"
+                    },
+                    "fontFamily": {
+                        "headline": ["EB Garamond"],
+                        "display": ["EB Garamond"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+        h1, h2, h3 {
+            font-family: 'EB Garamond', serif;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col">
+<!-- Top Navigation Bar (Suppressed Shell for Transactional Focus, but Brand presence maintained) -->
+<header class="bg-[#faf5ee] flex justify-between items-center w-full px-8 py-6 border-b border-[#d8d0c8]/60 shadow-[0_2px_16px_rgba(58,48,42,0.04)] z-10">
+<div class="flex items-center gap-3">
+<span class="text-2xl font-serif font-bold text-[#c2652a]">MedBridge</span>
+<span class="hidden md:block h-4 w-[1px] bg-outline-variant"></span>
+<span class="hidden md:block text-xs uppercase tracking-widest text-on-surface-variant font-medium">Patient Onboarding</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-stone-600 hover:text-[#c2652a] transition-colors">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-sm text-secondary">person</span>
+</div>
+</div>
+</header>
+<main class="flex-grow flex flex-col items-center justify-center px-6 py-12 md:py-24">
+<!-- Layout Wrapper -->
+<div class="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+<!-- Progress Sidebar (Visual Guide) -->
+<aside class="lg:col-span-4 order-2 lg:order-1">
+<div class="sticky top-12 space-y-8">
+<div class="space-y-2">
+<h2 class="text-3xl font-serif text-on-surface">Your Journey</h2>
+<p class="text-on-surface-variant text-sm leading-relaxed">Let's set up your digital health profile with sun-baked simplicity.</p>
+</div>
+<nav class="space-y-6">
+<div class="flex items-center gap-4 group">
+<div class="w-10 h-10 rounded-full flex items-center justify-center bg-primary text-on-primary font-bold shadow-sm">1</div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-primary">Personal Details</span>
+<span class="text-xs text-on-surface-variant">Step 1 of 3</span>
+</div>
+</div>
+<div class="flex items-center gap-4 group opacity-50">
+<div class="w-10 h-10 rounded-full flex items-center justify-center border-2 border-outline-variant text-outline font-bold">2</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-on-surface">Physical Metrics</span>
+<span class="text-xs text-on-surface-variant">Upcoming</span>
+</div>
+</div>
+<div class="flex items-center gap-4 group opacity-50">
+<div class="w-10 h-10 rounded-full flex items-center justify-center border-2 border-outline-variant text-outline font-bold">3</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-on-surface">Medical History</span>
+<span class="text-xs text-on-surface-variant">Final Stage</span>
+</div>
+</div>
+</nav>
+<!-- Decorative Card -->
+<div class="p-6 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-4">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">security</span>
+<h4 class="font-serif text-lg text-on-surface">Safe &amp; Encrypted</h4>
+<p class="text-xs text-on-surface-variant">Your medical data is protected with enterprise-grade AES-256 encryption. We prioritize your privacy above all.</p>
+</div>
+</div>
+</aside>
+<!-- Form Canvas -->
+<section class="lg:col-span-8 order-1 lg:order-2">
+<div class="bg-surface-container-lowest rounded-2xl shadow-[0_2px_16px_rgba(58,48,42,0.04)] border border-outline-variant/40 p-8 md:p-12 space-y-10">
+<!-- Header Section -->
+<div class="space-y-2">
+<span class="text-primary font-bold tracking-widest text-xs uppercase">Step One</span>
+<h1 class="text-4xl md:text-5xl font-serif text-on-surface">Personal Details</h1>
+<p class="text-on-surface-variant max-w-lg">Please provide your basic information so we can customize your health insights and dashboard experience.</p>
+</div>
+<!-- Illustration Area -->
+<div class="w-full h-48 rounded-xl overflow-hidden mb-8 relative">
+<img alt="Healthcare illustration" class="w-full h-full object-cover" data-alt="A serene, high-key photograph of warm morning sunlight streaming through a minimalist healthcare facility. The scene features soft linen textures, polished light wood surfaces, and a few artisanal ceramic vases with dried desert flowers. The lighting is golden and inviting, creating a sun-baked aesthetic with a professional medical undertone in a warm linen and burnt sienna palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuByjEUWpFkZ1RarTr8q8F-NuYFpU3I-e6f74B603kpjJgK0Fc0usFv-8oRWyDc4kUZJzI7GY5wbAZ0tAB-loCS87FP1YstDwBa8F7PyoTYW4LWBnjglOkTdse9_-77hFNiLLvAHek266-2FbNAkTSshcJTnSrD9JBQdjwE02XWQyZ_rUBNezKNOAPaQBrLdVlT-08oB0-itOP6_bZn8v9o5oSkkPwjBbWVgCWL5W_KjUZsG2YkK5h72Fskz25Fqxna7dfx3kPKsgKg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/80 to-transparent"></div>
+</div>
+<!-- Form Controls -->
+<form class="space-y-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2 md:col-span-2">
+<label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Full Name</label>
+<input class="w-full px-4 py-3 rounded-lg border-outline-variant bg-surface focus:ring-primary focus:border-primary transition-all text-on-surface" placeholder="e.g. Elena Richardson" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Age</label>
+<div class="relative">
+<input class="w-full px-4 py-3 rounded-lg border-outline-variant bg-surface focus:ring-primary focus:border-primary transition-all text-on-surface" placeholder="28" type="number"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-outline italic">Years</span>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Sex at Birth</label>
+<select class="w-full px-4 py-3 rounded-lg border-outline-variant bg-surface focus:ring-primary focus:border-primary transition-all text-on-surface appearance-none">
+<option disabled="" selected="" value="">Select option</option>
+<option value="female">Female</option>
+<option value="male">Male</option>
+<option value="other">Other</option>
+<option value="prefer-not">Prefer not to say</option>
+</select>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="pt-6 border-t border-outline-variant/40 flex flex-col md:flex-row justify-between items-center gap-4">
+<button class="order-2 md:order-1 px-8 py-3 text-secondary font-bold hover:text-primary transition-colors flex items-center gap-2 group" type="button">
+<span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                                Back
+                            </button>
+<button class="order-1 md:order-2 w-full md:w-auto bg-primary text-on-primary px-10 py-4 rounded-lg font-bold shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2" type="button">
+                                Continue
+                                <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</form>
+</div>
+<!-- Step Previews (Miniature context) -->
+<div class="mt-8 grid grid-cols-2 gap-4">
+<div class="p-4 rounded-xl border border-outline-variant/60 bg-surface-container-low opacity-60">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-xs text-on-surface-variant">straighten</span>
+<span class="text-[10px] font-bold uppercase text-on-surface-variant">Coming Up</span>
+</div>
+<h5 class="text-sm font-serif text-on-surface">Physical Metrics</h5>
+</div>
+<div class="p-4 rounded-xl border border-outline-variant/60 bg-surface-container-low opacity-60">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-xs text-on-surface-variant">history_edu</span>
+<span class="text-[10px] font-bold uppercase text-on-surface-variant">Final Goal</span>
+</div>
+<h5 class="text-sm font-serif text-on-surface">Health Card Generation</h5>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="bg-[#faf5ee] flex flex-col md:flex-row justify-between items-center px-8 py-8 border-t border-[#d8d0c8]/60 mt-auto">
+<div class="text-stone-400 font-sans text-xs mb-4 md:mb-0">
+            © 2024 MedBridge AI. Sun-baked simplicity for modern care.
+        </div>
+<div class="flex gap-6">
+<a class="text-stone-400 hover:text-orange-800 transition-colors text-xs" href="#">Privacy Policy</a>
+<a class="text-stone-400 hover:text-orange-800 transition-colors text-xs" href="#">Terms of Service</a>
+<a class="text-stone-400 hover:text-orange-800 transition-colors text-xs" href="#">Contact Support</a>
+</div>
+</footer>
+</body></html>

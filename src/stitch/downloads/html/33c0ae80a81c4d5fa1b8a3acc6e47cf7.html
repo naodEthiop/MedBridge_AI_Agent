@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedBridge AI - Patient Clinical Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&amp;family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface-variant": "#605850",
+                    "on-primary-fixed": "#401a08",
+                    "on-tertiary-container": "#3a2020",
+                    "on-error": "#ffffff",
+                    "on-error-container": "#7a1a10",
+                    "error": "#c0392b",
+                    "secondary-fixed-dim": "#cec6be",
+                    "on-tertiary-fixed-variant": "#6e3030",
+                    "on-primary-fixed-variant": "#8a4518",
+                    "on-secondary-fixed": "#2a2420",
+                    "tertiary-fixed": "#fce0e0",
+                    "inverse-on-surface": "#faf5ee",
+                    "secondary-container": "#eae2da",
+                    "on-primary": "#ffffff",
+                    "on-surface": "#3a302a",
+                    "on-background": "#3a302a",
+                    "outline-variant": "#d8d0c8",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#e8a0a0",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-container": "#fbe8d8",
+                    "on-secondary-container": "#605850",
+                    "inverse-primary": "#f0a878",
+                    "tertiary-container": "#d47070",
+                    "surface-tint": "#c2652a",
+                    "primary": "#c2652a",
+                    "surface": "#faf5ee",
+                    "secondary": "#78706a",
+                    "surface-variant": "#ece6dc",
+                    "surface-container-high": "#ece6dc",
+                    "primary-container": "#e08850",
+                    "inverse-surface": "#3a302a",
+                    "surface-container-highest": "#e6e0d6",
+                    "secondary-fixed": "#eae2da",
+                    "surface-bright": "#faf5ee",
+                    "outline": "#9a9088",
+                    "surface-container": "#f2ece4",
+                    "surface-container-low": "#f6f0e8",
+                    "on-secondary-fixed-variant": "#504840",
+                    "surface-dim": "#dcd6cc",
+                    "on-tertiary-fixed": "#2e1515",
+                    "primary-fixed": "#fbe8d8",
+                    "tertiary": "#8c3c3c",
+                    "primary-fixed-dim": "#f0a878",
+                    "background": "#faf5ee",
+                    "error-container": "#fce4e0"
+            },
+            "fontFamily": {
+                    "headline": ["EB Garamond"],
+                    "display": ["EB Garamond"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+        h1, h2, h3, .font-serif { font-family: 'EB Garamond', serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- Sidebar Navigation -->
+<aside class="h-screen w-72 left-0 top-0 fixed bg-[#faf5ee] dark:bg-stone-950 border-r border-stone-200/60 dark:border-stone-800/60 flex flex-col py-8 z-50">
+<div class="px-8 mb-10">
+<h1 class="font-serif text-xl text-[#c2652a]">MedBridge AI</h1>
+<p class="text-xs font-label text-stone-500 tracking-widest uppercase mt-1">Healthcare Portal</p>
+</div>
+<nav class="flex-1 space-y-1 px-4">
+<a class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+<span class="font-sans text-sm tracking-wide">Dashboard</span>
+</a>
+<a class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="monitor_heart">monitor_heart</span>
+<span class="font-sans text-sm tracking-wide">Symptoms</span>
+</a>
+<a class="flex items-center px-4 py-3 bg-stone-100/50 dark:bg-stone-900/50 text-[#c2652a] font-semibold border-r-4 border-[#c2652a] rounded-l-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="group">group</span>
+<span class="font-sans text-sm tracking-wide">Patient List</span>
+</a>
+<a class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="biotech">biotech</span>
+<span class="font-sans text-sm tracking-wide">Scanners</span>
+</a>
+<a class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="emergency">emergency</span>
+<span class="font-sans text-sm tracking-wide">Emergency</span>
+</a>
+<a class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="calendar_today">calendar_today</span>
+<span class="font-sans text-sm tracking-wide">Calendar</span>
+</a>
+<a class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] transition-all duration-300 rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="smart_toy">smart_toy</span>
+<span class="font-sans text-sm tracking-wide">AI Assistant</span>
+</a>
+</nav>
+<div class="mt-auto px-4 space-y-1">
+<a class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:text-[#c2652a]" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="help">help</span>
+<span class="font-sans text-sm">Help</span>
+</a>
+<div class="p-4 mt-4 bg-primary-container/20 rounded-xl">
+<p class="text-xs text-on-surface-variant mb-2">Need assistance?</p>
+<button class="w-full py-2 bg-primary text-white text-xs font-bold rounded-lg uppercase tracking-widest transition-opacity hover:opacity-90">Get Support</button>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-72 min-h-screen">
+<!-- Top Nav Bar -->
+<header class="w-full top-0 sticky bg-[#faf5ee] dark:bg-stone-950 border-b border-stone-200/60 dark:border-stone-800/60 shadow-[0_2px_16px_rgba(58,48,42,0.04)] z-40">
+<div class="flex justify-between items-center px-8 h-20 max-w-[1920px] mx-auto">
+<div class="flex items-center space-x-6">
+<button class="text-stone-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div>
+<h2 class="text-2xl font-serif font-bold text-stone-900 dark:text-stone-100">Evelyn Knight</h2>
+<p class="text-xs text-stone-500 font-medium">ID: #MB-9928 • Female, 64 • Type 2 Diabetes</p>
+</div>
+</div>
+<div class="flex items-center space-x-6">
+<div class="relative">
+<span class="material-symbols-outlined text-stone-500 cursor-pointer" data-icon="notifications">notifications</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-tertiary rounded-full"></span>
+</div>
+<span class="material-symbols-outlined text-stone-500 cursor-pointer" data-icon="settings">settings</span>
+<div class="h-10 w-10 rounded-full overflow-hidden border-2 border-primary/20">
+<img alt="User profile" data-alt="A professional headshot of a healthcare provider, a woman in her late 40s with a kind expression, wearing a minimalist white clinical coat. The background is a soft, sun-baked linen color that matches the warm Sahara design system. The lighting is natural and diffuse, creating a high-end editorial aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIGjiUIwMrGHQP4dtyAV3xOqCq_HA3LvHAn7z0pdmdXk9lu0qLIhviaRFnicEsb-ns2bv5QXW222DHmMpFuFAwCvSQxEgdAs33Pfn2Cbf0SxnatjIbjma776KXY-H6tcsnB-XentCpH-3urZwmGgV5r_mbH1tkqgCQaEBoYHd7qXxTZ4IW1NTyvjKUZgHFiKV6PjluLuPwRHER2zpHT9M8_HuhScLk-bv8_6GjpW2cW5GTnGPFvKxMwJLf8DTMKuRhGMPgSMbdLNo"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Clinical Canvas Grid -->
+<div class="p-8 max-w-[1920px] mx-auto">
+<div class="grid grid-cols-12 gap-8">
+<!-- Left Column: Clinical Notes & Prescription -->
+<div class="col-span-12 lg:col-span-7 space-y-8">
+<!-- Clinical Notes Editor -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_2px_16px_rgba(58,48,42,0.04)] border border-outline-variant/30">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-2xl font-serif text-on-surface">Clinical Examination Notes</h3>
+<div class="flex space-x-2">
+<span class="px-3 py-1 bg-primary-container/10 text-primary text-xs font-bold rounded-full border border-primary/20 uppercase tracking-tighter">New Consultation</span>
+</div>
+</div>
+<div class="space-y-6">
+<div>
+<label class="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 block">Subjective Symptoms</label>
+<textarea class="w-full border-outline-variant/60 rounded-lg bg-surface-container-low focus:ring-primary focus:border-primary text-sm font-body" placeholder="Patient reports persistent fatigue and occasional blurred vision over the last 72 hours..." rows="3"></textarea>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 block">BP (mmHg)</label>
+<input class="w-full border-outline-variant/60 rounded-lg bg-surface-container-low focus:ring-primary focus:border-primary text-sm font-body" type="text" value="138/88"/>
+</div>
+<div>
+<label class="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 block">Heart Rate (bpm)</label>
+<input class="w-full border-outline-variant/60 rounded-lg bg-surface-container-low focus:ring-primary focus:border-primary text-sm font-body" type="text" value="76"/>
+</div>
+</div>
+<div>
+<label class="text-xs font-bold text-stone-400 uppercase tracking-widest mb-2 block">Assessment &amp; Plan</label>
+<textarea class="w-full border-outline-variant/60 rounded-lg bg-surface-container-low focus:ring-primary focus:border-primary text-sm font-body" placeholder="Possible hyperglycemia exacerbation. Adjusting Metformin dosage and requesting immediate metabolic panel..." rows="4"></textarea>
+</div>
+</div>
+</section>
+<!-- Prescription Form -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_2px_16px_rgba(58,48,42,0.04)] border border-outline-variant/30">
+<div class="flex items-center mb-6 space-x-3">
+<span class="material-symbols-outlined text-primary" data-icon="prescriptions">prescriptions</span>
+<h3 class="text-2xl font-serif text-on-surface">Digital Prescription</h3>
+</div>
+<div class="space-y-4">
+<div class="flex items-center p-4 bg-surface-container rounded-lg border border-outline-variant/20">
+<div class="flex-1">
+<p class="font-bold text-stone-800">Metformin HCL</p>
+<p class="text-xs text-stone-500">500mg • Twice daily • Oral</p>
+</div>
+<span class="material-symbols-outlined text-stone-400 cursor-pointer" data-icon="edit">edit</span>
+</div>
+<div class="flex items-center p-4 border-2 border-dashed border-outline-variant/40 rounded-lg hover:bg-stone-50 cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-primary mr-3" data-icon="add_circle">add_circle</span>
+<span class="text-sm font-bold text-primary uppercase tracking-widest">Add New Medication</span>
+</div>
+</div>
+<div class="mt-8 flex justify-end space-x-4">
+<button class="px-6 py-3 border border-outline text-on-surface-variant font-bold rounded-lg text-xs uppercase tracking-widest hover:bg-surface-container transition-colors">Save Draft</button>
+<button class="px-6 py-3 bg-primary text-white font-bold rounded-lg text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:opacity-90">Authorize &amp; Sign</button>
+</div>
+</section>
+</div>
+<!-- Right Column: Diagnostic Support AI -->
+<div class="col-span-12 lg:col-span-5 space-y-8">
+<!-- AI Diagnostic Summary -->
+<section class="bg-stone-900 text-stone-100 rounded-xl p-8 shadow-xl border border-stone-800 overflow-hidden relative">
+<!-- Decorative glow -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 rounded-full blur-[80px]"></div>
+<div class="relative z-10">
+<div class="flex items-center space-x-2 mb-6">
+<span class="material-symbols-outlined text-[#f0a878]" data-icon="smart_toy" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<h3 class="text-xl font-serif italic text-primary-fixed-dim">Diagnostic Support AI</h3>
+</div>
+<div class="space-y-6">
+<div class="p-4 bg-white/5 rounded-lg border border-white/10">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold uppercase tracking-widest text-[#f0a878]">Primary Suggestion</span>
+<span class="px-2 py-1 bg-error/20 text-error-container text-[10px] font-bold rounded uppercase">High Confidence</span>
+</div>
+<p class="text-lg font-serif">Diabetic Retinopathy (Early Stage)</p>
+<p class="text-sm text-stone-400 mt-2 leading-relaxed italic">Based on patient-submitted ocular scans and reported symptoms of peripheral blurring.</p>
+</div>
+<div class="space-y-3">
+<h4 class="text-xs font-bold text-stone-500 uppercase tracking-widest">Data Synthesis</h4>
+<div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mr-3 text-[#f0a878]" data-icon="check_circle">check_circle</span>
+<span class="text-sm">Symptom Checker: Vision Loss</span>
+</div>
+<span class="text-xs text-stone-500">4 hrs ago</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mr-3 text-[#f0a878]" data-icon="check_circle">check_circle</span>
+<span class="text-sm">Medication Scan: Insulin Log</span>
+</div>
+<span class="text-xs text-stone-500">12 hrs ago</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-white/5 rounded-lg border-l-2 border-tertiary">
+<div class="flex items-center">
+<span class="material-symbols-outlined text-sm mr-3 text-tertiary" data-icon="warning">warning</span>
+<span class="text-sm">Lab Summary: HbA1c 8.2%</span>
+</div>
+<span class="text-xs text-tertiary font-bold">Urgent</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Bento Grid: Patient App Insights -->
+<div class="grid grid-cols-2 gap-4">
+<div class="col-span-2 bg-surface-container-low p-6 rounded-xl border border-outline-variant/30">
+<h4 class="text-xs font-bold text-stone-400 uppercase tracking-widest mb-4">Patient-Submitted Imagery</h4>
+<div class="grid grid-cols-3 gap-2">
+<div class="aspect-square bg-stone-200 rounded-lg overflow-hidden border border-outline-variant/40 group relative cursor-zoom-in">
+<img alt="Retinal Scan" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="A high-resolution clinical photograph of a human retina, captured for diagnostic purposes. The image shows the intricate network of blood vessels against a warm, orange-toned ocular background. The lighting is focused and medical-grade, emphasizing professional clinical detail in a minimalist, warm-toned medical interface setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhvh0-m1IY5eZZj2IeSawZtDTjUVG86YGhBx7FRXiK8zODrarVc2nMEN0R44XxdKuMFLNJMsKF52vSi1_GAnczOABKERKaTK86KAiXFV3UG33MCiEF6TwzZXeEZPXMSaX5pTKHaqaPR2wEmOURgqGwFz7p6WdiT-0ystkpKWneuLjwc7cu9PmuZrhzR0cW3pvSiEAtc-i5MnXaiHP3POCFFGRspfLwgO37sa-bOwEz6_o4r2RH4dgIh8k5022Q7Lj1qXQWpVhhoZI"/>
+<div class="absolute bottom-1 right-1 bg-black/60 text-[8px] text-white px-1 rounded uppercase">Ocular</div>
+</div>
+<div class="aspect-square bg-stone-200 rounded-lg overflow-hidden border border-outline-variant/40 group relative cursor-zoom-in">
+<img alt="Medication Box" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="A macro photograph of a prescription medication box on a warm linen-colored surface. The packaging is clean and modern. The lighting is soft and natural, coming from a window, creating a serene and professional pharmaceutical aesthetic that aligns with the warm minimalism of the Sahara design system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlTrVfF3Z2e7Pn0c6FO5wCwdrVbvsV7C-gVwdILbGkjXqXqhLQGSufamPrz0JbsDpkf2ZrKEcQ93QD0OJ6fl2FCy4IgZ54CrjgyOzEpKg3XXgvvJc0nczxDHDFtbYmCM1Xcu0vRhzQGGQ5bFHpyM-JWhGje_HG1fvvOomNY2wekEcNiFcoXi9t6JDC8FNL_05DFvHOh8ul8jA9B2c2lc7zuFU9-knp_AawvdEP7WknLbzaSYUJPniEOcCBApmoPH8i2UgYFbssQpM"/>
+<div class="absolute bottom-1 right-1 bg-black/60 text-[8px] text-white px-1 rounded uppercase">Medication</div>
+</div>
+<div class="aspect-square bg-stone-200 rounded-lg overflow-hidden border border-outline-variant/40 group relative cursor-zoom-in">
+<img alt="Blood Glucose Meter" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="A close-up shot of a modern, sleek digital blood glucose monitoring device held by a patient. The screen displays a reading. The scene is illuminated with warm, golden-hour light, giving a comforting yet precise healthcare feel. The background is softly blurred to keep focus on the clinical data being captured by the patient app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9u6CWZDTgm8L8MVvjX1acLE-9hekOrnnW1HlE4WnYqPFZIXwD40-n7TufASPyePpNA2OCplNuBdKyoseuwBhSo9gwZ57hw-721CgTTvBbeYNmF0PZa2FW9l-dDJ-oyrjpXEhqJJPZoOwBavB13gaUZzW-FJfOzZBFIIz4hdUCrGws0XJC0YB7LEs3A0yAlv-ypMA8ShbKGkK7dKiLedvY5G9BNpK-Ph0VbLwVL5gfLB8NFVPJHrFellD7Llor0sNrk5qFBcNyvz8"/>
+<div class="absolute bottom-1 right-1 bg-black/60 text-[8px] text-white px-1 rounded uppercase">Vitals</div>
+</div>
+</div>
+</div>
+<div class="bg-primary-container/10 p-6 rounded-xl border border-primary/10">
+<h4 class="text-xs font-bold text-primary uppercase tracking-widest mb-1">Adherence</h4>
+<p class="text-3xl font-serif text-on-surface">92%</p>
+<p class="text-[10px] text-stone-500 mt-2 font-medium">Medication logging consistency over 30 days.</p>
+</div>
+<div class="bg-tertiary-container/10 p-6 rounded-xl border border-tertiary/10">
+<h4 class="text-xs font-bold text-tertiary uppercase tracking-widest mb-1">Risk Score</h4>
+<p class="text-3xl font-serif text-tertiary">Elevated</p>
+<p class="text-[10px] text-stone-500 mt-2 font-medium">Recent glucose volatility detected.</p>
+</div>
+</div>
+<!-- Action Sidebar Card -->
+<section class="bg-surface-container-high/50 p-6 rounded-xl border border-outline-variant/40">
+<h4 class="text-xs font-bold text-stone-500 uppercase tracking-widest mb-4">Immediate Actions</h4>
+<div class="space-y-3">
+<button class="w-full py-3 bg-white border border-outline-variant text-stone-700 text-xs font-bold rounded-lg uppercase tracking-widest hover:bg-stone-50 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-sm mr-2" data-icon="videocam">videocam</span>
+                                Request Telehealth Call
+                            </button>
+<button class="w-full py-3 bg-white border border-outline-variant text-stone-700 text-xs font-bold rounded-lg uppercase tracking-widest hover:bg-stone-50 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-sm mr-2" data-icon="share">share</span>
+                                Export Lab Requisition
+                            </button>
+</div>
+</section>
+</div>
+</div>
+</div>
+</main>
+</body></html>

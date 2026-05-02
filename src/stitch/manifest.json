@@ -1,0 +1,77 @@
+{
+  "projectId": "7088852600831637289",
+  "projectTitle": "MedBridge AI Healthcare Platform",
+  "screens": [
+    {
+      "title": "Welcome to MedBridge AI",
+      "name": "projects/7088852600831637289/screens/0cb747e15c0247659eacaee5afa7f284",
+      "route": "/",
+      "htmlFile": "welcome.html",
+      "htmlDownloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzgwNzI2ZjNiZjYzNTQxYWE4ODE2MjRiOWJhZjZhMmJmEgsSBxCNouLr1hcYAZIBIwoKcHJvamVjdF9pZBIVQhM3MDg4ODUyNjAwODMxNjM3Mjg5&filename=&opi=89354086"
+    },
+    {
+      "title": "Patient Onboarding",
+      "name": "projects/7088852600831637289/screens/62b6887cbfee417f9a4de1512a54f012",
+      "route": "/onboarding",
+      "htmlFile": "patient-onboarding.html",
+      "htmlDownloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzliZmVkOTUzMmYzNzRiMzFiMmI5ZTFjZTYyNTA3NzFkEgsSBxCNouLr1hcYAZIBIwoKcHJvamVjdF9pZBIVQhM3MDg4ODUyNjAwODMxNjM3Mjg5&filename=&opi=89354086"
+    },
+    {
+      "title": "Patient: Dashboard",
+      "name": "projects/7088852600831637289/screens/c16f47095f4849a3ac7ad8fa3bc4bac2",
+      "route": "/patient",
+      "htmlFile": "patient-dashboard.html",
+      "htmlDownloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzU4ZDE5NzVkZjZmZjQyZWFiZjg1YTc3MjI0YjM0NzU0EgsSBxCNouLr1hcYAZIBIwoKcHJvamVjdF9pZBIVQhM3MDg4ODUyNjAwODMxNjM3Mjg5&filename=&opi=89354086"
+    },
+    {
+      "title": "Patient: AI Symptom Checker",
+      "name": "projects/7088852600831637289/screens/7f34d14387934fdea0f0b0a30a8829f4",
+      "route": "/patient/symptom-checker",
+      "htmlFile": "patient-symptom-checker.html",
+      "htmlDownloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzU3OTBiNDEzYzI3NjQ0MmJiYTkyMDlkYzZmMGFmZjQ2EgsSBxCNouLr1hcYAZIBIwoKcHJvamVjdF9pZBIVQhM3MDg4ODUyNjAwODMxNjM3Mjg5&filename=&opi=89354086"
+    },
+    {
+      "title": "Patient: AI Scanners",
+      "name": "projects/7088852600831637289/screens/4eff94d565f6480486c01ccee82be9e9",
+      "route": "/patient/scanners",
+      "htmlFile": "patient-scanners.html",
+      "htmlDownloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzJjZTM5YWQ2OThjNzQ2NGQ5MjBjNzE5MDEyYTdiOTYxEgsSBxCNouLr1hcYAZIBIwoKcHJvamVjdF9pZBIVQhM3MDg4ODUyNjAwODMxNjM3Mjg5&filename=&opi=89354086"
+    },
+    {
+      "title": "Patient: Emergency & Care Finder",
+      "name": "projects/7088852600831637289/screens/f61ee30e91ed48769ce23c696abbaa0b",
+      "route": "/patient/care-finder",
+      "htmlFile": "patient-care-finder.html",
+      "htmlDownloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzQ5NzY0YmY3ZDk1ZDQyMzRiMDAwNTMwYWZlMjM4M2I4EgsSBxCNouLr1hcYAZIBIwoKcHJvamVjdF9pZBIVQhM3MDg4ODUyNjAwODMxNjM3Mjg5&filename=&opi=89354086"
+    },
+    {
+      "title": "My Digital Health Card",
+      "name": "projects/7088852600831637289/screens/920699ca78c04205a9a47326d3a0baa6",
+      "route": "/patient/health-card",
+      "htmlFile": "patient-health-card.html",
+      "htmlDownloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sX2Q5NTVkNDdiMDBlMzRmMmNhMmQ2NGFlMTIyYTNjZDY3EgsSBxCNouLr1hcYAZIBIwoKcHJvamVjdF9pZBIVQhM3MDg4ODUyNjAwODMxNjM3Mjg5&filename=&opi=89354086"
+    },
+    {
+      "title": "Doctor: Clinical Dashboard",
+      "name": "projects/7088852600831637289/screens/bbc8f3ae7e0a435f92eef97e5acab2f9",
+      "route": "/doctor",
+      "htmlFile": "doctor-dashboard.html",
+      "htmlDownloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sXzhmN2QxNmZlYjI4NjQ4NGRiZTQyZDFlN2RjNTNjYTYxEgsSBxCNouLr1hcYAZIBIwoKcHJvamVjdF9pZBIVQhM3MDg4ODUyNjAwODMxNjM3Mjg5&filename=&opi=89354086"
+    },
+    {
+      "title": "Doctor: Patient Detail View",
+      "name": "projects/7088852600831637289/screens/33c0ae80a81c4d5fa1b8a3acc6e47cf7",
+      "route": "/doctor/patients/pat_1",
+      "htmlFile": "doctor-patient-detail.html",
+      "htmlDownloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sX2Q2MDA2ZTNiNzYzMTRkMDA5ZDkzZmFiODViZmRhMjM3EgsSBxCNouLr1hcYAZIBIwoKcHJvamVjdF9pZBIVQhM3MDg4ODUyNjAwODMxNjM3Mjg5&filename=&opi=89354086"
+    },
+    {
+      "title": "Provider Verification",
+      "name": "projects/7088852600831637289/screens/951a435c66024df798bca450b66a42fa",
+      "route": "/provider/verification",
+      "htmlFile": "provider-verification.html",
+      "htmlDownloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sX2Y5YjU3OWE3YzkzNDRkN2FiNTk4NjRmNzQwM2YzMjM5EgsSBxCNouLr1hcYAZIBIwoKcHJvamVjdF9pZBIVQhM3MDg4ODUyNjAwODMxNjM3Mjg5&filename=&opi=89354086"
+    }
+  ]
+}
+

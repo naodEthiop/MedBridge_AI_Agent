@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedBridge AI - Emergency &amp; Care Directory</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&amp;family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface-variant": "#605850",
+                    "on-primary-fixed": "#401a08",
+                    "on-tertiary-container": "#3a2020",
+                    "on-error": "#ffffff",
+                    "on-error-container": "#7a1a10",
+                    "error": "#c0392b",
+                    "secondary-fixed-dim": "#cec6be",
+                    "on-tertiary-fixed-variant": "#6e3030",
+                    "on-primary-fixed-variant": "#8a4518",
+                    "on-secondary-fixed": "#2a2420",
+                    "tertiary-fixed": "#fce0e0",
+                    "inverse-on-surface": "#faf5ee",
+                    "secondary-container": "#eae2da",
+                    "on-primary": "#ffffff",
+                    "on-surface": "#3a302a",
+                    "on-background": "#3a302a",
+                    "outline-variant": "#d8d0c8",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "tertiary-fixed-dim": "#e8a0a0",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-container": "#fbe8d8",
+                    "on-secondary-container": "#605850",
+                    "inverse-primary": "#f0a878",
+                    "tertiary-container": "#d47070",
+                    "surface-tint": "#c2652a",
+                    "primary": "#c2652a",
+                    "surface": "#faf5ee",
+                    "secondary": "#78706a",
+                    "surface-variant": "#ece6dc",
+                    "surface-container-high": "#ece6dc",
+                    "primary-container": "#e08850",
+                    "inverse-surface": "#3a302a",
+                    "surface-container-highest": "#e6e0d6",
+                    "secondary-fixed": "#eae2da",
+                    "surface-bright": "#faf5ee",
+                    "outline": "#9a9088",
+                    "surface-container": "#f2ece4",
+                    "surface-container-low": "#f6f0e8",
+                    "on-secondary-fixed-variant": "#504840",
+                    "surface-dim": "#dcd6cc",
+                    "on-tertiary-fixed": "#2e1515",
+                    "primary-fixed": "#fbe8d8",
+                    "tertiary": "#8c3c3c",
+                    "primary-fixed-dim": "#f0a878",
+                    "background": "#faf5ee",
+                    "error-container": "#fce4e0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["EB Garamond"],
+                    "display": ["EB Garamond"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .emergency-pulse {
+            box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(192, 57, 43, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(192, 57, 43, 0); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen">
+<!-- Sidebar Navigation -->
+<aside class="h-screen w-72 left-0 top-0 fixed bg-[#faf5ee] dark:bg-stone-950 border-r border-stone-200/60 flex flex-col h-full py-8 z-50">
+<div class="px-8 mb-10">
+<h1 class="font-serif text-xl text-[#c2652a]">MedBridge AI</h1>
+<p class="text-[10px] uppercase tracking-widest text-secondary font-bold mt-1">Healthcare Portal</p>
+</div>
+<nav class="flex-1 space-y-1 px-4">
+<a class="flex items-center px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-[#c2652a] transition-all duration-300 rounded-lg group" href="#">
+<span class="material-symbols-outlined mr-3">dashboard</span>
+<span class="font-sans text-sm tracking-wide">Dashboard</span>
+</a>
+<a class="flex items-center px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-[#c2652a] transition-all duration-300 rounded-lg group" href="#">
+<span class="material-symbols-outlined mr-3">monitor_heart</span>
+<span class="font-sans text-sm tracking-wide">Symptoms</span>
+</a>
+<a class="flex items-center px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-[#c2652a] transition-all duration-300 rounded-lg group" href="#">
+<span class="material-symbols-outlined mr-3">biotech</span>
+<span class="font-sans text-sm tracking-wide">Scanners</span>
+</a>
+<a class="flex items-center px-4 py-3 bg-stone-100/50 text-[#c2652a] font-semibold border-r-4 border-[#c2652a] transition-all duration-300" href="#">
+<span class="material-symbols-outlined mr-3">emergency</span>
+<span class="font-sans text-sm tracking-wide">Emergency</span>
+</a>
+<a class="flex items-center px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-[#c2652a] transition-all duration-300 rounded-lg group" href="#">
+<span class="material-symbols-outlined mr-3">map</span>
+<span class="font-sans text-sm tracking-wide">Map</span>
+</a>
+<a class="flex items-center px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-[#c2652a] transition-all duration-300 rounded-lg group" href="#">
+<span class="material-symbols-outlined mr-3">analytics</span>
+<span class="font-sans text-sm tracking-wide">Clinical Dashboard</span>
+</a>
+<a class="flex items-center px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-[#c2652a] transition-all duration-300 rounded-lg group" href="#">
+<span class="material-symbols-outlined mr-3">group</span>
+<span class="font-sans text-sm tracking-wide">Patient List</span>
+</a>
+</nav>
+<div class="px-6 pt-6 border-t border-stone-200/60 mt-auto">
+<button class="w-full bg-primary text-white py-3 rounded-xl font-semibold shadow-md hover:bg-opacity-90 transition-all">
+                Get Support
+            </button>
+<div class="mt-6 space-y-1">
+<a class="flex items-center px-2 py-2 text-stone-500 hover:text-primary text-sm" href="#">
+<span class="material-symbols-outlined mr-3 text-lg">help</span> Help
+                </a>
+<a class="flex items-center px-2 py-2 text-stone-500 hover:text-primary text-sm" href="#">
+<span class="material-symbols-outlined mr-3 text-lg">logout</span> Logout
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-72 min-h-screen">
+<!-- Top Navigation -->
+<header class="w-full top-0 sticky z-40 bg-[#faf5ee] dark:bg-stone-950 border-b border-stone-200/60 shadow-[0_2px_16px_rgba(58,48,42,0.04)] h-20">
+<div class="flex justify-between items-center px-8 h-full max-w-[1920px] mx-auto">
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-stone-400">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-stone-600 placeholder-stone-400 w-64 font-sans text-sm" placeholder="Search facilities, symptoms, or doctors..." type="text"/>
+</div>
+<div class="flex items-center space-x-6">
+<button class="relative text-stone-500 hover:text-[#c2652a] transition-colors duration-200">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-stone-500 hover:text-[#c2652a] transition-colors duration-200">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-stone-200">
+<img alt="User profile" data-alt="A professional close-up portrait of a female physician in her late 30s wearing a white lab coat. She has a warm, confident expression and is set against a softly blurred medical office background with warm lighting. The aesthetic is clean and high-key, aligning with the warm minimalism of the Sahara design system, emphasizing trust and care." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDNTaYxFQe41UKj3UfoCkxMYvAcBKs6Qw96TR3-9gJDODNl0nfKrHBuKxscu277jnRbAjUG9hshci10luJlugQ-xAb8NylnNP45YsinPUxd4U35F8oMEnJ7OocsPdhXaZpcuMER1QVtOZWFIn0FU7Hmn8nKZgaDU1aiesPCAu1f-QykBCJ5hoxAOggogpAR6ynZCWjpjrjGbsqQssjVzFstt0EnIXlu01RGngUejhzzRBTiU384hExVuqqOpBIfDbkQElPwG8ImEx0"/>
+</div>
+</div>
+</div>
+</header>
+<section class="p-8 max-w-7xl mx-auto space-y-10">
+<!-- Hero Section: Emergency Action -->
+<div class="relative overflow-hidden bg-tertiary-container rounded-[2rem] p-12 text-on-tertiary shadow-xl flex flex-col md:flex-row items-center justify-between">
+<div class="relative z-10 max-w-xl">
+<h2 class="font-display text-5xl font-bold leading-tight mb-4">Request Emergency Help</h2>
+<p class="font-body text-xl text-on-tertiary-container/80 mb-8 max-w-md">Our AI dispatcher is prioritizing your location. Medical assistance is one tap away.</p>
+<div class="flex items-center space-x-6">
+<button class="bg-error text-white px-10 py-5 rounded-full font-bold text-lg emergency-pulse flex items-center space-x-3 hover:bg-opacity-90 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">emergency</span>
+<span>Call Services Now</span>
+</button>
+<div class="flex flex-col">
+<div class="flex items-center text-on-tertiary-container font-semibold">
+<span class="w-2 h-2 bg-error rounded-full animate-ping mr-2"></span>
+                                Contacting services...
+                            </div>
+<span class="text-sm text-on-tertiary-container/60">Estimated arrival: 8-12 mins</span>
+</div>
+</div>
+</div>
+<div class="hidden md:block absolute right-[-5%] bottom-[-10%] opacity-20">
+<span class="material-symbols-outlined text-[24rem]">medical_services</span>
+</div>
+</div>
+<!-- Care Directory & Finder -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[700px]">
+<!-- Left Sidebar: Search & List -->
+<div class="lg:col-span-5 flex flex-col space-y-6">
+<div class="flex items-center justify-between">
+<h3 class="font-display text-3xl font-bold text-stone-800">Care Directory</h3>
+<div class="flex bg-surface-container rounded-full p-1 border border-stone-200">
+<button class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white shadow-sm text-primary">List</button>
+<button class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-stone-500 hover:text-primary transition-colors">Map</button>
+</div>
+</div>
+<!-- Filters -->
+<div class="flex space-x-2 overflow-x-auto pb-2 no-scrollbar">
+<button class="px-5 py-2.5 rounded-full bg-primary text-white text-sm font-semibold whitespace-nowrap">Hospitals</button>
+<button class="px-5 py-2.5 rounded-full bg-white border border-stone-200 text-stone-600 text-sm font-semibold hover:border-primary transition-colors whitespace-nowrap">Clinics</button>
+<button class="px-5 py-2.5 rounded-full bg-white border border-stone-200 text-stone-600 text-sm font-semibold hover:border-primary transition-colors whitespace-nowrap">Pharmacies</button>
+<button class="px-5 py-2.5 rounded-full bg-white border border-stone-200 text-stone-600 text-sm font-semibold hover:border-primary transition-colors whitespace-nowrap">Diagnostics</button>
+</div>
+<!-- Facility List -->
+<div class="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
+<!-- Facility Card 1 -->
+<div class="bg-white p-6 rounded-2xl border border-stone-100 hover:border-primary/30 transition-all cursor-pointer group shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-display text-xl font-bold text-stone-800">St. Mary's General Hospital</h4>
+<span class="text-xs font-bold px-2 py-1 bg-green-100 text-green-700 rounded uppercase">Open 24/7</span>
+</div>
+<div class="flex items-center text-sm text-stone-500 mb-4">
+<span class="material-symbols-outlined text-sm mr-1">distance</span> 1.2 miles away
+                                <span class="mx-2">•</span>
+<span class="material-symbols-outlined text-sm mr-1">star</span> 4.8 (1.2k reviews)
+                            </div>
+<div class="flex space-x-3">
+<button class="flex-1 bg-surface-container-low text-primary py-2.5 rounded-xl font-bold text-sm hover:bg-primary-container transition-colors">Directions</button>
+<button class="px-4 bg-white border border-stone-200 text-stone-600 py-2.5 rounded-xl hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-lg">call</span>
+</button>
+</div>
+</div>
+<!-- Facility Card 2 -->
+<div class="bg-white p-6 rounded-2xl border border-stone-100 hover:border-primary/30 transition-all cursor-pointer group shadow-sm border-l-4 border-l-primary">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-display text-xl font-bold text-stone-800">Sahara Urgent Care Center</h4>
+<span class="text-xs font-bold px-2 py-1 bg-green-100 text-green-700 rounded uppercase">Wait: 15m</span>
+</div>
+<div class="flex items-center text-sm text-stone-500 mb-4">
+<span class="material-symbols-outlined text-sm mr-1">distance</span> 2.4 miles away
+                                <span class="mx-2">•</span>
+<span class="material-symbols-outlined text-sm mr-1">star</span> 4.5 (850 reviews)
+                            </div>
+<div class="flex space-x-3">
+<button class="flex-1 bg-surface-container-low text-primary py-2.5 rounded-xl font-bold text-sm hover:bg-primary-container transition-colors">Directions</button>
+<button class="px-4 bg-white border border-stone-200 text-stone-600 py-2.5 rounded-xl hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-lg">call</span>
+</button>
+</div>
+</div>
+<!-- Facility Card 3 -->
+<div class="bg-white p-6 rounded-2xl border border-stone-100 hover:border-primary/30 transition-all cursor-pointer group shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-display text-xl font-bold text-stone-800">Phoenix Children's Wing</h4>
+<span class="text-xs font-bold px-2 py-1 bg-stone-100 text-stone-500 rounded uppercase">Busy</span>
+</div>
+<div class="flex items-center text-sm text-stone-500 mb-4">
+<span class="material-symbols-outlined text-sm mr-1">distance</span> 4.1 miles away
+                                <span class="mx-2">•</span>
+<span class="material-symbols-outlined text-sm mr-1">star</span> 4.9 (2k reviews)
+                            </div>
+<div class="flex space-x-3">
+<button class="flex-1 bg-surface-container-low text-primary py-2.5 rounded-xl font-bold text-sm hover:bg-primary-container transition-colors">Directions</button>
+<button class="px-4 bg-white border border-stone-200 text-stone-600 py-2.5 rounded-xl hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-lg">call</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Canvas: Map View -->
+<div class="lg:col-span-7 bg-surface-container-low rounded-[2rem] overflow-hidden relative shadow-inner">
+<!-- Map Placeholder Image -->
+<div class="absolute inset-0 w-full h-full bg-[#f2ece4]" data-location="Phoenix, Arizona" style="">
+<img alt="Location Map" class="w-full h-full object-cover opacity-50 mix-blend-multiply" data-alt="A clean, minimalist digital map of an urban area rendered in soft sepia and warm linen tones. The map features elegant, thin street lines and gentle pastel-colored markers representing medical facilities. The lighting is bright and even, creating a calm, high-end editorial aesthetic. The design focuses on clarity and whitespace, using the Sahara palette of burnt sienna and warm grays to designate points of interest." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGxy1q3GH5LtnliO4_Inpr0p2k_MmsYMpENLpyyF1Dax_pPniW5G2KJ9E4iXU4123JIi6Mx2R9QS0C6xLEHyCNVBqKa2i6dCup3wwQSU8RHEM1m9kdVukdl-ear6DPJQqYU1892hkssDEjkZoLwOz0jne2p2ew7dE2E1S6-g1wTdBCCTg2p2cadzSTWIODbd4JblGKZw3M-yJCaaXraYExDHNzFA2zEUGyRTWEzSpP9Yn7ye2FnlHsyUgJkv-r4gPtDTPRd74MTg4"/>
+</div>
+<!-- Map Overlay Controls -->
+<div class="absolute top-6 right-6 space-y-3">
+<button class="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-stone-600 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button class="w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center text-stone-600 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<button class="w-12 h-12 bg-primary text-white rounded-full shadow-lg flex items-center justify-center">
+<span class="material-symbols-outlined">my_location</span>
+</button>
+</div>
+<!-- Active Marker Details -->
+<div class="absolute bottom-8 left-8 right-8">
+<div class="bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-2xl flex items-center justify-between border border-white/20">
+<div class="flex items-center space-x-4">
+<div class="w-16 h-16 bg-primary-container rounded-2xl flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">local_hospital</span>
+</div>
+<div>
+<h5 class="font-display text-lg font-bold text-stone-800">St. Mary's General Hospital</h5>
+<p class="text-sm text-stone-500">1200 Health Pkwy, Phoenix, AZ</p>
+</div>
+</div>
+<div class="text-right">
+<div class="text-xs font-bold text-stone-400 uppercase tracking-widest mb-1">Travel Time</div>
+<div class="text-2xl font-display font-bold text-primary">6 mins</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #faf5ee;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #d8d0c8;
+            border-radius: 10px;
+        }
+    </style>
+</body></html>

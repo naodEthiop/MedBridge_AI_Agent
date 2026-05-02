@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedBridge AI - Symptom Checker</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&amp;family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#605850",
+                        "on-primary-fixed": "#401a08",
+                        "on-tertiary-container": "#3a2020",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#7a1a10",
+                        "error": "#c0392b",
+                        "secondary-fixed-dim": "#cec6be",
+                        "on-tertiary-fixed-variant": "#6e3030",
+                        "on-primary-fixed-variant": "#8a4518",
+                        "on-secondary-fixed": "#2a2420",
+                        "tertiary-fixed": "#fce0e0",
+                        "inverse-on-surface": "#faf5ee",
+                        "secondary-container": "#eae2da",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#3a302a",
+                        "on-background": "#3a302a",
+                        "outline-variant": "#d8d0c8",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#e8a0a0",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#fbe8d8",
+                        "on-secondary-container": "#605850",
+                        "inverse-primary": "#f0a878",
+                        "tertiary-container": "#d47070",
+                        "surface-tint": "#c2652a",
+                        "primary": "#c2652a",
+                        "surface": "#faf5ee",
+                        "secondary": "#78706a",
+                        "surface-variant": "#ece6dc",
+                        "surface-container-high": "#ece6dc",
+                        "primary-container": "#e08850",
+                        "inverse-surface": "#3a302a",
+                        "surface-container-highest": "#e6e0d6",
+                        "secondary-fixed": "#eae2da",
+                        "surface-bright": "#faf5ee",
+                        "outline": "#9a9088",
+                        "surface-container": "#f2ece4",
+                        "surface-container-low": "#f6f0e8",
+                        "on-secondary-fixed-variant": "#504840",
+                        "surface-dim": "#dcd6cc",
+                        "on-tertiary-fixed": "#2e1515",
+                        "primary-fixed": "#fbe8d8",
+                        "tertiary": "#8c3c3c",
+                        "primary-fixed-dim": "#f0a878",
+                        "background": "#faf5ee",
+                        "error-container": "#fce4e0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["EB Garamond"],
+                        "display": ["EB Garamond"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #faf5ee;
+            color: #3a302a;
+        }
+        h1, h2, h3, .font-serif {
+            font-family: 'EB Garamond', serif;
+        }
+        .anatomy-glow {
+            filter: drop-shadow(0 0 12px rgba(194, 101, 42, 0.6));
+        }
+    </style>
+</head>
+<body class="flex min-h-screen overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="h-screen w-72 left-0 top-0 fixed bg-[#faf5ee] dark:bg-stone-950 border-r border-stone-200/60 dark:border-stone-800/60 flex flex-col h-full py-8 z-50">
+<div class="px-6 mb-10">
+<h1 class="font-serif text-xl text-[#c2652a] italic">MedBridge AI</h1>
+<p class="font-sans text-xs tracking-widest text-stone-500 uppercase mt-1">Healthcare Portal</p>
+</div>
+<nav class="flex-1 space-y-1 px-4">
+<div class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all duration-300 cursor-pointer rounded-xl group">
+<span class="material-symbols-outlined mr-3 group-hover:text-[#c2652a]">dashboard</span>
+<span class="font-sans text-sm tracking-wide">Dashboard</span>
+</div>
+<div class="flex items-center px-4 py-3 bg-stone-100/50 dark:bg-stone-900/50 text-[#c2652a] font-semibold border-r-4 border-[#c2652a] cursor-pointer rounded-l-xl transition-all duration-300">
+<span class="material-symbols-outlined mr-3">monitor_heart</span>
+<span class="font-sans text-sm tracking-wide">Symptoms</span>
+</div>
+<div class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all duration-300 cursor-pointer rounded-xl group">
+<span class="material-symbols-outlined mr-3 group-hover:text-[#c2652a]">biotech</span>
+<span class="font-sans text-sm tracking-wide">Scanners</span>
+</div>
+<div class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all duration-300 cursor-pointer rounded-xl group">
+<span class="material-symbols-outlined mr-3 group-hover:text-[#c2652a]">emergency</span>
+<span class="font-sans text-sm tracking-wide">Emergency</span>
+</div>
+<div class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all duration-300 cursor-pointer rounded-xl group">
+<span class="material-symbols-outlined mr-3 group-hover:text-[#c2652a]">map</span>
+<span class="font-sans text-sm tracking-wide">Map</span>
+</div>
+<div class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all duration-300 cursor-pointer rounded-xl group">
+<span class="material-symbols-outlined mr-3 group-hover:text-[#c2652a]">analytics</span>
+<span class="font-sans text-sm tracking-wide">Clinical Dashboard</span>
+</div>
+<div class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all duration-300 cursor-pointer rounded-xl group">
+<span class="material-symbols-outlined mr-3 group-hover:text-[#c2652a]">group</span>
+<span class="font-sans text-sm tracking-wide">Patient List</span>
+</div>
+<div class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all duration-300 cursor-pointer rounded-xl group">
+<span class="material-symbols-outlined mr-3 group-hover:text-[#c2652a]">calendar_today</span>
+<span class="font-sans text-sm tracking-wide">Calendar</span>
+</div>
+<div class="flex items-center px-4 py-3 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 transition-all duration-300 cursor-pointer rounded-xl group">
+<span class="material-symbols-outlined mr-3 group-hover:text-[#c2652a]">smart_toy</span>
+<span class="font-sans text-sm tracking-wide">AI Assistant</span>
+</div>
+</nav>
+<div class="px-6 mt-auto space-y-4">
+<button class="w-full bg-[#c2652a] text-white py-3 rounded-2xl font-semibold shadow-sm hover:opacity-90 transition-opacity">
+                Get Support
+            </button>
+<div class="space-y-1">
+<div class="flex items-center px-4 py-2 text-stone-500 hover:text-[#c2652a] cursor-pointer transition-colors">
+<span class="material-symbols-outlined mr-3">help</span>
+<span class="text-xs">Help</span>
+</div>
+<div class="flex items-center px-4 py-2 text-stone-500 hover:text-[#c2652a] cursor-pointer transition-colors">
+<span class="material-symbols-outlined mr-3">logout</span>
+<span class="text-xs">Logout</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-72 flex-1 flex flex-col h-screen relative">
+<!-- TopNavBar (Shared Component) -->
+<header class="w-full top-0 sticky bg-[#faf5ee] dark:bg-stone-950 border-b border-stone-200/60 dark:border-stone-800/60 shadow-[0_2px_16px_rgba(58,48,42,0.04)] z-40">
+<div class="flex justify-between items-center px-8 h-20 max-w-[1920px] mx-auto">
+<div class="flex items-center gap-6 flex-1">
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">search</span>
+<input class="w-full bg-white border-stone-200 rounded-xl pl-10 pr-4 py-2 text-sm focus:ring-1 focus:ring-[#c2652a] focus:border-[#c2652a] transition-all" placeholder="Search medical history..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-stone-500 cursor-pointer hover:text-[#c2652a] transition-colors">notifications</span>
+<span class="material-symbols-outlined text-stone-500 cursor-pointer hover:text-[#c2652a] transition-colors">settings</span>
+<div class="w-10 h-10 rounded-full overflow-hidden bg-stone-200 border-2 border-white shadow-sm">
+<img alt="User profile" data-alt="A professional headshot of a female doctor in her late 40s wearing a clean white clinical coat with a stethoscope around her neck. The background is a soft-focus medical office with warm lighting consistent with a Sahara-inspired luxury healthcare brand. She has a reassuring and calm expression, looking directly into the camera." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDA5OiZT0jZLYcbLcUzxRi3b5x7jca2ttrREZ1FB0hdMKyxqaB6u7km4EXqMUIinDC86ALdpq58YijBzvYqhGjBhJxXKRSytDmk067pgpYZ2ZpYge3pz8J9fgkNN9wuU9asLIhkJ4xYJx6aYkU8hMpM7UbIoF4bINmwXUUzU-F62BzGCcorVBmTNYez2keUV4jAKPnRkh4AdFYnQghrGNLva_BYP8xeTUYwVbj4vcf-Jh87bEpX68kMRnWP0-2LMG7TfHFp_7RtA08"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Conversational Interface & Analysis -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Conversation & Anatomy Side -->
+<div class="flex-1 flex flex-col p-8 gap-8 overflow-y-auto">
+<!-- Chat Window -->
+<div class="flex-1 flex flex-col gap-6 max-w-4xl mx-auto w-full">
+<!-- AI Greeting -->
+<div class="flex gap-4 items-start">
+<div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center text-[#c2652a] flex-shrink-0">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+<div class="bg-white p-6 rounded-2xl rounded-tl-none shadow-[0_2px_16px_rgba(58,48,42,0.04)] border border-stone-100 max-w-[80%]">
+<p class="text-on-surface leading-relaxed">Hello. I'm your MedBridge assistant. I've noted that you're experiencing some discomfort. Based on our conversation, could you confirm if the pain is localized in the lower right area of your abdomen, as indicated on the diagram?</p>
+<p class="mt-4 text-on-surface leading-relaxed">It would also help to know: does the pain feel sharp or dull, and has it moved at all since it started?</p>
+</div>
+</div>
+<!-- Human Anatomy Diagram Section -->
+<div class="flex justify-center py-8">
+<div class="relative w-80 h-[500px] bg-white rounded-3xl shadow-sm border border-stone-100 p-8 flex flex-col items-center">
+<h3 class="font-serif text-lg text-stone-500 mb-6 italic">Symptom Localization</h3>
+<div class="relative flex-1 w-full">
+<!-- Placeholder for Anatomy SVG/Illustration -->
+<div class="absolute inset-0 flex items-center justify-center opacity-20">
+<span class="material-symbols-outlined text-[300px] text-stone-300">person</span>
+</div>
+<!-- Visual Representation of the "Soft Amber Glow" in the lower right -->
+<div class="absolute bottom-1/4 right-1/4 w-12 h-12 bg-primary/30 rounded-full anatomy-glow animate-pulse"></div>
+<div class="absolute bottom-1/4 right-1/4 w-4 h-4 bg-primary rounded-full"></div>
+<img alt="Anatomy Diagram" class="w-full h-full object-contain mix-blend-multiply opacity-80" data-alt="A minimalist and artistic medical illustration of a human torso shown from the front. The style is clean and elegant with warm linen background tones. A soft, glowing amber aura is localized in the lower right quadrant of the abdomen, indicating the source of pain. The lighting is ethereal and clinical yet warm, avoiding harsh medical graphics for a more high-end patient experience." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBa65wu9xEZbPeCIguuzlPfckJBQbAon6PL-y7wAa-rQOYjyxFBEYifLRssx4TU0Elvk-JoJ_X3Mb62goYa3ZmYt08YWejzFlRwjlrITlkgU11ovrSUwZpz47pucA7fLZOk7Udw-j1OKt3cZoDIIW2tMkIMDGKXxWPAjhYi3ck4gYwWRAok_PKdYkiIjvQ50En08EwyJLr8WzlK1eZxjOWlDPZjm2Y0a4s4Rt2BlIfMegH8RO-BAqLkmjdT8uahfgikP9ckDeOdboo"/>
+</div>
+<div class="mt-4 text-center">
+<span class="text-xs font-semibold tracking-widest uppercase text-[#c2652a]">Area Identified: Lower Right Quadrant</span>
+</div>
+</div>
+</div>
+<!-- User Input -->
+<div class="flex gap-4 items-end justify-end mb-8">
+<div class="bg-[#c2652a] p-6 rounded-2xl rounded-tr-none shadow-md max-w-[80%]">
+<p class="text-white leading-relaxed">Yes, it's exactly there. It started as a dull ache around my belly button but now it's shifted and feels much sharper when I move.</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-stone-200 overflow-hidden flex-shrink-0 border-2 border-white">
+<img alt="User profile" data-alt="A portrait of a male patient in his 30s with a thoughtful expression. He is wearing a casual earth-toned sweater, fitting the warm minimalism aesthetic. The background is a soft, natural beige wall. The lighting is gentle and side-lit, creating a calm and professional atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxAjij5FIu3ubIaOlW8nliD3WAm2AV-5G77uJE7Ry-RVcnwqfl6W-eSamNm7lWFKLiqKvBtXzFAWTCzlN6f4xA9w3QHlfG4p-K_E4DlL8JN-VgbahkXenSrxELVdOtIeH4lHa60I_-Vuzu6j5QU9ONyKiYaMOOd7FPRnaanf5qQw-VcRarq6v3alwii31B3LOBuB5EDapC8CX2fcVFblD7GmpvQqvJtfGXnV-VVp9Se8DjupIBsVQYNk4OdZOSkX_yTxnQufVb7-s"/>
+</div>
+</div>
+</div>
+<!-- Input Bar (Sticky at bottom of conversation) -->
+<div class="sticky bottom-0 bg-[#faf5ee]/80 backdrop-blur-md pt-4 pb-2">
+<div class="max-w-4xl mx-auto w-full relative">
+<div class="bg-white border border-stone-200 rounded-2xl p-2 shadow-sm flex items-center gap-2">
+<button class="p-2 text-stone-400 hover:text-[#c2652a] transition-colors">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-sm py-3 px-2" placeholder="Type your symptoms here..." type="text"/>
+<button class="p-2 text-stone-400 hover:text-[#c2652a] transition-colors">
+<span class="material-symbols-outlined">mic</span>
+</button>
+<button class="bg-[#c2652a] text-white p-2 px-6 rounded-xl hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+<p class="text-[10px] text-center text-stone-400 mt-2 italic">MedBridge AI provides guidance but is not a substitute for professional medical advice.</p>
+</div>
+</div>
+</div>
+<!-- Analysis Sidebar -->
+<aside class="w-96 bg-surface-container-low border-l border-stone-200/60 p-8 overflow-y-auto space-y-8">
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="font-serif text-2xl text-on-surface">AI Analysis</h2>
+<span class="bg-[#c2652a]/10 text-[#c2652a] text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Live Scan</span>
+</div>
+<!-- Urgency Badge -->
+<div class="bg-tertiary-fixed p-4 rounded-2xl border border-tertiary/20 flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-tertiary/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-widest text-on-tertiary-fixed-variant font-bold">Urgency Status</p>
+<p class="text-on-tertiary-container font-semibold">Medium-High</p>
+</div>
+</div>
+</div>
+<!-- Conditions List -->
+<div class="space-y-4">
+<p class="text-xs font-bold text-stone-400 uppercase tracking-widest">Potential Conditions</p>
+<div class="space-y-3">
+<!-- Condition 1 -->
+<div class="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm transition-all hover:border-[#c2652a]/30">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-semibold text-on-surface">Appendicitis</h4>
+<span class="text-[#c2652a] font-bold text-sm">68% Match</span>
+</div>
+<div class="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-[#c2652a] h-full w-[68%]"></div>
+</div>
+<p class="text-xs text-stone-500 mt-3 leading-relaxed italic">Classic presentation: periumbilical pain migrating to RLQ with increased intensity.</p>
+</div>
+<!-- Condition 2 -->
+<div class="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm opacity-70">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-semibold text-on-surface">Gastroenteritis</h4>
+<span class="text-stone-400 font-bold text-sm">24% Match</span>
+</div>
+<div class="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-stone-300 h-full w-[24%]"></div>
+</div>
+</div>
+<!-- Condition 3 -->
+<div class="bg-white p-5 rounded-2xl border border-stone-100 shadow-sm opacity-50">
+<div class="flex justify-between items-start mb-2">
+<h4 class="font-semibold text-on-surface">Muscle Strain</h4>
+<span class="text-stone-400 font-bold text-sm">12% Match</span>
+</div>
+<div class="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
+<div class="bg-stone-300 h-full w-[12%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recommended Next Steps -->
+<div class="space-y-4">
+<p class="text-xs font-bold text-stone-400 uppercase tracking-widest">Recommended Next Steps</p>
+<div class="space-y-2">
+<div class="flex items-start gap-3 bg-white/50 p-3 rounded-xl border border-stone-100">
+<span class="material-symbols-outlined text-[#c2652a] text-lg">check_circle</span>
+<span class="text-sm text-on-surface">Avoid eating or drinking until examined</span>
+</div>
+<div class="flex items-start gap-3 bg-white/50 p-3 rounded-xl border border-stone-100">
+<span class="material-symbols-outlined text-[#c2652a] text-lg">check_circle</span>
+<span class="text-sm text-on-surface">Monitor for fever or vomiting</span>
+</div>
+<div class="flex items-start gap-3 bg-white/50 p-3 rounded-xl border border-stone-100">
+<span class="material-symbols-outlined text-[#c2652a] text-lg">check_circle</span>
+<span class="text-sm text-on-surface font-semibold">Consult an Urgent Care within 4 hours</span>
+</div>
+</div>
+</div>
+<!-- CTA -->
+<div class="pt-4">
+<button class="w-full bg-on-surface text-white py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 hover:bg-stone-800 transition-colors">
+<span class="material-symbols-outlined">local_hospital</span>
+                        Find Nearest Facility
+                    </button>
+<p class="text-[10px] text-center text-stone-400 mt-4 px-4 leading-normal">Your data is encrypted and shared only with your chosen providers.</p>
+</div>
+</aside>
+</div>
+</main>
+</body></html>

@@ -1,24 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+MedBridge is a Next.js (App Router) + Tailwind v4 project styled from a Stitch design system (Sahara-inspired palette).
 
 ## Getting Started
 
-First, run the development server:
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Data sources
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- The UI fetches data from Next.js route handlers under `src/app/api/*`.
+- The server-side repository layer lives in `src/lib/server/repositories.ts`.
+- If you set Supabase env vars, the API switches from mock data to Supabase automatically:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Routes (from Stitch screens)
+
+- `/` Welcome to MedBridge AI
+- `/onboarding` Patient Onboarding
+- `/patient` Patient Dashboard
+- `/patient/symptom-checker` Patient: AI Symptom Checker
+- `/patient/scanners` Patient: AI Scanners
+- `/patient/care-finder` Patient: Emergency & Care Finder
+- `/patient/health-card` My Digital Health Card
+- `/doctor` Doctor: Clinical Dashboard
+- `/doctor/patients/[id]` Doctor: Patient Detail View
+- `/provider/verification` Provider Verification
+
+### Stitch sync
+
+- Screen mapping manifest: `src/stitch/manifest.json`
+- Sync all Stitch HTML exports:
+
+```bash
+npm run sync:stitch
+```
+
+This writes the latest HTML snapshots to `src/stitch/html/`.
+
+### Smoke test
+
+Run route + API smoke checks end-to-end:
+
+```bash
+npm run test:smoke
+```
+
+### Production build
+
+```bash
+npm run lint
+npm run build
+npm run start
+```
 
 ## Learn More
 

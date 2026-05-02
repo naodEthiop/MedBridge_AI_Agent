@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedBridge - Healthcare AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Eb+Garamond:wght@400;500;600;700;800&amp;family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface-variant": "#605850",
+                    "surface-container-low": "#f6f0e8",
+                    "surface-container-high": "#ece6dc",
+                    "on-tertiary-container": "#3a2020",
+                    "tertiary-fixed-dim": "#e8a0a0",
+                    "tertiary-fixed": "#fce0e0",
+                    "tertiary": "#8c3c3c",
+                    "on-error-container": "#7a1a10",
+                    "primary-fixed-dim": "#f0a878",
+                    "surface-container-highest": "#e6e0d6",
+                    "on-tertiary-fixed": "#2e1515",
+                    "surface-variant": "#ece6dc",
+                    "primary-fixed": "#fbe8d8",
+                    "on-background": "#3a302a",
+                    "inverse-on-surface": "#faf5ee",
+                    "inverse-surface": "#3a302a",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#c2652a",
+                    "on-secondary": "#ffffff",
+                    "outline": "#9a9088",
+                    "secondary-fixed": "#eae2da",
+                    "on-primary-fixed-variant": "#8a4518",
+                    "surface-bright": "#faf5ee",
+                    "surface": "#faf5ee",
+                    "on-error": "#ffffff",
+                    "outline-variant": "#d8d0c8",
+                    "on-tertiary": "#ffffff",
+                    "surface-dim": "#dcd6cc",
+                    "tertiary-container": "#d47070",
+                    "background": "#faf5ee",
+                    "on-secondary-fixed-variant": "#504840",
+                    "primary-container": "#e08850",
+                    "primary": "#c2652a",
+                    "on-surface": "#3a302a",
+                    "error": "#c0392b",
+                    "secondary-container": "#eae2da",
+                    "on-secondary-fixed": "#2a2420",
+                    "secondary-fixed-dim": "#cec6be",
+                    "error-container": "#fce4e0",
+                    "on-tertiary-fixed-variant": "#6e3030",
+                    "on-primary-container": "#fbe8d8",
+                    "inverse-primary": "#f0a878",
+                    "on-secondary-container": "#605850",
+                    "on-primary-fixed": "#401a08",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#f2ece4",
+                    "secondary": "#78706a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Eb Garamond"],
+                    "display": ["Eb Garamond"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #faf5ee;
+            color: #3a302a;
+        }
+    </style>
+</head>
+<body class="font-body selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopNavBar -->
+<nav class="bg-[#faf5ee] dark:bg-stone-950 docked full-width top-0 border-b border-[#d8d0c8]/60 dark:border-stone-800 shadow-[0_2px_16px_rgba(58,48,42,0.04)] fixed z-50 flex justify-between items-center w-full px-8 py-4">
+<div class="flex items-center gap-2">
+<span class="text-2xl font-serif font-bold text-[#c2652a] dark:text-orange-400">MedBridge</span>
+</div>
+<div class="hidden md:flex items-center space-x-8">
+<a class="text-stone-600 dark:text-stone-400 hover:text-[#c2652a] dark:hover:text-orange-300 transition-colors cursor-pointer active:scale-95 transition-transform" href="#">Solutions</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-[#c2652a] dark:hover:text-orange-300 transition-colors cursor-pointer active:scale-95 transition-transform" href="#">For Providers</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-[#c2652a] dark:hover:text-orange-300 transition-colors cursor-pointer active:scale-95 transition-transform" href="#">Technology</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-stone-600 dark:text-stone-400 cursor-pointer" data-icon="notifications">notifications</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A professional headshot of a friendly individual in a brightly lit, warm-toned indoor office setting. The lighting is soft and natural, emphasizing a high-key light-mode aesthetic that complements the Sahara palette of warm linens and sienna. The background is softly blurred to keep focus on the person, suggesting a modern healthcare or tech environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRsXB3JQPJWGZ2qi3iGUAJ92ulWoviq11N92aAiMc7fAwobj0JQ59XhgohzzfKvUlqEQ-wjWbxHJB4_U2PZhAjwqbofS8ni9jsTRnkO4Q6ipCl0W18QUlKgo2necyYis_XVpGqTZKlwosHxXhjI7utm9ko-cdv-MxSfg5iIjWp233stmqkKPtXgZ07qFiwDIaaSfURlUTuTRKflkSgRbG7s03oG5O__uj_B9v8PcKppwSTnCrxDeRjDy7ljmY5n-QrNiKoGSGprHQ"/>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="pt-24 pb-12">
+<!-- Hero Section -->
+<section class="max-w-7xl mx-auto px-8 py-16 lg:py-32 flex flex-col lg:flex-row items-center gap-16">
+<div class="flex-1 space-y-8">
+<div class="inline-block px-4 py-1.5 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full text-xs font-semibold tracking-wider uppercase">
+                    Revolutionizing Care
+                </div>
+<h1 class="font-headline text-6xl lg:text-8xl text-on-background leading-[1.1] font-bold">
+                    Healthcare that <br/><span class="text-primary italic">breathes</span> with you.
+                </h1>
+<p class="text-xl text-on-surface-variant max-w-xl leading-relaxed">
+                    MedBridge combines human expertise with sun-baked AI simplicity to bring you a healthcare experience that is as warm as it is intelligent. Welcome to the future of patient-centered care.
+                </p>
+<div class="flex flex-col sm:flex-row gap-4 pt-4">
+<button class="px-8 py-4 bg-primary text-on-primary rounded-lg font-bold shadow-lg hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group">
+                        Start as Patient
+                        <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="px-8 py-4 border-2 border-outline-variant text-on-surface rounded-lg font-bold hover:bg-surface-container-low active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        Join as Healthcare Provider
+                    </button>
+</div>
+</div>
+<div class="flex-1 relative w-full lg:w-auto">
+<div class="relative z-10 rounded-2xl overflow-hidden shadow-2xl rotate-2 aspect-[4/5] max-w-md mx-auto">
+<img alt="Healthcare Professional" class="w-full h-full object-cover" data-alt="A doctor in a modern clinic with warm, sun-drenched lighting filtering through a window, creating soft shadows and golden highlights. The scene features minimalist decor in tones of linen and wood, aligning with the Sahara design system. The healthcare professional is smiling warmly, holding a digital tablet, embodying the integration of human care and AI-driven technology in a serene, luxurious environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPsazx8vD8mcn7k0nfTV6qnQseHfd048_s8QLG2PtDqAi1cHib6gg1V5XPdc90qFw7I-4c1SVDVWjwjHnVbMgHMOy6Pi36o6SO0v2q6HwMtHlCOmOYkdEFR254oyAQE1TZRtR1fxVv3cDnE3ZU4yNzyBMX7MYdO4x_-zytOnYvTjG_DtWPKIs23-8mfjlsyrr-AUk7PRoeqhdScxKxgJaCApbDk1b7vWdLlNh_jw1eErG-d1cfbwhpec1h0NX9bkQhGlCtrcoYB78"/>
+</div>
+<div class="absolute top-1/2 -left-8 -translate-y-1/2 w-64 h-64 bg-primary-fixed-dim/30 rounded-full blur-3xl -z-0"></div>
+<div class="absolute bottom-4 -right-4 w-48 h-48 bg-tertiary-fixed/30 rounded-full blur-2xl -z-0"></div>
+</div>
+</section>
+<!-- Value Proposition / Bento Grid -->
+<section class="bg-surface-container-low py-24">
+<div class="max-w-7xl mx-auto px-8">
+<div class="text-center mb-16 space-y-4">
+<h2 class="font-headline text-4xl lg:text-5xl text-on-background font-bold">The MedBridge Advantage</h2>
+<p class="text-on-surface-variant max-w-2xl mx-auto">Focused on clarity, efficiency, and a touch of human warmth.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- AI Insight Card -->
+<div class="md:col-span-2 bg-white p-10 rounded-xl shadow-[0_2px_16px_rgba(58,48,42,0.04)] border border-outline-variant/60 flex flex-col lg:flex-row gap-8 items-center">
+<div class="space-y-4 lg:w-1/2">
+<span class="material-symbols-outlined text-primary text-4xl" data-icon="neurology">neurology</span>
+<h3 class="font-headline text-3xl font-bold">AI-Driven Care Scanners</h3>
+<p class="text-on-surface-variant leading-relaxed">Our advanced AI doesn't just process data; it understands context. From symptom checking to medical document analysis, get insights that are accurate and easy to understand.</p>
+</div>
+<div class="lg:w-1/2 w-full h-48 bg-surface-container-high rounded-lg overflow-hidden">
+<img alt="AI Dashboard" class="w-full h-full object-cover opacity-80" data-alt="A clean, minimalist medical data visualization dashboard displayed on a high-resolution screen. The interface uses the Sahara color palette, featuring warm burnt sienna accents and linen-colored backgrounds. Abstract glowing nodes and lines represent AI neural networks, rendered in a sophisticated, low-contrast light-mode style that feels professional and calm." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSMpB6Dv217Lyd2HjjiKeGU2EiVqEZ_5ghf4v-4zOcOvKA9Nk6oJjKw8jtuBYjIaj4ewkSNop3AHdVO1G3SUIUpBrrQnPNJgcGVHrrMs-perp7zcbNXnfHuZRUe_QWNjmoZepTJ-i-ygDGjWq-1qpfws2lC5f1u8hHWcrHcBJvsWAMMgxDzgRERpqt3X87pjQmTv3x4tJAaqGNS68RnhXm5qKYO6DYhvw4DQ3kFwATfLG0R0eeu6QOzjeEpoY3cPaqeMXsTxsFOU0"/>
+</div>
+</div>
+<!-- Speed/Ease Card -->
+<div class="bg-white p-10 rounded-xl shadow-[0_2px_16px_rgba(58,48,42,0.04)] border border-outline-variant/60 space-y-4">
+<span class="material-symbols-outlined text-primary text-4xl" data-icon="bolt">bolt</span>
+<h3 class="font-headline text-3xl font-bold">Instant Health Card</h3>
+<p class="text-on-surface-variant leading-relaxed">Your entire medical history, condensed into a secure, portable digital identity accessible in seconds.</p>
+</div>
+<!-- Emergency Card -->
+<div class="bg-[#8c3c3c] p-10 rounded-xl shadow-lg space-y-4 text-white">
+<span class="material-symbols-outlined text-white text-4xl" data-icon="emergency">emergency</span>
+<h3 class="font-headline text-3xl font-bold text-white">24/7 Emergency Support</h3>
+<p class="text-rose-100/80 leading-relaxed">Direct connection to critical care when every second counts. AI-assisted triage ensures you get help faster.</p>
+</div>
+<!-- Map/Location Card -->
+<div class="md:col-span-2 bg-white p-10 rounded-xl shadow-[0_2px_16px_rgba(58,48,42,0.04)] border border-outline-variant/60 flex flex-col lg:flex-row-reverse gap-8 items-center">
+<div class="space-y-4 lg:w-1/2">
+<span class="material-symbols-outlined text-primary text-4xl" data-icon="map">map</span>
+<h3 class="font-headline text-3xl font-bold">Global Care Map</h3>
+<p class="text-on-surface-variant leading-relaxed">Find the nearest specialized healthcare provider or pharmacy within our verified network, anywhere in the world.</p>
+</div>
+<div class="lg:w-1/2 w-full h-48 bg-surface-container-high rounded-lg overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A stylized minimalist map of a modern city center, with warm-toned markers indicating medical facilities. The cartography style is clean and elegant, using neutral linen tones and subtle sienna highlights for routes, avoiding busy details to maintain the sun-baked simplicity of the Sahara design language." data-location="Zurich" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBadccNnyUiKEywECyw6bqyXDdcK2NUdyHAFBPEIo1k-gS9n4X-07CtK9Uj_O297UuP3csCKooZ6Ri24_KFwgIEs8EGKMaByyQej9-O4WY-fkKYGKXMFGP-UuwB6lbZH3T-elLUwr6SVakE2_nLi-EjeTQlvf8cr1TOpvgkobAgimrRzSer2vSCnBgokO2az1lL4s6BJOq8bu3oYQjRj4w-7cCEX4k36lGJhWHkhqY2HzECOxQMS8GlogdyA4tapUy4J-zyv7WYMjY"/>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Provider CTA Section -->
+<section class="max-w-7xl mx-auto px-8 py-24">
+<div class="bg-surface-container-highest rounded-3xl p-12 lg:p-20 relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-12">
+<div class="space-y-6 lg:max-w-xl z-10 text-center lg:text-left">
+<h2 class="font-headline text-4xl lg:text-5xl text-on-background font-bold">Are you a healthcare professional?</h2>
+<p class="text-lg text-on-surface-variant leading-relaxed">
+                        Join our growing ecosystem of doctors, nurses, and specialists who are using AI to spend less time on paperwork and more time with patients.
+                    </p>
+<button class="px-8 py-4 bg-on-background text-inverse-on-surface rounded-lg font-bold hover:opacity-90 transition-all flex items-center justify-center gap-2 mx-auto lg:mx-0">
+                        Apply for Provider Status
+                        <span class="material-symbols-outlined" data-icon="medical_services">medical_services</span>
+</button>
+</div>
+<div class="lg:w-1/3 z-10 flex justify-center">
+<div class="grid grid-cols-2 gap-4">
+<div class="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden">
+<img alt="Doctor 1" class="w-full h-full object-cover" data-alt="A portrait of a male doctor in a bright, warm studio environment, smiling with confidence. The lighting is soft and golden, matching the MedBridge warm-minimalist aesthetic. The focus is sharp on his friendly expression, set against a clean, off-white linen background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBUp2D6fswf3-zNRkKXc8F5pae3iwW3ugayE5sfdQKwZ9GHWB7I87ir96ONlSgaD1Fh9ZwfWx7lyxHGRLIDgnBs39J5N7tujbZm11NIAWtpBED6vZgEljaWP5y-E3O3a_uA3MgtZVcR5l0-b-LV3iE4Feqpc3vj9jnESGarV7Xq50Hn4wp_abcYY_IFbCN6EgSNAU-jhemYdSJimlSEtEDKfr1Pk8zDhP0yeqpm8YydJDUyIUPbeMV2OA099TDy2DWbO4fZXyqopc"/>
+</div>
+<div class="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden mt-8">
+<img alt="Doctor 2" class="w-full h-full object-cover" data-alt="A portrait of a female physician in a serene, warm-toned clinical setting. The image uses high-key lighting to create a welcoming and trustworthy atmosphere. She is wearing professional attire, and the background features soft, warm gradients of beige and linen typical of the Sahara design palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEV_TRMAu1w4ReFf1UhOio5n3KxjpfnJP3G8rdoVFU6t-KjTkp9R8atahinmAsgk5AtCgxpb-tc20UCsaK0LtaBTFKJefvXDqB3iZdjYj1SW-zcIW9lEXLePLwliR2_8Jyf4VoJOy9T1Ivyy6EO-4O2nNkhk2grXNJMZWQrwfjg2UFpMBeE3B5ZN5t-DYek9TZSCfdTWsPY0h1z_lSRFG-xnCHQcLGbx2uYy2BWESI8K44IqvxXa0ZD6XnGhHWFE6p9u1panGQ90I"/>
+</div>
+<div class="w-24 h-24 rounded-full border-4 border-white shadow-lg overflow-hidden -mt-4">
+<img alt="Doctor 3" class="w-full h-full object-cover" data-alt="A close-up portrait of a healthcare worker in a clean, minimalist environment illuminated by warm morning sunlight. The visual style is editorial and premium, emphasizing natural skin tones and a peaceful, empathetic mood. The palette consists of soft ecrus and burnt sienna accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCw-LGwJv61xKCL8z1ECKNnwYsrGuW-QDnku7zc6oJCwMp1pxw5hI36mm_QoW9B9-MPBnnFzyCTXGjrOYxjfskcOwNWJOO6tDL_Eonry94H-eAJx9dWV8677GF7Lanf4c7v7JbDj7MceGRmzpOub8ho4Pzxya7tRWraEuaQwra8uRYR9b1VkqMvnZVh3ZhfPedDGrmD6pBZZbqi3OVgo6mhO6UwFJKPlRSckN2i74xrt2nKPecZPu9qh-3xbptNyfmG87sS8f4qsyo"/>
+</div>
+</div>
+</div>
+<!-- Decorative Elements -->
+<div class="absolute -top-12 -right-12 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-[#faf5ee] dark:bg-stone-950 w-full border-t border-[#d8d0c8]/60 dark:border-stone-800 flex flex-col md:flex-row justify-between items-center px-8 py-6 mt-auto">
+<div class="text-stone-400 dark:text-stone-500 font-sans Manrope text-xs mb-4 md:mb-0">
+            © 2024 MedBridge AI. Sun-baked simplicity for modern care.
+        </div>
+<div class="flex space-x-6">
+<a class="text-stone-400 dark:text-stone-500 font-sans Manrope text-xs hover:text-orange-800 dark:hover:text-orange-200 transition-colors" href="#">Privacy Policy</a>
+<a class="text-stone-400 dark:text-stone-500 font-sans Manrope text-xs hover:text-orange-800 dark:hover:text-orange-200 transition-colors" href="#">Terms of Service</a>
+<a class="text-stone-400 dark:text-stone-500 font-sans Manrope text-xs hover:text-orange-800 dark:hover:text-orange-200 transition-colors" href="#">Contact Support</a>
+</div>
+</footer>
+</body></html>

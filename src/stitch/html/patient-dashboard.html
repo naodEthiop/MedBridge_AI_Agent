@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedBridge AI - Patient Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&amp;family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#605850",
+                        "on-primary-fixed": "#401a08",
+                        "on-tertiary-container": "#3a2020",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#7a1a10",
+                        "error": "#c0392b",
+                        "secondary-fixed-dim": "#cec6be",
+                        "on-tertiary-fixed-variant": "#6e3030",
+                        "on-primary-fixed-variant": "#8a4518",
+                        "on-secondary-fixed": "#2a2420",
+                        "tertiary-fixed": "#fce0e0",
+                        "inverse-on-surface": "#faf5ee",
+                        "secondary-container": "#eae2da",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#3a302a",
+                        "on-background": "#3a302a",
+                        "outline-variant": "#d8d0c8",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#e8a0a0",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-container": "#fbe8d8",
+                        "on-secondary-container": "#605850",
+                        "inverse-primary": "#f0a878",
+                        "tertiary-container": "#d47070",
+                        "surface-tint": "#c2652a",
+                        "primary": "#c2652a",
+                        "surface": "#faf5ee",
+                        "secondary": "#78706a",
+                        "surface-variant": "#ece6dc",
+                        "surface-container-high": "#ece6dc",
+                        "primary-container": "#e08850",
+                        "inverse-surface": "#3a302a",
+                        "surface-container-highest": "#e6e0d6",
+                        "secondary-fixed": "#eae2da",
+                        "surface-bright": "#faf5ee",
+                        "outline": "#9a9088",
+                        "surface-container": "#f2ece4",
+                        "surface-container-low": "#f6f0e8",
+                        "on-secondary-fixed-variant": "#504840",
+                        "surface-dim": "#dcd6cc",
+                        "on-tertiary-fixed": "#2e1515",
+                        "primary-fixed": "#fbe8d8",
+                        "tertiary": "#8c3c3c",
+                        "primary-fixed-dim": "#f0a878",
+                        "background": "#faf5ee",
+                        "error-container": "#fce4e0"
+                    },
+                    "fontFamily": {
+                        "headline": ["EB Garamond"],
+                        "display": ["EB Garamond"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        h1, h2, h3, .serif { font-family: 'EB Garamond', serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- SideNavBar -->
+<aside class="h-screen w-72 left-0 top-0 fixed bg-[#faf5ee] dark:bg-stone-950 border-r border-stone-200/60 flex flex-col py-8 z-50">
+<div class="px-8 mb-10">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined">medical_services</span>
+</div>
+<div>
+<h1 class="font-serif text-xl text-[#c2652a]">MedBridge AI</h1>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Healthcare Portal</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<div class="bg-stone-100/50 dark:bg-stone-900/50 text-[#c2652a] font-semibold border-r-4 border-[#c2652a] flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-300">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-sans text-sm tracking-wide">Dashboard</span>
+</div>
+<div class="text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-300">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span class="font-sans text-sm tracking-wide">Symptoms</span>
+</div>
+<div class="text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-300">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-sans text-sm tracking-wide">Scanners</span>
+</div>
+<div class="text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-300">
+<span class="material-symbols-outlined">emergency</span>
+<span class="font-sans text-sm tracking-wide">Emergency</span>
+</div>
+<div class="text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-300">
+<span class="material-symbols-outlined">map</span>
+<span class="font-sans text-sm tracking-wide">Map</span>
+</div>
+<div class="text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-300">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-sans text-sm tracking-wide">Clinical Dashboard</span>
+</div>
+<div class="text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-300">
+<span class="material-symbols-outlined">group</span>
+<span class="font-sans text-sm tracking-wide">Patient List</span>
+</div>
+<div class="text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-300">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-sans text-sm tracking-wide">Calendar</span>
+</div>
+<div class="text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-900 hover:text-[#c2652a] flex items-center gap-3 px-4 py-3 cursor-pointer transition-all duration-300">
+<span class="material-symbols-outlined">smart_toy</span>
+<span class="font-sans text-sm tracking-wide">AI Assistant</span>
+</div>
+</nav>
+<div class="px-6 mt-auto">
+<button class="w-full bg-primary text-on-primary py-3 rounded-lg font-sans text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity">
+                Get Support
+            </button>
+<div class="mt-6 pt-6 border-t border-stone-200/60">
+<div class="flex items-center gap-3 px-2 py-2 text-stone-600 cursor-pointer hover:text-primary transition-colors">
+<span class="material-symbols-outlined">help</span>
+<span class="text-sm">Help</span>
+</div>
+<div class="flex items-center gap-3 px-2 py-2 text-stone-600 cursor-pointer hover:text-error transition-colors">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-sm">Logout</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-72 min-h-screen">
+<!-- TopNavBar -->
+<header class="w-full top-0 sticky bg-[#faf5ee] border-b border-stone-200/60 shadow-[0_2px_16px_rgba(58,48,42,0.04)] z-40">
+<div class="flex justify-between items-center px-8 h-20 max-w-[1920px] mx-auto">
+<div class="flex items-center flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-white border border-stone-200 rounded-lg focus:ring-1 focus:ring-primary focus:border-primary outline-none text-sm transition-all" placeholder="Search medical records..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-stone-600 cursor-pointer hover:text-primary transition-colors">notifications</span>
+<span class="material-symbols-outlined text-stone-600 cursor-pointer hover:text-primary transition-colors">settings</span>
+</div>
+<div class="h-10 w-10 rounded-full overflow-hidden border-2 border-primary-container">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A close-up professional headshot of a friendly man in his late 30s with short hair and a warm, kind smile. The lighting is soft and golden, characteristic of a Mediterranean sunset. The background is a blurred, warm linen texture that complements the Sahara theme's palette. The overall vibe is trustworthy, calm, and high-end editorial." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCngGCmaXaR8SL38woHtXCTiJlHuWsnHWwjt5bdZeeMyWT510ajJqINJG_OhlOetKKlwyllMZEhBDcjh4U22kYApZOUMb7VhfU5ukwyE54ECdgaFYAOmGvfO1essD3kGTSB2Tt-sA3tifaAZDdzkkm3jgFW151XPUjIDp5jlcpyYu5TfPSnGXeiUoQsQtK39PS4fu5rz7ZewCG_JixtN9amO27T7TeWXRWTaWF8nF7cuBFFT9jlyAcztwPlIPIKvWm_2vVwonH78YI"/>
+</div>
+</div>
+</div>
+</header>
+<section class="p-10 max-w-7xl mx-auto">
+<!-- Greeting & Header -->
+<div class="mb-12">
+<h2 class="text-5xl font-serif text-on-surface leading-tight mb-2 italic">Hi Alex, how are you feeling today?</h2>
+<p class="text-on-surface-variant font-body text-lg">Your health summary is updated based on your last scan.</p>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-8">
+<!-- AI Symptom Checker - Primary Action -->
+<div class="col-span-12 md:col-span-8 bg-surface-container-low rounded-[32px] p-8 shadow-[0_2px_16px_rgba(58,48,42,0.04)] relative overflow-hidden group border border-stone-200/40">
+<div class="relative z-10">
+<div class="bg-primary-container text-on-primary-fixed w-14 h-14 rounded-2xl flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-3xl">smart_toy</span>
+</div>
+<h3 class="text-3xl font-serif mb-4">AI Symptom Checker</h3>
+<p class="text-on-surface-variant max-w-md mb-8 leading-relaxed">Describe your symptoms or upload a voice note for an immediate clinical-grade assessment powered by MedBridge AI.</p>
+<button class="bg-primary text-on-primary px-8 py-4 rounded-xl font-bold flex items-center gap-2 hover:bg-opacity-90 transition-all shadow-md group-hover:translate-x-1">
+                            Start Assessment
+                            <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<div class="absolute right-0 bottom-0 w-1/2 h-full opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[200px] absolute -right-10 -bottom-10">neurology</span>
+</div>
+</div>
+<!-- Medication Scanner -->
+<div class="col-span-12 md:col-span-4 bg-white rounded-[32px] p-8 border border-stone-200/60 flex flex-col justify-between hover:shadow-lg transition-shadow">
+<div>
+<div class="text-primary mb-6">
+<span class="material-symbols-outlined text-4xl" data-weight="fill" style="font-variation-settings: 'FILL' 1;">pill</span>
+</div>
+<h3 class="text-2xl font-serif mb-2">Medication Scanner</h3>
+<p class="text-sm text-on-surface-variant font-body">Scan your prescription label to check for interactions and set reminders.</p>
+</div>
+<div class="mt-8">
+<div class="h-32 w-full bg-surface-container-highest rounded-2xl overflow-hidden mb-4">
+<img alt="Medication bottles" class="w-full h-full object-cover grayscale-[20%] hover:grayscale-0 transition-all" data-alt="A clean, minimalist arrangement of modern pharmaceutical amber bottles on a warm beige surface. The lighting is bright and airy with soft, long shadows. A smartphone is placed next to the bottles, suggesting a scanning action. The color palette is dominated by warm ochre, burnt sienna, and off-white tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfNNAsystygSpn_j90on_1Q62hrPTB_7459hih475MmTaS6fT14xME3OZHuoz_a8V9hIlHcRVit3YVY63BdGl2JdYGFPvFFg5dAvHYdy9VGFC4Lh7kmtUDQrHWmf6OXPp3FGSW0-AuXEz6NPq9-XAaODEIPPGRzQMYmYVqKUbb1Ah2_lrk8eBUnxTtcVmLAe3j01d3K2sUDW3nvUFnI8XtyxxEd6b0Qwjl-hjnhLW6VMbZqTfemWMDvT6yr0_hzmijpUEK8gwqmag"/>
+</div>
+<button class="w-full text-primary font-bold text-sm underline-offset-4 hover:underline flex items-center justify-center gap-2">
+                            Launch Scanner
+                        </button>
+</div>
+</div>
+<!-- Vitals Section (Asymmetric) -->
+<div class="col-span-12 md:col-span-12 lg:col-span-12">
+<div class="flex items-end justify-between mb-6">
+<h3 class="text-2xl font-serif">Current Vitals</h3>
+<span class="text-sm text-stone-400 font-sans">Last sync: 2 mins ago</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Heart Rate -->
+<div class="bg-white rounded-[24px] p-6 border border-stone-200/60 shadow-sm flex items-center gap-6">
+<div class="w-16 h-16 rounded-full bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-3xl">favorite</span>
+</div>
+<div>
+<p class="text-xs text-on-surface-variant font-bold uppercase tracking-wider mb-1">Heart Rate</p>
+<div class="flex items-baseline gap-1">
+<span class="text-3xl font-serif font-bold">72</span>
+<span class="text-sm text-stone-400">BPM</span>
+</div>
+</div>
+</div>
+<!-- Blood Pressure -->
+<div class="bg-white rounded-[24px] p-6 border border-stone-200/60 shadow-sm flex items-center gap-6">
+<div class="w-16 h-16 rounded-full bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">blood_pressure</span>
+</div>
+<div>
+<p class="text-xs text-on-surface-variant font-bold uppercase tracking-wider mb-1">Blood Pressure</p>
+<div class="flex items-baseline gap-1">
+<span class="text-3xl font-serif font-bold">118/76</span>
+<span class="text-sm text-stone-400">mmHg</span>
+</div>
+</div>
+</div>
+<!-- Oxygen -->
+<div class="bg-white rounded-[24px] p-6 border border-stone-200/60 shadow-sm flex items-center gap-6">
+<div class="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-3xl">air</span>
+</div>
+<div>
+<p class="text-xs text-on-surface-variant font-bold uppercase tracking-wider mb-1">Oxygen Saturation</p>
+<div class="flex items-baseline gap-1">
+<span class="text-3xl font-serif font-bold">98</span>
+<span class="text-sm text-stone-400">%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Visual AI Analysis -->
+<div class="col-span-12 md:col-span-7 bg-surface-container-high rounded-[32px] p-8 border border-stone-200/40 relative overflow-hidden group">
+<div class="max-w-md">
+<h3 class="text-2xl font-serif mb-4">Visual AI Analysis</h3>
+<p class="text-on-surface-variant mb-6 leading-relaxed">Upload a photo of a skin concern or eye redness for an instant dermatological pre-screening.</p>
+<div class="flex gap-4">
+<button class="bg-on-surface text-surface px-6 py-3 rounded-xl text-sm font-bold hover:bg-stone-800 transition-colors">
+                                Upload Photo
+                            </button>
+<button class="border border-on-surface-variant text-on-surface-variant px-6 py-3 rounded-xl text-sm font-bold hover:bg-white transition-colors">
+                                View History
+                            </button>
+</div>
+</div>
+<div class="absolute right-0 top-0 h-full w-1/3 bg-stone-200/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-7xl text-stone-300">photo_camera</span>
+</div>
+</div>
+<!-- Emergency Help (High Contrast) -->
+<div class="col-span-12 md:col-span-5 bg-tertiary-container rounded-[32px] p-8 text-on-tertiary-container flex flex-col justify-center items-center text-center border border-tertiary/20">
+<div class="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-5xl text-on-tertiary-container">emergency_share</span>
+</div>
+<h3 class="text-3xl font-serif mb-3">Emergency Help</h3>
+<p class="mb-8 opacity-90 text-sm max-w-[240px]">Instantly alert your care team and nearest medical services with your GPS location.</p>
+<button class="bg-tertiary text-on-tertiary w-full py-4 rounded-2xl font-bold uppercase tracking-widest text-sm hover:scale-[1.02] transition-transform shadow-lg">
+                        Activate Emergency Protocol
+                    </button>
+</div>
+</div>
+<!-- Recent Reports / Activity Section -->
+<div class="mt-16 pb-20">
+<div class="flex items-baseline justify-between mb-8">
+<h3 class="text-3xl font-serif italic">Recent Insights</h3>
+<a class="text-primary font-bold text-sm hover:underline" href="#">View All Records</a>
+</div>
+<div class="space-y-4">
+<div class="bg-white p-6 rounded-2xl border border-stone-100 flex items-center justify-between hover:border-primary/20 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">description</span>
+</div>
+<div>
+<h4 class="font-bold text-on-surface">Annual Physical Summary</h4>
+<p class="text-xs text-on-surface-variant">Yesterday at 4:30 PM • PDF Report</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-stone-300">chevron_right</span>
+</div>
+<div class="bg-white p-6 rounded-2xl border border-stone-100 flex items-center justify-between hover:border-primary/20 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">lab_research</span>
+</div>
+<div>
+<h4 class="font-bold text-on-surface">Comprehensive Blood Panel</h4>
+<p class="text-xs text-on-surface-variant">Oct 12, 2023 • Lab Results</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-stone-300">chevron_right</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+</body></html>

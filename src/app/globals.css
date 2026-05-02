@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /*
+    Sahara-inspired palette from Stitch design tokens (MedBridge AI Healthcare Platform)
+    Key tokens: background/surface + warm sienna primary + warm neutrals.
+  */
+  --background: #faf5ee; /* namedColors.background */
+  --foreground: #3a302a; /* namedColors.on_background */
+
+  --surface: #faf5ee; /* namedColors.surface */
+  --surface-low: #f6f0e8; /* namedColors.surface_container_low */
+  --surface-card: #ffffff; /* namedColors.surface_container_lowest */
+
+  --muted: #605850; /* namedColors.on_surface_variant */
+  --border: #d8d0c8; /* namedColors.outline_variant */
+
+  --primary: #c2652a; /* namedColors.primary */
+  --primary-2: #e08850; /* namedColors.primary_container */
+  --tertiary: #8c3c3c; /* namedColors.tertiary */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-manrope);
+  --font-serif: var(--font-eb-garamond);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* App-specific semantic colors */
+  --color-sahara-bg: var(--background);
+  --color-sahara-fg: var(--foreground);
+  --color-sahara-surface: var(--surface);
+  --color-sahara-surface-low: var(--surface-low);
+  --color-sahara-card: var(--surface-card);
+  --color-sahara-muted: var(--muted);
+  --color-sahara-border: var(--border);
+  --color-sahara-primary: var(--primary);
+  --color-sahara-primary-2: var(--primary-2);
+  --color-sahara-tertiary: var(--tertiary);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Subtle, warm ambient shadow (from Stitch designMd guidance) */
+.shadow-ambient {
+  box-shadow: 0 2px 16px rgba(58, 48, 42, 0.04);
 }
