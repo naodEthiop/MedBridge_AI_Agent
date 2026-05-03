@@ -33,7 +33,20 @@ export type SystemEventName =
   | 'security:throttle_applied'
   | 'system:health_ok'
   | 'system:degraded'
-  | 'system:critical_load';
+  | 'system:critical_load'
+  | 'ehr:sync_completed'
+  | 'fhir:resource_received'
+  | 'hl7:message_received'
+  | 'insurance:claim_updated'
+  | 'billing:claim_created'
+  | 'billing:claim_submitted'
+  | 'billing:claim_paid'
+  | 'billing:claim_denied'
+  | 'lab:result_received'
+  | 'lab:result_updated'
+  | 'referral:created'
+  | 'referral:accepted'
+  | 'referral:completed';
 
 const recentlyEmitted = new Map<string, number>();
 
