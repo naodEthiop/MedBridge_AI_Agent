@@ -75,6 +75,27 @@ async function broadcastRealtime(name: SystemEventName, payload: Record<string, 
   }
 }
 
+async function broadcastRealtime(name: SystemEventName, payload: Record<string, unknown>) {
+  try {
+    const supabase = getSupabaseAdmin();
+    await supabase.channel('realtime:global').send({
+      type: 'broadcast',
+      event: name,
+      payload,
+    });
+
+    if (name === 'emergency:triggered' || (name === 'patient:risk_updated' && payload.riskLevel === 'critical')) {
+      await supabase.channel('realtime:critical').send({
+        type: 'broadcast',
+        event: name,
+        payload,
+      });
+    }
+  } catch (error) {
+    console.error('[event] realtime broadcast failed', error);
+  }
+}
+
 export function emitEvent(name: SystemEventName, payload: Record<string, unknown>) {
   const startedAt = Date.now();
   cleanupFingerprints(startedAt);
