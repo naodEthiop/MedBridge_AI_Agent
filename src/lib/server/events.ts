@@ -25,7 +25,15 @@ export type SystemEventName =
   | 'ai:system_health_ok'
   | 'ai:degraded_mode_active'
   | 'ai:fallback_triggered'
-  | 'ai:cost_threshold_warning';
+  | 'ai:cost_threshold_warning'
+  | 'sync:queued'
+  | 'sync:completed'
+  | 'sync:conflict_resolved'
+  | 'security:rate_limit_hit'
+  | 'security:throttle_applied'
+  | 'system:health_ok'
+  | 'system:degraded'
+  | 'system:critical_load';
 
 const recentlyEmitted = new Map<string, number>();
 
@@ -36,10 +44,12 @@ function cleanupFingerprints(now = Date.now()) {
 }
 
 async function broadcastRealtime(name: SystemEventName, payload: Record<string, unknown>) {
+  const tenantId = typeof payload.tenantId === 'string' ? payload.tenantId : null;
+  const eventName = tenantId ? `${tenantId}:${name}` : name;
   const supabase = getSupabaseAdmin();
   await supabase.channel('realtime:global').send({
     type: 'broadcast',
-    event: name,
+    event: eventName,
     payload,
   });
 
