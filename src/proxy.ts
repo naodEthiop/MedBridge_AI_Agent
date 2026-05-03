@@ -1,41 +1,155 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { readSessionFromCookieValue, SESSION_COOKIE } from "@/lib/auth/session-core";
+import { env, hasSupabasePublicEnv } from "@/lib/env";
 import { getAuthUserFromRequest } from "@/lib/server/authUser";
+
+function safeInternalPath(nextParam: string | null): string | null {
+  if (!nextParam || !nextParam.startsWith("/") || nextParam.startsWith("//")) return null;
+  try {
+    const u = new URL(nextParam, "http://local.invalid");
+    if (u.username || u.password) return null;
+    const path = u.pathname + u.search + u.hash;
+    if (!path.startsWith("/") || path.includes("//")) return null;
+    return path;
+  } catch {
+    return null;
+  }
+}
+
+function redirect(request: NextRequest, path: string, sessionResponse: NextResponse) {
+  const res = NextResponse.redirect(new URL(path, request.url));
+  const cookies = sessionResponse.headers.getSetCookie?.() ?? [];
+  for (const c of cookies) {
+    res.headers.append("Set-Cookie", c);
+  }
+  return res;
+}
+
+async function resolveSession(
+  request: NextRequest,
+  baseResponse: NextResponse,
+): Promise<{
+  user: { role: string } | null;
+  response: NextResponse;
+  sealedInvalid: boolean;
+}> {
+  const sealed = request.cookies.get(SESSION_COOKIE)?.value;
+  if (sealed) {
+    const sessionUser = await readSessionFromCookieValue(sealed);
+    if (sessionUser) {
+      return { user: { role: sessionUser.role }, response: baseResponse, sealedInvalid: false };
+    }
+    return { user: null, response: baseResponse, sealedInvalid: true };
+  }
+
+  if (hasSupabasePublicEnv) {
+    let response = baseResponse;
+    const supabase = createServerClient(
+      env.NEXT_PUBLIC_SUPABASE_URL!,
+      env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+            response = NextResponse.next({ request });
+            cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+          },
+        },
+      },
+    );
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      return {
+        user: { role: String(user.user_metadata?.role ?? "patient") },
+        response,
+        sealedInvalid: false,
+      };
+    }
+    return { user: null, response, sealedInvalid: false };
+  }
+
+  const authUser = await getAuthUserFromRequest(request);
+  if (authUser) {
+    return { user: { role: authUser.role }, response: baseResponse, sealedInvalid: false };
+  }
+
+  return { user: null, response: baseResponse, sealedInvalid: false };
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const sealed = request.cookies.get(SESSION_COOKIE)?.value;
+  let response = NextResponse.next({ request });
 
-  let role: string | null = null;
-
-  if (sealed) {
-    const sessionUser = await readSessionFromCookieValue(sealed);
-    if (!sessionUser) {
-      const login = new URL("/login", request.url);
-      login.searchParams.set("expired", "1");
-      return NextResponse.redirect(login);
+  if (pathname === "/login" || pathname.startsWith("/login/")) {
+    const { user, response: sessionResponse, sealedInvalid } = await resolveSession(request, response);
+    if (sealedInvalid || !user) {
+      return sessionResponse;
     }
-    role = sessionUser.role;
-  } else {
-    const authUser = await getAuthUserFromRequest(request);
-    if (!authUser) {
-      return NextResponse.next();
+
+    const nextPath = safeInternalPath(request.nextUrl.searchParams.get("next"));
+    if (nextPath) {
+      if (nextPath.startsWith("/doctor") && user.role === "doctor") {
+        return redirect(request, nextPath, sessionResponse);
+      }
+      if (nextPath.startsWith("/patient") && user.role === "patient") {
+        return redirect(request, nextPath, sessionResponse);
+      }
+      if (!nextPath.startsWith("/doctor") && !nextPath.startsWith("/patient")) {
+        return redirect(request, nextPath, sessionResponse);
+      }
     }
-    role = authUser.role;
+    const home = user.role === "doctor" ? "/doctor/dashboard" : "/patient";
+    return redirect(request, home, sessionResponse);
   }
 
-  if (pathname.startsWith("/doctor") && role !== "doctor") {
-    return NextResponse.redirect(new URL("/patient", request.url));
-  }
-  if (pathname.startsWith("/patient") && role !== "patient") {
-    return NextResponse.redirect(new URL("/doctor/dashboard", request.url));
+  const { user, response: sessionResponse, sealedInvalid } = await resolveSession(request, response);
+
+  if (sealedInvalid) {
+    const login = new URL("/login", request.url);
+    login.searchParams.set("expired", "1");
+    return NextResponse.redirect(login);
   }
 
-  return NextResponse.next();
+  if (!user) {
+    const login = new URL("/login", request.url);
+    login.searchParams.set("next", pathname);
+    return NextResponse.redirect(login);
+  }
+
+  if (pathname.startsWith("/doctor") && user.role !== "doctor") {
+    return redirect(request, "/patient", sessionResponse);
+  }
+  if (pathname.startsWith("/patient") && user.role !== "patient") {
+    return redirect(request, "/doctor/dashboard", sessionResponse);
+  }
+
+  if (pathname.startsWith("/onboarding") && user.role !== "patient") {
+    return redirect(request, "/doctor/dashboard", sessionResponse);
+  }
+
+  return sessionResponse;
 }
 
 export const config = {
-  matcher: ["/patient", "/patient/:path*", "/doctor", "/doctor/:path*"],
+  matcher: [
+    "/login",
+    "/login/:path*",
+    "/patient",
+    "/patient/:path*",
+    "/doctor",
+    "/doctor/:path*",
+    "/provider",
+    "/provider/:path*",
+    "/onboarding",
+    "/onboarding/:path*",
+  ],
 };

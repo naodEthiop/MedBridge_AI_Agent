@@ -2,13 +2,15 @@
 
 import { Download, RefreshCw, Share2, ShieldAlert } from "lucide-react";
 import { useMemo, useState } from "react";
-import { differenceInYears } from "date-fns";
+import { differenceInYears, format } from "date-fns";
 
 import { AppShell } from "@/components/layout/AppShell";
+import { DigitalHealthCardWallet } from "@/components/views/DigitalHealthCardWallet";
 import { useAuthSession } from "@/hooks/useSessionRole";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import { usePatient } from "@/hooks/usePatient";
 import { triggerUiAction } from "@/lib/apiClient";
+import { buildHealthCardHtml, computeTrustScore } from "@/lib/health-card-download";
 
 export default function HealthCardPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -45,6 +47,20 @@ export default function HealthCardPage() {
   const conditions = apiPatient?.conditions?.length ? apiPatient.conditions : ["No conditions on file"];
   const allergies = apiPatient?.allergies?.length ? apiPatient.allergies : [];
 
+  const issuedLabel = format(new Date(), "M/d/yyyy");
+  const walletStatus = apiPatient && patientQuery.isSuccess ? "verified" : "pending";
+  const trustScore = computeTrustScore({
+    conditions,
+    allergies,
+    hasDateOfBirth: Boolean(apiPatient?.dateOfBirth ?? profile?.age),
+  });
+  const conditionsSummary = useMemo(() => {
+    const real = conditions.filter((c) => c.toLowerCase() !== "no conditions on file");
+    const parts = [...real.slice(0, 2), ...(allergies.length ? [`Allergies: ${allergies.slice(0, 2).join(", ")}`] : [])];
+    const line = parts.length ? parts.join(" · ") : "Clinical summary syncing";
+    return line.length > 120 ? `${line.slice(0, 117)}…` : line;
+  }, [conditions, allergies]);
+
   const qrPayload = useMemo(
     () =>
       JSON.stringify({
@@ -73,24 +89,29 @@ export default function HealthCardPage() {
     setActionLoading(true);
     setFeedback(null);
     const res = await triggerUiAction("health_card_download_pdf", { patientId: patientId || displayId });
-    const blob = new Blob(
-      [
-        `MedBridge Health Card\nName: ${displayName}\nID: ${displayId}\nEmail: ${sessionQ.data?.email ?? ""}\n` +
-          `Age: ${ageYears ?? "—"}\nSex: ${sexDisplay}\nBlood: ${bloodType}\nHeight: ${heightCm ?? "—"} cm\nWeight: ${weightKg ?? "—"} kg\n` +
-          `Conditions: ${conditions.join(", ")}\nAllergies: ${allergies.join(", ") || "—"}\n`,
-      ],
-      { type: "text/plain;charset=utf-8" },
-    );
+    const html = buildHealthCardHtml({
+      displayName,
+      email: sessionQ.data?.email ?? "—",
+      patientId: String(displayId),
+      trustScore,
+      status: walletStatus,
+      issuedLabel,
+      bloodType: String(bloodType),
+      ageLabel: ageYears != null ? `${ageYears} yrs` : "Age —",
+      conditionsLine: conditionsSummary,
+    });
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `medbridge-health-card-${displayId}.txt`;
+    const safeFileId = String(displayId).replace(/[^a-zA-Z0-9-_]/g, "_").slice(0, 48) || "card";
+    a.download = `medbridge-health-card-${safeFileId}.html`;
     a.click();
     URL.revokeObjectURL(url);
     setActionLoading(false);
     setFeedback(
       res.ok
-        ? `${res.data.message ?? "Export queued."} A summary file was downloaded to this device.`
+        ? `${res.data.message ?? "Export ready."} Open the HTML file in any browser to view your card.`
         : "Action failed. Please try again.",
     );
   }
@@ -159,113 +180,94 @@ export default function HealthCardPage() {
         </div>
 
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
-          <div className="lg:col-span-8">
-            <div className="relative mx-auto aspect-[1.58/1] w-full max-w-2xl overflow-hidden rounded-[2rem] bg-white p-1 shadow-2xl lg:mx-0">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#f6f0e8] via-white to-[#fbe8d8] opacity-40" />
-              <div className="absolute -right-24 -top-24 size-64 rounded-full bg-sahara-primary/5 blur-3xl" />
+          <div className="space-y-8 lg:col-span-8">
+            <div className="flex justify-center lg:justify-start">
+              <DigitalHealthCardWallet
+                displayName={displayName}
+                email={sessionQ.data?.email ?? "—"}
+                patientId={String(displayId)}
+                trustScore={trustScore}
+                status={walletStatus}
+                issuedLabel={issuedLabel}
+                bloodType={String(bloodType)}
+                ageLabel={ageYears != null ? `${ageYears} yrs` : "Age —"}
+                conditionsSummary={conditionsSummary}
+              />
+            </div>
 
-              <div className="relative flex h-full w-full flex-col rounded-[1.8rem] border border-sahara-border p-8">
-                <div className="mb-8 flex items-start justify-between">
+            <div className="rounded-[1.8rem] border border-sahara-border/80 bg-sahara-surface-low/80 p-6 shadow-inner md:p-8">
+              <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h3 className="font-serif text-xl font-bold text-sahara-fg md:text-2xl">Clinical details</h3>
+                  <p className="mt-1 text-xs text-sahara-muted">Full record fields for care teams and check-in.</p>
+                </div>
+                <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-sahara-border bg-white font-serif text-2xl font-bold text-sahara-muted">
+                  {displayName !== "—"
+                    ? displayName
+                        .split(/\s+/)
+                        .map((w) => w[0])
+                        .join("")
+                        .slice(0, 2)
+                        .toUpperCase()
+                    : "?"}
+                </div>
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Patient ID</p>
+                  <p className="font-mono text-sm font-semibold">{displayId}</p>
+                </div>
+                <div>
+                  <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Sex</p>
+                  <p className="text-sm font-semibold">{sexDisplay}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Conditions</p>
+                  <div className="flex flex-wrap gap-2">
+                    {conditions.length ? (
+                      conditions.map((condition) => (
+                        <span
+                          key={condition}
+                          className="rounded-full border border-sahara-border bg-white px-2 py-0.5 text-xs font-medium text-sahara-muted"
+                        >
+                          {condition}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-sahara-muted">None recorded</span>
+                    )}
+                  </div>
+                </div>
+                {allergies.length ? (
+                  <div className="sm:col-span-2">
+                    <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Allergies</p>
+                    <div className="flex flex-wrap gap-2">
+                      {allergies.map((a) => (
+                        <span
+                          key={a}
+                          className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900"
+                        >
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                <div className="flex gap-10 sm:col-span-2">
                   <div>
-                    <h3 className="font-serif text-2xl font-bold tracking-tight text-sahara-primary">MedBridge</h3>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sahara-primary">
-                      Universal Health Identity
-                    </p>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Height</p>
+                    <p className="text-sm font-semibold">{heightCm != null ? `${heightCm} cm` : "—"}</p>
                   </div>
-                  <div className="rounded-full bg-sahara-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-sahara-primary">
-                    Active
-                  </div>
-                </div>
-
-                <div className="flex flex-1 gap-8">
-                  <div className="flex size-[7.5rem] shrink-0 items-center justify-center rounded-xl border border-sahara-border bg-[#ece6dc] font-serif text-3xl font-bold text-sahara-muted">
-                    {displayName !== "—"
-                      ? displayName
-                          .split(/\s+/)
-                          .map((w) => w[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase()
-                      : "?"}
-                  </div>
-
-                  <div className="grid flex-1 grid-cols-2 gap-x-4 gap-y-6">
-                    <div>
-                      <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Full Name</p>
-                      <p className="font-serif text-lg font-bold">{displayName}</p>
-                    </div>
-                    <div>
-                      <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Patient ID</p>
-                      <p className="font-serif text-lg font-bold">{displayId}</p>
-                    </div>
-                    <div className="col-span-2 grid grid-cols-3 gap-4">
-                      <div>
-                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Age</p>
-                        <p className="text-base font-bold">{ageYears ?? "—"}</p>
-                      </div>
-                      <div>
-                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Sex</p>
-                        <p className="text-base font-bold">{sexDisplay}</p>
-                      </div>
-                      <div>
-                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Blood Type</p>
-                        <p className="text-base font-bold text-sahara-tertiary">{bloodType}</p>
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Conditions</p>
-                      <div className="flex flex-wrap gap-2">
-                        {conditions.length ? (
-                          conditions.map((condition) => (
-                            <span
-                              key={condition}
-                              className="rounded-full border border-sahara-border bg-[#ece6dc] px-2 py-0.5 text-xs font-medium text-sahara-muted"
-                            >
-                              {condition}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs text-sahara-muted">None recorded</span>
-                        )}
-                      </div>
-                    </div>
-                    {allergies.length ? (
-                      <div className="col-span-2">
-                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Allergies</p>
-                        <div className="flex flex-wrap gap-2">
-                          {allergies.map((a) => (
-                            <span
-                              key={a}
-                              className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900"
-                            >
-                              {a}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="mt-auto flex items-end justify-between pt-6">
-                  <div className="flex gap-8">
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Height</p>
-                      <p className="text-sm font-semibold">{heightCm != null ? `${heightCm} cm` : "—"}</p>
-                    </div>
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Weight</p>
-                      <p className="text-sm font-semibold">{weightKg != null ? `${weightKg} kg` : "—"}</p>
-                    </div>
-                  </div>
-                  <div className="max-w-[140px] text-right text-[8px] font-medium leading-tight text-stone-400">
-                    Record sync: demo API. Replace with your backend services.
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Weight</p>
+                    <p className="text-sm font-semibold">{weightKg != null ? `${weightKg} kg` : "—"}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-8 flex flex-wrap justify-center gap-4 lg:justify-start">
+            <div className="flex flex-wrap justify-center gap-4 lg:justify-start">
               <button
                 type="button"
                 onClick={() => void handleDownloadPdf()}
@@ -273,7 +275,7 @@ export default function HealthCardPage() {
                 className="flex items-center gap-2 rounded-lg bg-sahara-primary px-6 py-3 font-bold text-white shadow-md transition-all hover:brightness-110 active:scale-95"
               >
                 <Download className="size-5" />
-                Download summary
+                Download card (HTML)
               </button>
               <button
                 type="button"
