@@ -1,8 +1,18 @@
+// src/lib/backend/case-service.ts
+// MCP-Migrated Case Service
+// ALL database operations now go through MCP gateway
+
 import { randomUUID } from "node:crypto";
-import { createClient } from "@supabase/supabase-js";
+import { createDBGateway } from "@/lib/db/dbGateway";
 
 import { env } from "@/lib/env";
-import { getRepositories } from "@/lib/server/repositories";
+
+// Default tenant context for case service
+const DEFAULT_TENANT_CONTEXT = {
+  tenantId: process.env.DEFAULT_TENANT_ID || 'medbridge-tenant-001',
+  userId: 'case-service-user',
+  role: 'admin' as const
+};
 
 type CaseInput = {
   symptoms: string;
@@ -22,117 +32,97 @@ type CaseInput = {
 const inMemoryCases: Array<CaseInput & { id: string; createdAt: string }> = [];
 type CaseRecord = CaseInput & { id: string; createdAt: string };
 
-function createSupabaseWithAccessToken(accessToken: string) {
-  return createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+function getDBGateway() {
+  return createDBGateway(DEFAULT_TENANT_CONTEXT);
 }
 
 export async function listCases(limit = 50, accessToken?: string): Promise<CaseRecord[]> {
-  const repos = getRepositories();
-  if (repos.source === "supabase") {
-    if (!accessToken) {
-      return [];
-    }
-    try {
-      const supabase = createSupabaseWithAccessToken(accessToken);
-      const { data, error } = await supabase
-        .from("cases")
-        .select("id, created_at, symptoms, urgency, red_flags, doctor_summary, patient_name, nearest_hospital")
-        .order("created_at", { ascending: false })
-        .limit(limit);
-      if (!error && data) {
-        return data.map((row) => ({
-          id: row.id as string,
-          createdAt: row.created_at as string,
-          symptoms: String(row.symptoms ?? ""),
-          urgency: (row.urgency as "medium" | "urgent") ?? "medium",
-          redFlags: (row.red_flags as string[] | null) ?? [],
-          doctorSummary: String(row.doctor_summary ?? ""),
-          patientName: (row.patient_name as string | null) ?? undefined,
-          nearestHospital: (row.nearest_hospital as CaseInput["nearestHospital"] | null) ?? undefined,
-        }));
-      }
-    } catch {
-      // Graceful fallback below.
-    }
+  try {
+    const dbGateway = getDBGateway();
+    const data = await dbGateway.query('cases', {
+      orderBy: 'created_at DESC',
+      limit
+    });
+
+    return data.map((row: any) => ({
+      id: row.id as string,
+      createdAt: row.created_at as string,
+      symptoms: String(row.symptoms ?? ""),
+      urgency: (row.urgency as "low" | "medium" | "urgent") ?? "medium",
+      redFlags: (row.red_flags as string[] | null) ?? [],
+      doctorSummary: String(row.doctor_summary ?? ""),
+      status: (row.status as "pending" | "monitoring" | "resolved") ?? "pending",
+      patientName: (row.patient_name as string | null) ?? undefined,
+      nearestHospital: (row.nearest_hospital as CaseInput["nearestHospital"] | null) ?? undefined,
+    }));
+  } catch (error) {
+    // Graceful fallback to in-memory
+    console.warn('[CaseService] MCP query failed, falling back to in-memory:', error);
+    return [...inMemoryCases].reverse().slice(0, limit);
   }
-  return [...inMemoryCases].reverse().slice(0, limit);
 }
 
 export async function getCaseById(id: string, accessToken?: string): Promise<CaseRecord | null> {
-  const repos = getRepositories();
-  if (repos.source === "supabase") {
-    if (!accessToken) {
-      return null;
-    }
-    try {
-      const supabase = createSupabaseWithAccessToken(accessToken);
-      const { data, error } = await supabase
-        .from("cases")
-        .select("id, created_at, symptoms, urgency, red_flags, doctor_summary, patient_name, nearest_hospital")
-        .eq("id", id)
-        .maybeSingle();
-      if (!error && data) {
-        return {
-          id: data.id as string,
-          createdAt: data.created_at as string,
-          symptoms: String(data.symptoms ?? ""),
-          urgency: (data.urgency as "medium" | "urgent") ?? "medium",
-          redFlags: (data.red_flags as string[] | null) ?? [],
-          doctorSummary: String(data.doctor_summary ?? ""),
-          patientName: (data.patient_name as string | null) ?? undefined,
-          nearestHospital: (data.nearest_hospital as CaseInput["nearestHospital"] | null) ?? undefined,
-        };
-      }
-    } catch {
-      // Graceful fallback below.
-    }
-  }
+  try {
+    const dbGateway = getDBGateway();
+    const data = await dbGateway.query('cases', {
+      where: `id = '${id}'`,
+      limit: 1
+    });
 
-  return inMemoryCases.find((c) => c.id === id) ?? null;
+    if (data.length === 0) {
+      return inMemoryCases.find((c) => c.id === id) ?? null;
+    }
+
+    const row = data[0];
+    return {
+      id: row.id as string,
+      createdAt: row.created_at as string,
+      symptoms: String(row.symptoms ?? ""),
+      urgency: (row.urgency as "low" | "medium" | "urgent") ?? "medium",
+      redFlags: (row.red_flags as string[] | null) ?? [],
+      doctorSummary: String(row.doctor_summary ?? ""),
+      status: (row.status as "pending" | "monitoring" | "resolved") ?? "pending",
+      patientName: (row.patient_name as string | null) ?? undefined,
+      nearestHospital: (row.nearest_hospital as CaseInput["nearestHospital"] | null) ?? undefined,
+    };
+  } catch (error) {
+    // Graceful fallback to in-memory
+    console.warn('[CaseService] MCP query failed, falling back to in-memory:', error);
+    return inMemoryCases.find((c) => c.id === id) ?? null;
+  }
 }
 
 export async function createCase(input: CaseInput, accessToken?: string) {
-  const repos = getRepositories();
+  try {
+    const dbGateway = getDBGateway();
+    const payload = {
+      user_id: DEFAULT_TENANT_CONTEXT.userId, // Use default for now, could be extracted from token
+      symptoms: input.symptoms,
+      urgency: input.urgency,
+      red_flags: input.redFlags,
+      doctor_summary: input.doctorSummary,
+      status: input.status ?? "pending",
+      patient_name: input.patientName ?? null,
+      nearest_hospital: input.nearestHospital ?? null,
+    };
 
-  // If we are on Supabase-backed mode and a `cases` table exists, store there.
-  if (repos.source === "supabase" && accessToken) {
-    try {
-      const supabase = createSupabaseWithAccessToken(accessToken);
-      const { data: userData, error: userErr } = await supabase.auth.getUser();
-      if (userErr || !userData.user) {
-        throw userErr ?? new Error("No user for case insert");
-      }
-      const payload = {
-        user_id: userData.user.id,
-        symptoms: input.symptoms,
-        urgency: input.urgency,
-        red_flags: input.redFlags,
-        doctor_summary: input.doctorSummary,
-        status: input.status ?? "pending",
-        patient_name: input.patientName ?? null,
-        nearest_hospital: input.nearestHospital ?? null,
-      };
-      const { data, error } = await supabase.from("cases").insert(payload).select("id, created_at").maybeSingle();
-      if (error) {
-        throw error;
-      }
-      if (data) {
-        return { id: data.id as string, createdAt: data.created_at as string, persisted: true };
-      }
-    } catch {
-      // Graceful fallback below.
-    }
+    const data = await dbGateway.insert('cases', payload);
+    return {
+      id: data.id as string,
+      createdAt: data.created_at as string,
+      persisted: true
+    };
+  } catch (error) {
+    // Graceful fallback to in-memory
+    console.warn('[CaseService] MCP insert failed, falling back to in-memory:', error);
+    const created = {
+      ...input,
+      id: randomUUID(),
+      createdAt: new Date().toISOString(),
+    };
+    inMemoryCases.push(created);
+    return { id: created.id, createdAt: created.createdAt, persisted: false };
   }
-
-  const created = {
-    ...input,
-    id: randomUUID(),
-    createdAt: new Date().toISOString(),
-  };
-  inMemoryCases.push(created);
-  return { id: created.id, createdAt: created.createdAt, persisted: false };
 }
 

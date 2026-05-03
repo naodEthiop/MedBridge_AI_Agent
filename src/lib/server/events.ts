@@ -16,6 +16,7 @@ export type SystemEventName =
   | 'ai:simulation_updated'
   | 'ai:trajectory_risk_detected'
   | 'ai:intervention_recommendation'
+  | 'ai:early_warning'
   | 'ai:early_warning_escalation'
   | 'ai:request_logged'
   | 'ai:request_failed'
@@ -53,25 +54,6 @@ const recentlyEmitted = new Map<string, number>();
 function cleanupFingerprints(now = Date.now()) {
   for (const [fingerprint, expiry] of recentlyEmitted.entries()) {
     if (expiry <= now) recentlyEmitted.delete(fingerprint);
-  }
-}
-
-async function broadcastRealtime(name: SystemEventName, payload: Record<string, unknown>) {
-  const tenantId = typeof payload.tenantId === 'string' ? payload.tenantId : null;
-  const eventName = tenantId ? `${tenantId}:${name}` : name;
-  const supabase = getSupabaseAdmin();
-  await supabase.channel('realtime:global').send({
-    type: 'broadcast',
-    event: eventName,
-    payload,
-  });
-
-  if (name === 'emergency:triggered' || (name === 'patient:risk_updated' && payload.riskLevel === 'critical')) {
-    await supabase.channel('realtime:critical').send({
-      type: 'broadcast',
-      event: name,
-      payload,
-    });
   }
 }
 

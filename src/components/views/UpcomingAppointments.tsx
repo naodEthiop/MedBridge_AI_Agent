@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useDoctors } from "@/hooks/useDoctors";
 import { usePatients } from "@/hooks/usePatients";
+import type { Appointment } from "@/lib/server/repositories";
 
 function byId<T extends { id: string }>(items: T[]) {
   return new Map(items.map((i) => [i.id, i]));
@@ -25,9 +26,9 @@ export function UpcomingAppointments() {
   const doctorMap = byId(doctors.data ?? []);
 
   const upcoming = (appts.data ?? [])
-    .filter((a) => a.status === "scheduled")
+    .filter((a: Appointment) => a.status === "scheduled")
     .slice()
-    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+    .sort((a: Appointment, b: Appointment) => a.startTime.localeCompare(b.startTime))
     .slice(0, 5);
 
   return (
@@ -45,7 +46,7 @@ export function UpcomingAppointments() {
           <p className="text-sm text-sahara-muted">No upcoming appointments.</p>
         ) : (
           <div className="grid gap-3">
-            {upcoming.map((a) => {
+            {upcoming.map((a: Appointment) => {
               const patient = patientMap.get(a.patientId);
               const doctor = doctorMap.get(a.doctorId);
               return (

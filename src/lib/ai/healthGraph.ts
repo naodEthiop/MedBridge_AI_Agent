@@ -8,7 +8,7 @@ export type HealthGraph = {
 export function buildHealthGraph(memory: PatientMemory): HealthGraph {
   const nodes = memory.timeline.map((event, index) => ({
     id: `${event.type}-${index}`,
-    type: event.type === 'ai_analysis' ? 'outcome' : event.type === 'appointment' ? 'treatment' : event.type,
+    type: (event.type === 'ai_analysis' ? 'outcome' : event.type === 'appointment' ? 'treatment' : event.type === 'symptom' ? 'symptom' : event.type === 'diagnosis' ? 'diagnosis' : 'outcome') as 'symptom' | 'diagnosis' | 'treatment' | 'outcome',
     timestamp: event.timestamp,
     data: event.data,
   }));

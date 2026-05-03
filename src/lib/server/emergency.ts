@@ -98,7 +98,7 @@ export async function triggerEmergencyForPatient(payload: EmergencyTriggerPayloa
         await repos.messages.createMessage({
           senderId,
           receiverId: doctor.id,
-          role: payload.senderRole ?? 'ai',
+          role: (payload.senderRole === 'ai' ? 'system' : payload.senderRole) ?? 'system',
           message: `Emergency escalation for ${patient.fullName}: ${payload.aiSummary}. Symptoms: ${payload.symptoms.join(', ')}. Risk level: ${payload.riskLevel}.`,
           attachments: {
             location: payload.location ?? null,

@@ -1,13 +1,22 @@
 import type { Appointment, LabRecord, Patient } from '@/lib/types';
 
 export function toInternalPatient(fhirPatient: Record<string, unknown>): Partial<Patient> {
+  const name = Array.isArray(fhirPatient?.name) && fhirPatient.name[0] ? fhirPatient.name[0] : null;
+  const given = Array.isArray(name?.given) ? name.given.join(' ') : '';
+  const family = typeof name?.family === 'string' ? name.family : '';
+  const fullName = [given, family].filter(Boolean).join(' ') || undefined;
+
+  const telecom = Array.isArray(fhirPatient?.telecom) ? fhirPatient.telecom : [];
+  const phone = telecom.find((t: any) => t?.system === 'phone')?.value;
+  const email = telecom.find((t: any) => t?.system === 'email')?.value;
+
   return {
-    id: fhirPatient?.id,
-    fullName: [fhirPatient?.name?.[0]?.given?.join(' '), fhirPatient?.name?.[0]?.family].filter(Boolean).join(' '),
-    dateOfBirth: fhirPatient?.birthDate,
-    sex: fhirPatient?.gender,
-    phone: fhirPatient?.telecom?.find((t: { system?: string; value?: string }) => t.system === 'phone')?.value,
-    email: fhirPatient?.telecom?.find((t: { system?: string; value?: string }) => t.system === 'email')?.value,
+    id: typeof fhirPatient?.id === 'string' ? fhirPatient.id : undefined,
+    fullName,
+    dateOfBirth: typeof fhirPatient?.birthDate === 'string' ? fhirPatient.birthDate : undefined,
+    sex: typeof fhirPatient?.gender === 'string' && ['female', 'male', 'other'].includes(fhirPatient.gender) ? fhirPatient.gender as 'female' | 'male' | 'other' : undefined,
+    phone: typeof phone === 'string' ? phone : undefined,
+    email: typeof email === 'string' ? email : undefined,
   };
 }
 
@@ -23,12 +32,23 @@ export function toFhirPatient(internalPatient: Partial<Patient>) {
 }
 
 export function toInternalObservation(fhirObservation: Record<string, unknown>): Partial<LabRecord> {
+  const subject = fhirObservation?.subject as any;
+  const subjectRef = typeof subject?.reference === 'string' ? subject.reference : '';
+  const patientId = subjectRef.replace('Patient/', '') || undefined;
+
+  const code = fhirObservation?.code as any;
+  const testName = typeof code?.text === 'string' ? code.text : undefined;
+
+  const valueQuantity = fhirObservation?.valueQuantity as any;
+  const valueString = fhirObservation?.valueString as any;
+  const result = String(valueQuantity?.value ?? valueString ?? '');
+
   return {
-    id: fhirObservation?.id,
-    patientId: fhirObservation?.subject?.reference?.replace('Patient/', ''),
-    testName: fhirObservation?.code?.text,
-    result: String(fhirObservation?.valueQuantity?.value ?? fhirObservation?.valueString ?? ''),
-    createdAt: fhirObservation?.effectiveDateTime,
+    id: typeof fhirObservation?.id === 'string' ? fhirObservation.id : undefined,
+    patientId,
+    testName,
+    result,
+    createdAt: typeof fhirObservation?.effectiveDateTime === 'string' ? fhirObservation.effectiveDateTime : undefined,
   };
 }
 
@@ -44,13 +64,17 @@ export function toFhirObservation(labResult: Partial<LabRecord>) {
 }
 
 export function toInternalAppointment(fhirAppointment: Record<string, unknown>): Partial<Appointment> {
+  const participants = Array.isArray(fhirAppointment?.participant) ? fhirAppointment.participant : [];
+  const patientRef = participants[0]?.actor?.reference as string;
+  const doctorRef = participants[1]?.actor?.reference as string;
+
   return {
-    id: fhirAppointment?.id,
-    startTime: fhirAppointment?.start,
-    endTime: fhirAppointment?.end,
-    status: fhirAppointment?.status,
-    patientId: fhirAppointment?.participant?.[0]?.actor?.reference?.replace('Patient/', ''),
-    doctorId: fhirAppointment?.participant?.[1]?.actor?.reference?.replace('Practitioner/', ''),
+    id: typeof fhirAppointment?.id === 'string' ? fhirAppointment.id : undefined,
+    startTime: typeof fhirAppointment?.start === 'string' ? fhirAppointment.start : undefined,
+    endTime: typeof fhirAppointment?.end === 'string' ? fhirAppointment.end : undefined,
+    status: typeof fhirAppointment?.status === 'string' && ['scheduled', 'confirmed', 'completed', 'cancelled'].includes(fhirAppointment.status) ? fhirAppointment.status as 'scheduled' | 'confirmed' | 'completed' | 'cancelled' : undefined,
+    patientId: typeof patientRef === 'string' ? patientRef.replace('Patient/', '') : undefined,
+    doctorId: typeof doctorRef === 'string' ? doctorRef.replace('Practitioner/', '') : undefined,
   };
 }
 

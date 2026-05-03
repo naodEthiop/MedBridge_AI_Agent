@@ -265,7 +265,7 @@ export class MCPConsistencyGuard {
   /**
    * Validate FK integrity
    */
-  async validateForeignKeys(table: string, data: any): Promise<void> {
+  async validateForeignKeys(table: 'patients' | 'appointments' | 'medical_reports' | 'labs' | 'medical_timeline', data: any): Promise<void> {
     const relationships = {
       patients: ['primary_doctor_id'],
       appointments: ['patient_id', 'doctor_id', 'health_center_id'],

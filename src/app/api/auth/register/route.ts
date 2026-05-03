@@ -94,7 +94,11 @@ export async function POST(request: Request) {
       userId = createData.user?.id ?? null;
       if (!userId) throw new Error('Failed to create Supabase user.');
     } else {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password: data.password }, { data: { role } });
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password: data.password,
+        options: { data: { role } }
+      });
       if (signUpError) {
         return NextResponse.json({ error: signUpError.message }, { status: 400 });
       }

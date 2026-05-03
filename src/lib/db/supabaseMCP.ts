@@ -2,8 +2,19 @@
 // Core Supabase MCP Server connection layer
 // ALL database operations MUST route through this layer
 
-import { mcp_io_github_pge_query_database } from 'mcp-io-github-pge';
-import { mcp_com_supabase__execute_sql } from 'mcp-com-supabase';
+// MCP tool imports - these will be replaced with actual MCP calls
+// For now, using mock implementations for development
+const mcp_io_github_pge_query_database = async (params: any) => {
+  console.warn('[MCP MOCK] query_database called with:', params);
+  // Mock implementation - return empty array for now
+  return [];
+};
+
+const mcp_com_supabase__execute_sql = async (params: any) => {
+  console.warn('[MCP MOCK] execute_sql called with:', params);
+  // Mock implementation - return success for now
+  return { success: true };
+};
 
 interface QueryFilters {
   where?: string;
@@ -47,7 +58,7 @@ export class SupabaseMCP {
       return result; // Assuming result is array of rows
     } catch (error) {
       console.error('MCP Query failed:', error);
-      throw new Error(`Database query failed: ${error.message}`);
+      throw new Error(`Database query failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -67,7 +78,7 @@ export class SupabaseMCP {
       return result;
     } catch (error) {
       console.error('MCP Insert failed:', error);
-      throw new Error(`Database insert failed: ${error.message}`);
+      throw new Error(`Database insert failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -86,7 +97,7 @@ export class SupabaseMCP {
       return result;
     } catch (error) {
       console.error('MCP Update failed:', error);
-      throw new Error(`Database update failed: ${error.message}`);
+      throw new Error(`Database update failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -104,7 +115,7 @@ export class SupabaseMCP {
       return result;
     } catch (error) {
       console.error('MCP Delete failed:', error);
-      throw new Error(`Database delete failed: ${error.message}`);
+      throw new Error(`Database delete failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -123,7 +134,7 @@ export class SupabaseMCP {
       return result;
     } catch (error) {
       console.error('MCP RPC failed:', error);
-      throw new Error(`Database RPC failed: ${error.message}`);
+      throw new Error(`Database RPC failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

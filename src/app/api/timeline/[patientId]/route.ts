@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
 import { getRepositories } from '@/lib/server/repositories';
 
-export async function GET(request: Request, { params }: { params: { patientId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ patientId: string }> }) {
   try {
     const user = await getAuthenticatedUser(request);
-    const patientId = params.patientId;
+    const { patientId } = await params;
     const repos = getRepositories();
     const patient = await repos.patients.getPatient(patientId);
     if (!patient) {

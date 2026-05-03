@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import { triggerUiAction } from "@/lib/apiClient";
+import type { Appointment } from "@/lib/server/repositories";
 
 function getAge(dateOfBirth?: string) {
   if (!dateOfBirth) return null;
@@ -25,9 +26,9 @@ export function DoctorDashboardView() {
   const patientRows = useMemo(
     () =>
       summary.patients.map((patient) => {
-        const relatedAppointments = summary.appointments.filter((appointment) => appointment.patientId === patient.id);
-        const latestAppointment = relatedAppointments.slice().sort((a, b) => b.startTime.localeCompare(a.startTime))[0];
-        const scheduled = relatedAppointments.some((appointment) => appointment.status === "scheduled");
+        const relatedAppointments = summary.appointments.filter((appointment: Appointment) => appointment.patientId === patient.id);
+        const latestAppointment = relatedAppointments.slice().sort((a: Appointment, b: Appointment) => b.startTime.localeCompare(a.startTime))[0];
+        const scheduled = relatedAppointments.some((appointment: Appointment) => appointment.status === "scheduled");
 
         return {
           patient,
@@ -210,7 +211,7 @@ export function DoctorDashboardView() {
                 <CalendarDays className="h-5 w-5 text-sahara-muted" />
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
-                {summary.appointments.slice(0, 3).map((appointment) => {
+                {summary.appointments.slice(0, 3).map((appointment: Appointment) => {
                   const patient = summary.patients.find((entry) => entry.id === appointment.patientId);
                   return (
                     <div key={appointment.id}>

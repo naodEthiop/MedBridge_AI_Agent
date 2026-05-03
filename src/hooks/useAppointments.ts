@@ -5,7 +5,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { invalidateQueryGroup } from "@/hooks/invalidateQueryGroup";
 import { useRealtime } from "@/hooks/useRealtime";
 import { listAppointments } from "@/lib/apiClient";
-import { useRealtime } from "@/hooks/useRealtime";
 
 export function useAppointments() {
   const queryClient = useQueryClient();

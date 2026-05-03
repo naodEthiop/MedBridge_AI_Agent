@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useDoctors } from "@/hooks/useDoctors";
 import { triggerUiAction } from "@/lib/apiClient";
+import type { Appointment } from "@/lib/server/repositories";
 
 export default function PatientAppointmentsPage() {
   const appts = useAppointments();
@@ -24,9 +25,9 @@ export default function PatientAppointmentsPage() {
   const doctorMap = new Map((doctors.data ?? []).map((d) => [d.id, d]));
 
   const scheduled = (appts.data ?? [])
-    .filter((a) => a.status === "scheduled")
+    .filter((a: Appointment) => a.status === "scheduled")
     .slice()
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+    .sort((a: Appointment, b: Appointment) => a.startTime.localeCompare(b.startTime));
 
 
   const handleBook = async () => {
@@ -69,7 +70,7 @@ export default function PatientAppointmentsPage() {
               <p className="text-sm text-sahara-muted">No upcoming appointments. Request one above or contact your clinic.</p>
             ) : (
               <ul className="space-y-3">
-                {scheduled.map((a) => {
+                {scheduled.map((a: Appointment) => {
                   const doc = doctorMap.get(a.doctorId);
                   return (
                     <li key={a.id} className="rounded-2xl border border-sahara-border/60 bg-sahara-surface-low/60 p-4">

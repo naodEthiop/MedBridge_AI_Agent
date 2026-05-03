@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         details: matched
           ? {
               doctorId: matched.id,
-              specialty: matched.specialty,
+              specialty: matched.specialization,
               clinic: matched.clinicName ?? body.clinic ?? null,
               note: 'Provider matched existing doctor records.',
             }

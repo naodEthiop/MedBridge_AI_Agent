@@ -19,7 +19,6 @@ export async function POST(request: Request) {
 
   const medix = await runHealthAssistant({
     message: `${symptom}. ${followUpAnswer}`,
-    skipTriage: true,
   });
 
   const summary = medix.urgency === "urgent" ? `⚠️ URGENT: ${medix.message}` : medix.message;

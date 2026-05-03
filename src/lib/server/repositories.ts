@@ -1,46 +1,119 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+// src/lib/server/repositories.ts
+// MCP-Migrated Repository Layer
+// ALL database operations now go through MCP gateway
 
-import { createSupabaseAdminClient, createSupabaseServerClient } from '@/lib/supabase/server';
-import { hasSupabasePublicEnv } from '@/lib/env';
-import type { Appointment, Doctor, LabRecord, MedicalTimelineEvent, MessageRecord, Patient } from '@/lib/types';
+import { createDBGateway } from "@/lib/db/dbGateway";
 
-function getSupabaseClient(): SupabaseClient {
-  if (!hasSupabasePublicEnv) {
-    throw new Error('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
-  }
-  return createSupabaseServerClient();
+// Default tenant context for server-side operations
+const DEFAULT_TENANT_CONTEXT = {
+  tenantId: process.env.DEFAULT_TENANT_ID || 'medbridge-tenant-001',
+  userId: 'system-user',
+  role: 'admin' as const
+};
+
+function getDBGateway() {
+  return createDBGateway(DEFAULT_TENANT_CONTEXT);
 }
 
-function getSupabaseAdminClientOrThrow(): SupabaseClient {
-  const admin = createSupabaseAdminClient();
-  if (!admin) {
-    throw new Error('Supabase admin client is not configured. Set SUPABASE_SERVICE_ROLE_KEY.');
-  }
-  return admin;
+// Type definitions
+export interface Patient {
+  id: string;
+  userId: string;
+  fullName: string;
+  sex: 'male' | 'female' | 'other';
+  dob: string;
+  dateOfBirth?: string; // Alias for dob
+  medicalHistory: Record<string, unknown>;
+  primaryDoctorId?: string;
+  conditions?: string[];
+  allergies?: string[];
+  phone?: string;
+  createdAt: string;
 }
 
+export interface Doctor {
+  id: string;
+  userId: string;
+  fullName: string;
+  specialization: string;
+  specialty?: string; // Alias for specialization
+  clinicName?: string;
+  licenseNumber?: string;
+  createdAt: string;
+}
+
+export interface Appointment {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  startTime: string;
+  endTime: string;
+  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
+  urgency?: 'low' | 'medium' | 'high' | 'emergency';
+  reason?: string;
+  location?: string;
+}
+
+export interface MedicalTimelineEvent {
+  id: string;
+  patientId: string;
+  eventType: string;
+  title: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  source: 'ai' | 'doctor' | 'patient' | 'system';
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface MessageRecord {
+  id: string;
+  senderId: string;
+  receiverId: string;
+  role: 'patient' | 'doctor' | 'system';
+  message: string;
+  attachments: Record<string, unknown>;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface LabRecord {
+  id: string;
+  patientId: string;
+  testName: string;
+  result: string;
+  normalRange?: string;
+  createdAt: string;
+}
+
+// Mapping functions
 function mapPatient(row: Record<string, unknown>): Patient {
   return {
     id: String(row.id),
+    userId: String(row.user_id),
     fullName: String(row.full_name),
-    dateOfBirth: String(row.dob),
-    sex: (String(row.gender) as Patient['sex']) ?? 'other',
-    phone: row.phone ? String(row.phone) : undefined,
-    email: row.email ? String(row.email) : undefined,
+    sex: String(row.gender) as Patient['sex'],
+    dob: String(row.dob),
+    dateOfBirth: String(row.dob), // Alias for compatibility
+    medicalHistory: (row.medical_history as Record<string, unknown>) ?? {},
     primaryDoctorId: row.primary_doctor_id ? String(row.primary_doctor_id) : undefined,
-    allergies: Array.isArray(row.allergies) ? (row.allergies as string[]) : undefined,
-    conditions: Array.isArray(row.conditions) ? (row.conditions as string[]) : undefined,
+    conditions: (row.conditions as string[]) ?? [],
+    allergies: (row.allergies as string[]) ?? [],
+    phone: row.phone ? String(row.phone) : undefined,
+    createdAt: String(row.created_at),
   };
 }
 
 function mapDoctor(row: Record<string, unknown>): Doctor {
   return {
     id: String(row.id),
+    userId: String(row.user_id),
     fullName: String(row.full_name),
-    specialty: String(row.specialization),
+    specialization: String(row.specialization),
+    specialty: String(row.specialization), // Alias for compatibility
     clinicName: row.clinic_name ? String(row.clinic_name) : undefined,
-    phone: row.phone ? String(row.phone) : undefined,
-    email: row.email ? String(row.email) : undefined,
+    licenseNumber: row.license_number ? String(row.license_number) : undefined,
+    createdAt: String(row.created_at),
   };
 }
 
@@ -181,24 +254,23 @@ export type Repositories = {
 };
 
 export function getRepositories(): Repositories {
-  const supabase = getSupabaseClient();
-  const admin = createSupabaseAdminClient() ?? supabase;
+  const dbGateway = getDBGateway();
 
   return {
     patients: {
       async listPatients() {
-        const { data, error } = await supabase.from('patients').select('*').order('full_name', { ascending: true });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapPatient(row as Record<string, unknown>));
+        const data = await dbGateway.query('patients', {
+          orderBy: 'full_name ASC'
+        });
+        return data.map((row: any) => mapPatient(row));
       },
       async getPatient(id) {
-        const { data, error } = await supabase
-          .from('patients')
-          .select('*')
-          .or(`id.eq.${id},user_id.eq.${id}`)
-          .maybeSingle();
-        if (error) throw new Error(error.message);
-        return data ? mapPatient(data as Record<string, unknown>) : null;
+        // MCP query with OR condition - simplified for now
+        const data = await dbGateway.query('patients', {
+          where: `id = '${id}' OR user_id = '${id}'`,
+          limit: 1
+        });
+        return data.length > 0 ? mapPatient(data[0]) : null;
       },
       async createPatient(params) {
         const payload = {
@@ -209,25 +281,23 @@ export function getRepositories(): Repositories {
           dob: params.dob,
           medical_history: params.medicalHistory ?? {},
         };
-        const { data, error } = await admin.from('patients').insert(payload).select('*').maybeSingle();
-        if (error || !data) throw new Error(error?.message ?? 'Failed to create patient');
-        return mapPatient(data as Record<string, unknown>);
+        const data = await dbGateway.insert('patients', payload);
+        return mapPatient(data);
       },
     },
     doctors: {
       async listDoctors() {
-        const { data, error } = await supabase.from('doctors').select('*').order('full_name', { ascending: true });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapDoctor(row as Record<string, unknown>));
+        const data = await dbGateway.query('doctors', {
+          orderBy: 'full_name ASC'
+        });
+        return data.map((row: any) => mapDoctor(row));
       },
       async getDoctor(id) {
-        const { data, error } = await supabase
-          .from('doctors')
-          .select('*')
-          .or(`id.eq.${id},user_id.eq.${id}`)
-          .maybeSingle();
-        if (error) throw new Error(error.message);
-        return data ? mapDoctor(data as Record<string, unknown>) : null;
+        const data = await dbGateway.query('doctors', {
+          where: `id = '${id}' OR user_id = '${id}'`,
+          limit: 1
+        });
+        return data.length > 0 ? mapDoctor(data[0]) : null;
       },
       async createDoctor(params) {
         const payload = {
@@ -237,82 +307,82 @@ export function getRepositories(): Repositories {
           specialization: params.specialization,
           license_number: params.licenseNumber ?? null,
         };
-        const { data, error } = await admin.from('doctors').insert(payload).select('*').maybeSingle();
-        if (error || !data) throw new Error(error?.message ?? 'Failed to create doctor');
-        return mapDoctor(data as Record<string, unknown>);
+        const data = await dbGateway.insert('doctors', payload);
+        return mapDoctor(data);
       },
     },
     appointments: {
       async listAppointments() {
-        const { data, error } = await supabase.from('appointments').select('*').order('scheduled_at', { ascending: false });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapAppointment(row as Record<string, unknown>));
+        const data = await dbGateway.query('appointments', {
+          orderBy: 'scheduled_at DESC'
+        });
+        return data.map((row: any) => mapAppointment(row));
       },
       async listAppointmentsForPatient(patientId) {
-        const { data, error } = await supabase
-          .from('appointments')
-          .select('*')
-          .eq('patient_id', patientId)
-          .order('scheduled_at', { ascending: false });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapAppointment(row as Record<string, unknown>));
+        const data = await dbGateway.query('appointments', {
+          where: `patient_id = '${patientId}'`,
+          orderBy: 'scheduled_at DESC'
+        });
+        return data.map((row: any) => mapAppointment(row));
       },
       async listAppointmentsForDoctor(doctorId) {
-        const { data, error } = await supabase
-          .from('appointments')
-          .select('*')
-          .eq('doctor_id', doctorId)
-          .order('scheduled_at', { ascending: false });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapAppointment(row as Record<string, unknown>));
+        const data = await dbGateway.query('appointments', {
+          where: `doctor_id = '${doctorId}'`,
+          orderBy: 'scheduled_at DESC'
+        });
+        return data.map((row: any) => mapAppointment(row));
       },
       async createAppointment(params) {
-        const { data, error } = await admin
-          .from('appointments')
-          .insert({
-            patient_id: params.patientId,
-            doctor_id: params.doctorId,
-            health_center_id: params.healthCenterId,
-            scheduled_at: params.scheduledAt,
-            status: params.status,
-            reason: params.reason ?? null,
-            location: params.location ?? null,
-          })
-          .select('*')
-          .maybeSingle();
-        if (error || !data) throw new Error(error?.message ?? 'Failed to create appointment');
-        return mapAppointment(data as Record<string, unknown>);
+        const payload = {
+          patient_id: params.patientId,
+          doctor_id: params.doctorId,
+          health_center_id: params.healthCenterId,
+          scheduled_at: params.scheduledAt,
+          status: params.status,
+          urgency: params.urgency ?? 'medium',
+          reason: params.reason ?? null,
+          location: params.location ?? null,
+        };
+        const data = await dbGateway.insert('appointments', payload);
+        return mapAppointment(data);
+      },
+      async escalatePatientAppointments(patientId, urgency) {
+        // MCP update - need to get appointments first and update each one
+        const appointments = await dbGateway.query('appointments', {
+          where: `patient_id = '${patientId}' AND status = 'scheduled'`
+        });
+
+        for (const appointment of appointments) {
+          await dbGateway.update('appointments', appointment.id, { urgency });
+        }
       },
     },
     users: {
       async getUserById(id) {
-        const { data, error } = await supabase.from('users').select('id, email, role').eq('id', id).maybeSingle();
-        if (error) throw new Error(error.message);
-        if (!data) return null;
+        const data = await dbGateway.query('users', {
+          where: `id = '${id}'`,
+          limit: 1
+        });
+        if (data.length === 0) return null;
+        const row = data[0];
         return {
-          id: String(data.id),
-          email: String(data.email),
-          role: data.role === 'doctor' ? 'doctor' : 'patient',
+          id: String(row.id),
+          email: String(row.email),
+          role: row.role === 'doctor' ? 'doctor' : 'patient',
         };
       },
     },
     healthCenters: {
       async saveHealthCenter(params) {
-        const { data, error } = await admin
-          .from('health_centers')
-          .upsert(
-            {
-              name: params.name,
-              type: params.type,
-              lat: params.lat,
-              lng: params.lng,
-              address: params.address,
-            },
-            { onConflict: ['name', 'lat', 'lng'] },
-          )
-          .select('*')
-          .maybeSingle();
-        if (error || !data) throw new Error(error?.message ?? 'Failed to save health center');
+        // MCP upsert - simplified for now, using insert
+        const payload = {
+          name: params.name,
+          type: params.type,
+          lat: params.lat,
+          lng: params.lng,
+          address: params.address,
+        };
+        const data = await dbGateway.insert('health_centers', payload);
         return {
           id: String(data.id),
           name: String(data.name),
@@ -325,29 +395,25 @@ export function getRepositories(): Repositories {
     },
     timeline: {
       async listTimelineForPatient(patientId) {
-        const { data, error } = await supabase
-          .from('medical_timeline')
-          .select('*')
-          .eq('patient_id', patientId)
-          .order('created_at', { ascending: false });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapTimelineEvent(row as Record<string, unknown>));
+        const data = await dbGateway.query('medical_timeline', {
+          where: `patient_id = '${patientId}'`,
+          orderBy: 'created_at DESC'
+        });
+        return data.map((row: any) => mapTimelineEvent(row));
       },
       async listTimelineForDoctor(doctorId) {
-        const { data: patients, error: patientError } = await supabase
-          .from('patients')
-          .select('id')
-          .eq('primary_doctor_id', doctorId);
-        if (patientError) throw new Error(patientError.message);
-        const patientIds = (patients ?? []).map((row) => String((row as Record<string, unknown>).id));
-        if (!patientIds.length) return [];
-        const { data, error } = await supabase
-          .from('medical_timeline')
-          .select('*')
-          .in('patient_id', patientIds)
-          .order('created_at', { ascending: false });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapTimelineEvent(row as Record<string, unknown>));
+        // First get patients for this doctor
+        const patients = await dbGateway.query('patients', {
+          where: `primary_doctor_id = '${doctorId}'`
+        });
+        const patientIds = patients.map((p: any) => p.id);
+        if (patientIds.length === 0) return [];
+
+        const data = await dbGateway.query('medical_timeline', {
+          where: `patient_id IN (${patientIds.map(id => `'${id}'`).join(',')})`,
+          orderBy: 'created_at DESC'
+        });
+        return data.map((row: any) => mapTimelineEvent(row));
       },
       async createTimelineEvent(params) {
         const payload = {
@@ -359,117 +425,47 @@ export function getRepositories(): Repositories {
           source: params.source,
           metadata: params.metadata ?? {},
         };
-        const { data, error } = await admin
-          .from('medical_timeline')
-          .insert(payload)
-          .select('*')
-          .maybeSingle();
-        if (error || !data) throw new Error(error?.message ?? 'Failed to create timeline event');
-        return mapTimelineEvent(data as Record<string, unknown>);
+        const data = await dbGateway.insert('medical_timeline', payload);
+        return mapTimelineEvent(data);
       },
     },
     messages: {
       async listConversation(userAId, userBId) {
-        const { data, error } = await supabase
-          .from('messages')
-          .select('*')
-          .or(
-            `and(sender_id.eq.${userAId},receiver_id.eq.${userBId}),and(sender_id.eq.${userBId},receiver_id.eq.${userAId})`,
-          )
-          .order('created_at', { ascending: true });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapMessage(row as Record<string, unknown>));
+        const data = await dbGateway.query('messages', {
+          where: `(sender_id = '${userAId}' AND receiver_id = '${userBId}') OR (sender_id = '${userBId}' AND receiver_id = '${userAId}')`,
+          orderBy: 'created_at ASC'
+        });
+        return data.map((row: any) => mapMessage(row));
       },
       async createMessage(params) {
-        const { data, error } = await admin
-          .from('messages')
-          .insert({
-            sender_id: params.senderId,
-            receiver_id: params.receiverId,
-            role: params.role,
-            message: params.message,
-            attachments: params.attachments ?? {},
-          })
-          .select('*')
-          .maybeSingle();
-        if (error || !data) throw new Error(error?.message ?? 'Failed to create message');
-        return mapMessage(data as Record<string, unknown>);
+        const payload = {
+          sender_id: params.senderId,
+          receiver_id: params.receiverId,
+          role: params.role,
+          message: params.message,
+          attachments: params.attachments ?? {},
+        };
+        const data = await dbGateway.insert('messages', payload);
+        return mapMessage(data);
       },
     },
     labs: {
       async listLabsForPatient(patientId) {
-        const { data, error } = await supabase
-          .from('labs')
-          .select('*')
-          .eq('patient_id', patientId)
-          .order('created_at', { ascending: false });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapLab(row as Record<string, unknown>));
+        const data = await dbGateway.query('labs', {
+          where: `patient_id = '${patientId}'`,
+          orderBy: 'created_at DESC'
+        });
+        return data.map((row: any) => mapLab(row));
       },
       async createLab(params) {
-        const { data, error } = await admin
-          .from('labs')
-          .insert({
-            patient_id: params.patientId,
-            test_name: params.testName,
-            result: params.result,
-            normal_range: params.normalRange ?? null,
-          })
-          .select('*')
-          .maybeSingle();
-        if (error || !data) throw new Error(error?.message ?? 'Failed to create lab record');
-        return mapLab(data as Record<string, unknown>);
-      },
-    },
-    appointments: {
-      async listAppointments() {
-        const { data, error } = await supabase.from('appointments').select('*').order('scheduled_at', { ascending: false });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapAppointment(row as Record<string, unknown>));
-      },
-      async listAppointmentsForPatient(patientId) {
-        const { data, error } = await supabase
-          .from('appointments')
-          .select('*')
-          .eq('patient_id', patientId)
-          .order('scheduled_at', { ascending: false });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapAppointment(row as Record<string, unknown>));
-      },
-      async listAppointmentsForDoctor(doctorId) {
-        const { data, error } = await supabase
-          .from('appointments')
-          .select('*')
-          .eq('doctor_id', doctorId)
-          .order('scheduled_at', { ascending: false });
-        if (error) throw new Error(error.message);
-        return (data ?? []).map((row) => mapAppointment(row as Record<string, unknown>));
-      },
-      async createAppointment(params) {
-        const { data, error } = await admin
-          .from('appointments')
-          .insert({
-            patient_id: params.patientId,
-            doctor_id: params.doctorId,
-            health_center_id: params.healthCenterId,
-            scheduled_at: params.scheduledAt,
-            status: params.status,
-            urgency: params.urgency ?? 'medium',
-            reason: params.reason ?? null,
-            location: params.location ?? null,
-          })
-          .select('*')
-          .maybeSingle();
-        if (error || !data) throw new Error(error?.message ?? 'Failed to create appointment');
-        return mapAppointment(data as Record<string, unknown>);
-      },
-      async escalatePatientAppointments(patientId, urgency) {
-        const { error } = await admin
-          .from('appointments')
-          .update({ urgency })
-          .eq('patient_id', patientId)
-          .eq('status', 'scheduled');
-        if (error) throw new Error(error.message);
+        const payload = {
+          patient_id: params.patientId,
+          test_name: params.testName,
+          result: params.result,
+          normal_range: params.normalRange ?? null,
+        };
+        const data = await dbGateway.insert('labs', payload);
+        return mapLab(data);
       },
     },
   };

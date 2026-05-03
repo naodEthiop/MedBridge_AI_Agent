@@ -57,7 +57,7 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
 
   return {
     id: data.user.id,
-    email: data.user.email,
+    email: data.user.email ?? null,
     role: data.user.user_metadata?.role === 'doctor' ? 'doctor' : 'patient',
   };
 }

@@ -114,7 +114,7 @@ export class MCPSchemaValidator {
       });
     } catch (error) {
       result.valid = false;
-      result.warnings.push(`Failed to verify table '${table}' exists in database: ${error.message}`);
+      result.warnings.push(`Failed to verify table '${table}' exists in database: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     return result;
@@ -207,7 +207,7 @@ export class MCPSchemaValidator {
             result.warnings.push(`Foreign key violation: ${fkColumn}='${fkValue}' does not exist in ${relTable}`);
           }
         } catch (error) {
-          result.warnings.push(`Failed to validate relationship ${table}.${fkColumn} -> ${relTable}: ${error.message}`);
+          result.warnings.push(`Failed to validate relationship ${table}.${fkColumn} -> ${relTable}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
     }

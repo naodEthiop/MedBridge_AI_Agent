@@ -27,7 +27,7 @@ export type Appointment = {
   doctorId: ID;
   startTime: string; // ISO datetime
   endTime: string; // ISO datetime
-  status: "scheduled" | "completed" | "cancelled";
+  status: "scheduled" | "confirmed" | "completed" | "cancelled";
   urgency?: "low" | "medium" | "high" | "emergency";
   reason?: string;
   location?: string;
