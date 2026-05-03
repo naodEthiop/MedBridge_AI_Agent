@@ -7,6 +7,9 @@ import { generateDoctorCopilotReport } from '@/lib/ai/aiService';
 
 export async function POST(request: Request) {
   try {
+    // DOCTOR COPILOT FLOW:
+    // API route -> aiService.generateDoctorCopilotReport -> repositories.timeline.createTimelineEvent
+    // -> emitEvent("doctor:note_added") -> response.
     const user = await getAuthenticatedUser(request);
     if (user.role !== 'doctor') {
       return NextResponse.json({ ok: false, error: 'Only doctors may access the copilot report' }, { status: 403 });
@@ -69,7 +72,7 @@ export async function POST(request: Request) {
       createdAt: new Date().toISOString(),
     });
 
-    return NextResponse.json({ ok: true, report });
+    return NextResponse.json({ ok: true, data: { report } });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 401 });

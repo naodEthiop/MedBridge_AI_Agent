@@ -22,7 +22,7 @@ export async function GET(request: Request, { params }: { params: { patientId: s
     }
 
     const timeline = await repos.timeline.listTimelineForPatient(patient.id);
-    return NextResponse.json({ ok: true, timeline });
+    return NextResponse.json({ ok: true, data: { timeline } });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 401 });
