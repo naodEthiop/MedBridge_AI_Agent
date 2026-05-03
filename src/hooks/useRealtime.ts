@@ -1,0 +1,39 @@
+"use client";
+
+import { useEffect, useMemo, useRef } from "react";
+
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+
+type RealtimeHandlers = Record<string, (payload: Record<string, unknown>) => void>;
+
+export function useRealtime(channelName: string, handlers: RealtimeHandlers, onReconnect?: () => void) {
+  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+  const handlersRef = useRef(handlers);
+  const reconnectRef = useRef(onReconnect);
+
+  useEffect(() => {
+    handlersRef.current = handlers;
+    reconnectRef.current = onReconnect;
+  }, [handlers, onReconnect]);
+
+  useEffect(() => {
+    const channel = supabase.channel(channelName, { config: { broadcast: { self: false, ack: false } } });
+
+    channel.on("broadcast", { event: "*" }, ({ event, payload }) => {
+      const callback = handlersRef.current[event];
+      if (callback && payload && typeof payload === "object") {
+        callback(payload as Record<string, unknown>);
+      }
+    });
+
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        reconnectRef.current?.();
+      }
+    });
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [channelName, supabase]);
+}

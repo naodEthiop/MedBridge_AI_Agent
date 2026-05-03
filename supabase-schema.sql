@@ -140,3 +140,9 @@ create index if not exists idx_messages_created_at on public.messages (created_a
 create index if not exists idx_messages_read on public.messages (read);
 
 alter table public.appointments add column if not exists urgency text not null default 'medium' check (urgency in ('low', 'medium', 'high', 'emergency'));
+
+-- Phase 3.6 realtime replication enablement
+ALTER PUBLICATION supabase_realtime ADD TABLE appointments;
+ALTER PUBLICATION supabase_realtime ADD TABLE chat_history;
+ALTER PUBLICATION supabase_realtime ADD TABLE medical_reports;
+ALTER PUBLICATION supabase_realtime ADD TABLE labs;
