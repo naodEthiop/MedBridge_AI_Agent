@@ -43,6 +43,7 @@ export async function POST(request: Request) {
     const patientProfile = `Patient: ${patient.fullName}; DOB: ${patient.dateOfBirth}; sex: ${patient.sex}; conditions: ${patient.conditions?.join(', ') || 'none'}; allergies: ${patient.allergies?.join(', ') || 'none'}; contact: ${patient.phone ?? 'unknown'}`;
 
     const report = await generateDoctorCopilotReport({
+      patientId: patient.id,
       patientProfile,
       timelineSummary: timelineSummary || 'No timeline available.',
       labsSummary: labsSummary || 'No lab history available.',

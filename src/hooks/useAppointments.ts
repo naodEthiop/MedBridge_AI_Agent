@@ -2,20 +2,18 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { invalidateQueryGroup } from "@/hooks/invalidateQueryGroup";
+import { useRealtime } from "@/hooks/useRealtime";
 import { listAppointments } from "@/lib/apiClient";
 import { useRealtime } from "@/hooks/useRealtime";
 
 export function useAppointments() {
   const queryClient = useQueryClient();
 
-  useRealtime(
-    "realtime:global",
-    {
-      "appointment:created": () => void queryClient.invalidateQueries({ queryKey: ["appointments"] }),
-      "patient:risk_updated": () => void queryClient.invalidateQueries({ queryKey: ["appointments"] }),
-    },
-    () => void queryClient.invalidateQueries({ queryKey: ["appointments"] }),
-  );
+  useRealtime("realtime:global", {
+    "appointment:created": () => invalidateQueryGroup(queryClient, "appointment:created"),
+    "patient:risk_updated": () => invalidateQueryGroup(queryClient, "patient:risk_updated"),
+  });
 
   return useQuery({
     queryKey: ["appointments"],

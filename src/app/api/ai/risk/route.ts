@@ -62,6 +62,7 @@ export async function POST(request: Request) {
         .join(' \n');
 
     const prediction = await runRiskPrediction({
+      patientId: patient.id,
       demographics,
       symptomsHistory: symptomsHistory || 'No recent symptom history available.',
       timelineSummary: timelineSummary || 'No timeline history available.',

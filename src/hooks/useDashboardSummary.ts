@@ -2,6 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 
+import { invalidateQueryGroup } from "@/hooks/invalidateQueryGroup";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useDoctors } from "@/hooks/useDoctors";
 import { usePatients } from "@/hooks/usePatients";
@@ -9,22 +10,11 @@ import { useRealtime } from "@/hooks/useRealtime";
 
 export function useDashboardSummary() {
   const queryClient = useQueryClient();
-  useRealtime(
-    "realtime:global",
-    {
-      "appointment:created": () => void queryClient.invalidateQueries({ queryKey: ["appointments"] }),
-      "doctor:note_added": () => void queryClient.invalidateQueries({ queryKey: ["patients"] }),
-      "ai:analysis_completed": () => {
-        void queryClient.invalidateQueries({ queryKey: ["patients"] });
-        void queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      },
-    },
-    () => {
-      void queryClient.invalidateQueries({ queryKey: ["patients"] });
-      void queryClient.invalidateQueries({ queryKey: ["doctors"] });
-      void queryClient.invalidateQueries({ queryKey: ["appointments"] });
-    },
-  );
+  useRealtime("realtime:global", {
+    "appointment:created": () => invalidateQueryGroup(queryClient, "appointment:created"),
+    "doctor:note_added": () => invalidateQueryGroup(queryClient, "doctor:note_added"),
+    "ai:analysis_completed": () => invalidateQueryGroup(queryClient, "ai:analysis_completed"),
+  });
 
   const patients = usePatients();
   const doctors = useDoctors();

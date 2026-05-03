@@ -31,6 +31,7 @@ export async function POST(req: Request) {
         : undefined,
       bodyPart: typeof body.bodyPart === "string" ? body.bodyPart : body.bodyPart === null ? null : undefined,
       transcript: typeof body.transcript === "string" ? body.transcript : undefined,
+      patientId: body.patientId ?? user.id,
     });
 
     const repos = getRepositories();
