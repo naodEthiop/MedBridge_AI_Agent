@@ -112,32 +112,17 @@ export default function CareFinderPage() {
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-sahara-border/40 bg-white p-6">
-                <NearbyMedicalMap />
+              <div className="rounded-2xl border border-sahara-border/40 bg-white p-4">
+                <p className="mb-3 text-xs text-sahara-muted">
+                  Use the interactive map on the right for live markers, search, and directions.
+                </p>
               </div>
             )}
           </div>
 
-          {/* Right Panel */}
-          <div className="relative min-h-[680px] overflow-hidden rounded-[2rem] border border-sahara-border/40 bg-sahara-surface-low lg:col-span-7">
-            <img
-              alt="Map"
-              className="h-full w-full object-cover opacity-55 mix-blend-multiply"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGxy1q3GH5LtnliO4_Inpr0p2k_MmsYMpENLpyyF1Dax_pPniW5G2KJ9E4iXU4123JIi6Mx2R9QS0C6xLEHyCNVBqKa2i6dCup3wwQSU8RHEM1m9kdVukdl-ear6DPJQqYU1892hkssDEjkZoLwOz0jne2p2ew7dE2E1S6-g1wTdBCCTg2p2cadzSTWIODbd4JblGKZw3M-yJCaaXraYExDHNzFA2zEUGyRTWEzSpP9Yn7ye2FnlHsyUgJkv-r4gPtDTPRd74MTg4"
-            />
-            <div className="absolute bottom-8 left-8 right-8 rounded-3xl border border-white/20 bg-white/90 p-6 shadow-2xl backdrop-blur-md">
-              <h5 className="font-serif text-xl">
-                St. Mary&apos;s General Hospital
-              </h5>
-              <p className="text-sm text-sahara-muted">
-                1200 Health Pkwy, Phoenix, AZ
-              </p>
-              <p className="mt-2 text-sm font-bold text-sahara-primary">
-                {view === "map"
-                  ? "Map interface active"
-                  : "Travel time: 6 mins"}
-              </p>
-            </div>
+          {/* Right Panel — always show interactive map */}
+          <div className="min-h-[560px] lg:col-span-7">
+            <NearbyMedicalMap />
           </div>
         </section>
 

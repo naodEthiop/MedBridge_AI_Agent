@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
+  Eye,
+  EyeOff,
   HeartPulse,
   Lock,
   Mail,
@@ -12,7 +14,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { FormEvent, Suspense, useEffect, useState } from "react";
+import { FormEvent, Suspense, startTransition, useEffect, useState } from "react";
 
 type Role = "patient" | "doctor";
 type AuthTab = "login" | "signup";
@@ -50,7 +52,10 @@ function LoginPageContent() {
 
   const [authTab, setAuthTab] = useState<AuthTab>("login");
   const [role, setRole] = useState<Role>("patient");
+  const [loginAsRole, setLoginAsRole] = useState<Role>("patient");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -73,15 +78,24 @@ function LoginPageContent() {
   const [modal, setModal] = useState<ModalKind>(null);
 
   useEffect(() => {
-    if (searchParams.get("google") === "unavailable") {
-      setError(
-        "Google sign-in needs Supabase: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then enable the Google provider in Supabase Auth. You can still use email and password.",
-      );
-    } else if (searchParams.get("error") === "oauth") {
-      setError("Google sign-in was cancelled or could not complete. Please try again.");
-    } else if (searchParams.get("error") === "sync") {
-      setError("Google sign-in worked, but syncing your MedBridge session failed. Try again or use email login.");
-    }
+    const tab = searchParams.get("tab");
+    const urlRole = searchParams.get("role");
+    queueMicrotask(() => {
+      if (tab === "signup") setAuthTab("signup");
+      if (urlRole === "doctor" || urlRole === "patient") {
+        setRole(urlRole);
+        setLoginAsRole(urlRole);
+      }
+      if (searchParams.get("google") === "unavailable") {
+        setError(
+          "Google sign-in needs Supabase: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then enable the Google provider in Supabase Auth. You can still use email and password.",
+        );
+      } else if (searchParams.get("error") === "oauth") {
+        setError("Google sign-in was cancelled or could not complete. Please try again.");
+      } else if (searchParams.get("error") === "sync") {
+        setError("Google sign-in worked, but syncing your MedBridge session failed. Try again or use email login.");
+      }
+    });
   }, [searchParams]);
 
   async function handleGoogleLogin() {
@@ -119,11 +133,19 @@ function LoginPageContent() {
   }
 
   function redirectForUser(r: Role) {
-    if (nextPath && nextPath.startsWith("/")) {
-      router.push(nextPath);
-      return;
-    }
-    router.push(r === "doctor" ? "/doctor/dashboard" : "/patient");
+    // Defer until after the App Router action queue is initialized (avoids
+    // "Router action dispatched before initialization" in Next.js 16 dev).
+    requestAnimationFrame(() => {
+      startTransition(() => {
+        let dest = r === "doctor" ? "/doctor/dashboard" : "/patient";
+        if (nextPath && nextPath.startsWith("/")) {
+          if (nextPath.startsWith("/doctor") && r === "doctor") dest = nextPath;
+          else if (nextPath.startsWith("/patient") && r === "patient") dest = nextPath;
+          else if (!nextPath.startsWith("/doctor") && !nextPath.startsWith("/patient")) dest = nextPath;
+        }
+        router.replace(dest);
+      });
+    });
   }
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
@@ -134,14 +156,16 @@ function LoginPageContent() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
+        credentials: "same-origin",
+        body: JSON.stringify({ email: email.trim(), password, role: loginAsRole }),
       });
       const data = (await res.json()) as { error?: string; user?: { role: Role } };
       if (!res.ok) {
         setError(data.error ?? "Sign-in failed.");
         return;
       }
-      if (data.user?.role) redirectForUser(data.user.role);
+      const resolvedRole = data.user?.role ?? loginAsRole;
+      redirectForUser(resolvedRole);
     } finally {
       setLoading(false);
     }
@@ -192,6 +216,7 @@ function LoginPageContent() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(body),
       });
       const data = (await res.json()) as { error?: string; user?: { role: Role } };
@@ -199,7 +224,8 @@ function LoginPageContent() {
         setError(data.error ?? "Registration failed.");
         return;
       }
-      if (data.user?.role) redirectForUser(data.user.role);
+      const resolvedRole = data.user?.role ?? role;
+      redirectForUser(resolvedRole);
     } finally {
       setLoading(false);
     }
@@ -283,6 +309,7 @@ function LoginPageContent() {
                 type="button"
                 onClick={() => {
                   setAuthTab("login");
+                  setLoginAsRole(role);
                   setError(null);
                 }}
                 className={`flex-1 pb-4 text-sm font-semibold tracking-wide transition-colors ${
@@ -315,6 +342,32 @@ function LoginPageContent() {
 
             {authTab === "login" ? (
               <>
+                <div className="mb-6">
+                  <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-sahara-muted">Sign in as</p>
+                  <div className="grid grid-cols-2 gap-2 rounded-xl border border-sahara-border/60 bg-sahara-surface-low p-1">
+                    <button
+                      type="button"
+                      onClick={() => setLoginAsRole("patient")}
+                      className={`rounded-lg py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+                        loginAsRole === "patient" ? "bg-white text-sahara-primary shadow-sm" : "text-sahara-muted hover:text-sahara-fg"
+                      }`}
+                    >
+                      Patient
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLoginAsRole("doctor")}
+                      className={`rounded-lg py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+                        loginAsRole === "doctor" ? "bg-white text-sahara-primary shadow-sm" : "text-sahara-muted hover:text-sahara-fg"
+                      }`}
+                    >
+                      Doctor
+                    </button>
+                  </div>
+                  <p className="mt-2 text-center text-xs text-sahara-muted">
+                    {loginAsRole === "doctor" ? "Clinical portal access" : "Patient portal access"}
+                  </p>
+                </div>
                 <form className="space-y-6" onSubmit={handleLogin}>
                   <div className="space-y-2">
                     <label className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Email Address</label>
@@ -341,14 +394,22 @@ function LoginPageContent() {
                     <div className="relative">
                       <Lock className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-sahara-muted/70" />
                       <input
-                        className="w-full rounded-xl border border-sahara-border/80 bg-white py-3 pl-12 pr-4 text-sahara-fg outline-none transition-all placeholder:text-sahara-muted/50 focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+                        className="w-full rounded-xl border border-sahara-border/80 bg-white py-3 pl-12 pr-12 text-sahara-fg outline-none transition-all placeholder:text-sahara-muted/50 focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
                         placeholder="••••••••"
-                        type="password"
+                        type={showLoginPassword ? "text" : "password"}
                         autoComplete="current-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
                       />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-sahara-muted hover:bg-sahara-surface-low hover:text-sahara-primary"
+                        aria-label={showLoginPassword ? "Hide password" : "Show password"}
+                        onClick={() => setShowLoginPassword((v) => !v)}
+                      >
+                        {showLoginPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
                     </div>
                   </div>
                   <button
@@ -596,17 +657,34 @@ function LoginPageContent() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="ml-1 block text-xs font-bold uppercase tracking-widest text-sahara-muted">Password</label>
+                  <div className="flex items-center justify-between px-1">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">Password</label>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-sahara-primary hover:underline"
+                      onClick={() => setShowSignupPassword((v) => !v)}
+                    >
+                      {showSignupPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
                   <div className="relative">
                     <Lock className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-sahara-muted/70" />
                     <input
-                      className="w-full rounded-xl border border-sahara-border/80 bg-white py-3 pl-12 pr-4 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
-                      type="password"
+                      className="w-full rounded-xl border border-sahara-border/80 bg-white py-3 pl-12 pr-12 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+                      type={showSignupPassword ? "text" : "password"}
                       autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                     />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-sahara-muted hover:bg-sahara-surface-low hover:text-sahara-primary"
+                      aria-label={showSignupPassword ? "Hide password" : "Show password"}
+                      onClick={() => setShowSignupPassword((v) => !v)}
+                    >
+                      {showSignupPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -615,7 +693,7 @@ function LoginPageContent() {
                     <Lock className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-sahara-muted/70" />
                     <input
                       className="w-full rounded-xl border border-sahara-border/80 bg-white py-3 pl-12 pr-4 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
-                      type="password"
+                      type={showSignupPassword ? "text" : "password"}
                       autoComplete="new-password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}

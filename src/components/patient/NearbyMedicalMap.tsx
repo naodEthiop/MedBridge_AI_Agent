@@ -33,7 +33,7 @@ export function NearbyMedicalMap() {
   const [location, setLocation] = useState<{ lat: number; lon: number }>(defaultLocation);
   const [locationMode, setLocationMode] = useState<"geo" | "default" | "search" | "denied">("default");
 
-  const [view, setView] = useState<"list" | "map">("list");
+  const [view, setView] = useState<"list" | "map">("map");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");

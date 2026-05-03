@@ -134,9 +134,10 @@ export async function triggerUiAction(action: string, payload?: Record<string, u
   const res = await fetch(url("/api/actions"), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
+    credentials: "same-origin",
     body: JSON.stringify({ action, payload: payload ?? {} }),
   });
   if (!res.ok) return { ok: false as const, error: await res.text(), status: res.status };
-  return { ok: true as const, data: await res.json() as { message?: string } };
+  return { ok: true as const, data: (await res.json()) as { message?: string; action?: string } };
 }
 

@@ -26,6 +26,16 @@ export function BodySelector(props: {
         <p className="text-xs text-sahara-muted">{props.value ? props.value : "Not selected"}</p>
       </div>
       <svg viewBox="0 0 100 120" className="mx-auto w-full max-w-[260px]">
+        <ellipse
+          cx="50"
+          cy="58"
+          rx="28"
+          ry="48"
+          fill="rgb(250 248 244)"
+          stroke="rgb(228 220 210)"
+          strokeWidth="1.5"
+          className="pointer-events-none"
+        />
         {regions
           .filter((r) => r.id !== "back")
           .map((r) => {

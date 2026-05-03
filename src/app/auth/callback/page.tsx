@@ -2,7 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, startTransition, useEffect, useState } from "react";
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -14,7 +14,9 @@ function AuthCallbackContent() {
     const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !anon) {
       setMessage("Supabase is not configured.");
-      router.replace("/login?google=unavailable");
+      requestAnimationFrame(() =>
+        startTransition(() => router.replace("/login?google=unavailable")),
+      );
       return;
     }
 
@@ -35,7 +37,7 @@ function AuthCallbackContent() {
 
       if (sessionError || !sessionData.session?.access_token) {
         setMessage("Could not complete Google sign-in.");
-        router.replace("/login?error=oauth");
+        requestAnimationFrame(() => startTransition(() => router.replace("/login?error=oauth")));
         return;
       }
 
@@ -46,16 +48,20 @@ function AuthCallbackContent() {
       const body = (await sync.json()) as { user?: { role: "patient" | "doctor" }; error?: string };
       if (!sync.ok) {
         setMessage(body.error ?? "Sync failed.");
-        router.replace("/login?error=sync");
+        requestAnimationFrame(() => startTransition(() => router.replace("/login?error=sync")));
         return;
       }
 
       const next = searchParams.get("next");
-      if (next && next.startsWith("/")) {
-        router.replace(next);
-        return;
-      }
-      router.replace(body.user?.role === "doctor" ? "/doctor/dashboard" : "/patient");
+      requestAnimationFrame(() => {
+        startTransition(() => {
+          if (next && next.startsWith("/")) {
+            router.replace(next);
+            return;
+          }
+          router.replace(body.user?.role === "doctor" ? "/doctor/dashboard" : "/patient");
+        });
+      });
     })();
 
     return () => {

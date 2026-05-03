@@ -19,6 +19,9 @@ const ACTION_MESSAGES: Record<string, string> = {
   doctor_settings_saved: "Settings saved successfully.",
   doctor_patients_refreshed: "Patient list refresh triggered.",
   doctor_add_patient: "Patient has been queued for registration.",
+  patient_appointments_refresh: "Appointment list refreshed from the server.",
+  patient_appointment_request: "Appointment request sent to your care team.",
+  patient_settings_saved: "Patient preferences saved.",
 };
 
 export async function POST(request: Request) {

@@ -14,6 +14,7 @@ import {
 const bodySchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
+  role: z.enum(["patient", "doctor"]).optional(),
 });
 
 export async function POST(request: Request) {
@@ -32,6 +33,15 @@ export async function POST(request: Request) {
     const pepper = getSessionSecret();
     if (row.passwordHash !== hashDemoPassword(parsed.data.password, pepper)) {
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
+    }
+
+    if (parsed.data.role && parsed.data.role !== row.role) {
+      return NextResponse.json(
+        {
+          error: `This account is registered as a ${row.role}. Use the "${row.role === "doctor" ? "Doctor" : "Patient"}" sign-in option or sign up with a different email.`,
+        },
+        { status: 403 },
+      );
     }
 
     const user: SessionUser =

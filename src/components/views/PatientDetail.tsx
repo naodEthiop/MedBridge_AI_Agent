@@ -64,15 +64,22 @@ export function PatientDetail(props: { id: string }) {
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ symptom: trimmed, followUpAnswer: "Doctor requested support from patient detail." }),
     });
-    const data = res.ok ? ((await res.json()) as { summary?: string; recommendation?: string; question?: string }) : null;
+    const raw = res.ok ? ((await res.json()) as Record<string, unknown>) : null;
+    const inner = raw?.result ?? raw?.payload ?? raw;
+    const d =
+      inner && typeof inner === "object" && !Array.isArray(inner) ? (inner as Record<string, unknown>) : raw;
+
+    const text = d
+      ? [d.summary, d.recommendation, d.question, d.message, d.guidance]
+          .filter((x) => typeof x === "string" && String(x).trim())
+          .join("\n\n")
+      : "";
 
     setMessages((current) => [
       ...current,
       {
         role: "assistant",
-        content: data
-          ? [data.summary, data.recommendation, data.question].filter(Boolean).join(" ")
-          : "I could not reach the assistant endpoint. Please try again.",
+        content: text || (res.ok ? "No summary returned. Try rephrasing your question." : "I could not reach the assistant endpoint. Please try again."),
       },
     ]);
 
@@ -212,6 +219,53 @@ export function PatientDetail(props: { id: string }) {
               </p>
             </div>
           </div>
+        </div>
+
+        <div className="rounded-xl border border-sahara-border/30 bg-white p-6 shadow-ambient">
+          <h3 className="mb-3 font-serif text-xl">Care assistant</h3>
+          <div className="mb-3 max-h-56 space-y-2 overflow-y-auto rounded-xl border border-sahara-border/50 bg-sahara-surface-low/50 p-3">
+            {messages.map((m, i) => (
+              <div key={`${m.role}-${i}`} className="rounded-lg bg-white p-2 text-xs shadow-sm">
+                <span className="font-bold uppercase text-sahara-muted">{m.role === "doctor" ? "You" : "AI"}</span>
+                <p className="mt-1 whitespace-pre-wrap text-sahara-fg">{m.content}</p>
+              </div>
+            ))}
+            {chatLoading ? <p className="text-center text-xs text-sahara-muted">Thinking…</p> : null}
+          </div>
+          <textarea
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            rows={3}
+            placeholder="Ask for medication review, labs, or follow-up…"
+            className="mb-2 w-full rounded-lg border border-sahara-border/60 bg-sahara-surface-low p-2 text-sm"
+          />
+          <button
+            type="button"
+            disabled={chatLoading || !chatInput.trim()}
+            onClick={handleSendChat}
+            className="w-full rounded-lg bg-sahara-primary py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            Send to assistant
+          </button>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={handleOrderLab}
+              className="rounded-lg border border-sahara-border py-2 text-xs font-bold uppercase tracking-wide text-sahara-fg disabled:opacity-50"
+            >
+              Order labs
+            </button>
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={handleAddPrescription}
+              className="rounded-lg border border-sahara-border py-2 text-xs font-bold uppercase tracking-wide text-sahara-fg disabled:opacity-50"
+            >
+              New Rx
+            </button>
+          </div>
+          {actionFeedback ? <p className="mt-3 text-xs text-sahara-muted">{actionFeedback}</p> : null}
         </div>
 
         <div className="rounded-xl border border-sahara-border/30 bg-white p-8 shadow-ambient">

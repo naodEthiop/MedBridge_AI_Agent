@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { format } from "date-fns";
 
 import { Badge } from "@/components/ui/Badge";
@@ -72,6 +73,14 @@ export function UpcomingAppointments() {
             })}
           </div>
         )}
+        <div className="mt-4 border-t border-sahara-border/50 pt-4">
+          <Link
+            href="/patient/appointments"
+            className="inline-flex w-full items-center justify-center rounded-xl bg-sahara-primary py-2.5 text-sm font-semibold text-white hover:bg-sahara-primary-2"
+          >
+            View all and schedule
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );

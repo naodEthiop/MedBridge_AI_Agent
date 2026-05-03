@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { differenceInYears, format } from "date-fns";
-import { AlertTriangle, Camera, HeartPulse, Pill, Sparkles } from "lucide-react";
+import { AlertTriangle, CalendarDays, Camera, HeartPulse, Pill, Settings, Sparkles } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
-import { PatientsPanel } from "@/components/views/PatientsPanel";
 import { UpcomingAppointments } from "@/components/views/UpcomingAppointments";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 
@@ -170,19 +169,35 @@ export default function PatientDashboardPage() {
 
         <div className="grid gap-6 lg:grid-cols-3">
           <UpcomingAppointments />
-          <PatientsPanel />
           <Card>
             <CardContent className="p-7">
-              <HeartPulse className="size-8 text-sahara-primary" />
-              <h3 className="mt-3 font-serif text-2xl">Provider verification</h3>
-              <p className="mt-2 text-sm text-sahara-muted">Before sharing sensitive data, verify the provider.</p>
+              <CalendarDays className="size-8 text-sahara-primary" />
+              <h3 className="mt-3 font-serif text-2xl">Appointments</h3>
+              <p className="mt-2 text-sm text-sahara-muted">
+                Request visits, see confirmations, and sync with your care team.
+              </p>
               <Link
-                href="/provider/verification"
+                href="/patient/appointments"
                 className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-sahara-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-sahara-primary-2"
               >
-                Verify Provider
+                Open appointments
               </Link>
-              <p className="mt-4 text-xs text-sahara-muted">Synced appointment count: {summary.appointmentCount}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-7">
+              <Settings className="size-8 text-sahara-primary" />
+              <h3 className="mt-3 font-serif text-2xl">Account & preferences</h3>
+              <p className="mt-2 text-sm text-sahara-muted">
+                Notifications, privacy, and the profile you used at sign-up.
+              </p>
+              <Link
+                href="/patient/settings"
+                className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-sahara-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-sahara-primary-2"
+              >
+                Open settings
+              </Link>
+              <p className="mt-4 text-xs text-sahara-muted">Appointments synced: {summary.appointmentCount}</p>
             </CardContent>
           </Card>
         </div>

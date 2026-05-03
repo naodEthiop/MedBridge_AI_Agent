@@ -52,7 +52,7 @@ export default function Home() {
                 <ArrowRight className="size-4 transition group-hover:translate-x-1" />
               </Link>
               <Link
-                href="/doctor"
+                href="/login?tab=signup&role=doctor"
                 className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-sahara-border px-8 py-4 font-bold text-sahara-fg transition-all hover:bg-sahara-surface-low active:scale-[0.98]"
               >
                 Join as Healthcare Provider
@@ -193,7 +193,7 @@ export default function Home() {
           <a className="transition-colors hover:text-sahara-primary" href="/login">
             Terms of Service
           </a>
-          <a className="transition-colors hover:text-sahara-primary" href="/doctor/assistant">
+          <a className="transition-colors hover:text-sahara-primary" href="mailto:support@medbridge.ai">
             Contact Support
           </a>
         </div>

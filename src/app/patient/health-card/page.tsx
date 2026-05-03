@@ -1,8 +1,11 @@
 "use client";
 
 import { Download, RefreshCw, Share2, ShieldAlert } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { differenceInYears } from "date-fns";
 
+import { AppShell } from "@/components/layout/AppShell";
+import { useAuthSession } from "@/hooks/useSessionRole";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import { usePatient } from "@/hooks/usePatient";
 import { triggerUiAction } from "@/lib/apiClient";
@@ -10,31 +13,148 @@ import { triggerUiAction } from "@/lib/apiClient";
 export default function HealthCardPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const summary = useDashboardSummary();
-  const patientId = summary.currentPatient?.id ?? "pat_1";
-  const patientQuery = usePatient(patientId);
-  const patient = patientQuery.data?.patient;
+  const [qrNonce, setQrNonce] = useState(0);
 
-  const displayName = patient?.fullName ?? "Julian Vane";
-  const displayId = patient?.id ?? "MB-8829-QX";
-  const sex = patient?.sex ? patient.sex[0].toUpperCase() + patient.sex.slice(1) : "Male";
-  const conditions = patient?.conditions?.length ? patient.conditions : ["Type 1 Diabetes", "Mild Asthma"];
+  const sessionQ = useAuthSession();
+  const summary = useDashboardSummary();
+
+  const email = sessionQ.data?.email?.toLowerCase() ?? "";
+  const profile = sessionQ.data?.patientProfile;
+
+  const linkedPatient = useMemo(() => {
+    const list = summary.patients;
+    if (!list.length) return null;
+    const byEmail = email ? list.find((p) => p.email?.toLowerCase() === email) : undefined;
+    return byEmail ?? list[0] ?? null;
+  }, [summary.patients, email]);
+
+  const patientId = linkedPatient?.id ?? "";
+  const patientQuery = usePatient(patientId);
+  const apiPatient = patientQuery.data?.patient;
+
+  const displayName = profile?.fullName ?? apiPatient?.fullName ?? "—";
+  const displayId = (apiPatient?.id ?? patientId) || "—";
+  const sexLabel = (profile?.sex ?? apiPatient?.sex ?? "—") as string;
+  const sexDisplay = typeof sexLabel === "string" ? sexLabel[0].toUpperCase() + sexLabel.slice(1) : "—";
+
+  const ageYears = profile?.age ?? (apiPatient?.dateOfBirth ? differenceInYears(new Date(), new Date(apiPatient.dateOfBirth)) : null);
+  const heightCm = profile?.heightCm ?? null;
+  const weightKg = profile?.weightKg ?? null;
+  const bloodType = profile?.bloodType ?? "—";
+
+  const conditions = apiPatient?.conditions?.length ? apiPatient.conditions : ["No conditions on file"];
+  const allergies = apiPatient?.allergies?.length ? apiPatient.allergies : [];
+
+  const qrPayload = useMemo(
+    () =>
+      JSON.stringify({
+        v: 1,
+        app: "medbridge",
+        patientId: displayId,
+        email: sessionQ.data?.email ?? null,
+        nonce: qrNonce,
+        issued: new Date().toISOString(),
+        note: "Replace with signed token from your backend",
+      }),
+    [displayId, qrNonce, sessionQ.data?.email],
+  );
+
+  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrPayload)}`;
 
   async function runAction(action: string) {
     setActionLoading(true);
     setFeedback(null);
-    const res = await triggerUiAction(action, { patientId });
+    const res = await triggerUiAction(action, { patientId: patientId || displayId });
     setActionLoading(false);
     setFeedback(res.ok ? (res.data.message ?? "Action completed.") : "Action failed. Please try again.");
   }
 
+  async function handleDownloadPdf() {
+    setActionLoading(true);
+    setFeedback(null);
+    const res = await triggerUiAction("health_card_download_pdf", { patientId: patientId || displayId });
+    const blob = new Blob(
+      [
+        `MedBridge Health Card\nName: ${displayName}\nID: ${displayId}\nEmail: ${sessionQ.data?.email ?? ""}\n` +
+          `Age: ${ageYears ?? "—"}\nSex: ${sexDisplay}\nBlood: ${bloodType}\nHeight: ${heightCm ?? "—"} cm\nWeight: ${weightKg ?? "—"} kg\n` +
+          `Conditions: ${conditions.join(", ")}\nAllergies: ${allergies.join(", ") || "—"}\n`,
+      ],
+      { type: "text/plain;charset=utf-8" },
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `medbridge-health-card-${displayId}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setActionLoading(false);
+    setFeedback(
+      res.ok
+        ? `${res.data.message ?? "Export queued."} A summary file was downloaded to this device.`
+        : "Action failed. Please try again.",
+    );
+  }
+
+  async function handleShare() {
+    setActionLoading(true);
+    setFeedback(null);
+    const res = await triggerUiAction("health_card_share_access", { patientId: patientId || displayId });
+    const apiNote = res.ok ? (res.data.message ?? "Secure link prepared.") : "Action failed. Please try again.";
+    const text = `MedBridge health summary for ${displayName} (${displayId}).`;
+    if (!res.ok) {
+      setActionLoading(false);
+      setFeedback(apiNote);
+      return;
+    }
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "MedBridge Health Card", text });
+        setFeedback(`${apiNote} Shared from this device.`);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        setFeedback(`${apiNote} Summary copied to clipboard.`);
+      } else {
+        setFeedback(`${apiNote} ${text}`);
+      }
+    } catch {
+      setFeedback(`${apiNote} Share was cancelled or unavailable.`);
+    }
+    setActionLoading(false);
+  }
+
+  async function handleRefreshQr() {
+    setQrNonce((n) => n + 1);
+    await runAction("health_card_refresh_qr");
+  }
+
+  if (sessionQ.isLoading || summary.loading) {
+    return (
+      <AppShell title="Digital Health Card" subtitle="Portable summary & check-in QR">
+        <p className="text-sm text-sahara-muted">Loading your health card…</p>
+      </AppShell>
+    );
+  }
+
+  if (sessionQ.isError || sessionQ.data?.role !== "patient") {
+    return (
+      <AppShell title="Digital Health Card" subtitle="Portable summary & check-in QR">
+        <p className="text-sm text-sahara-muted">This page is for signed-in patients.</p>
+      </AppShell>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-sahara-bg text-sahara-fg lg:pl-64">
-      <section className="mx-auto w-full max-w-6xl p-8 lg:p-12">
-        <div className="mb-10 text-center lg:text-left">
+    <AppShell title="Digital Health Card" subtitle="Live data from your account + care record">
+      <section className="mx-auto w-full max-w-6xl space-y-4 py-2">
+        <p className="max-w-2xl text-xs text-sahara-muted">
+          Vitals and demographics come from <strong>sign-up (session)</strong>; conditions and allergies from{" "}
+          <strong>GET /api/patients/:id</strong>. Point both at your backend when you integrate.
+        </p>
+
+        <div className="mb-6 text-center lg:text-left">
           <h2 className="mb-3 font-serif text-4xl font-bold leading-tight lg:text-5xl">Your Digital Health Card</h2>
           <p className="max-w-xl text-sahara-muted">
-            A secure, portable summary of your medical identity. Present this code to any MedBridge certified provider for instant record sync.
+            Updates when your session and patient record change. QR encodes a demo payload—swap for a signed token from your API.
           </p>
         </div>
 
@@ -53,19 +173,20 @@ export default function HealthCardPage() {
                     </p>
                   </div>
                   <div className="rounded-full bg-sahara-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-sahara-primary">
-                    Active Status
+                    Active
                   </div>
                 </div>
 
                 <div className="flex flex-1 gap-8">
-                  <div className="shrink-0">
-                    <div className="h-40 w-32 overflow-hidden rounded-xl border border-sahara-border bg-[#ece6dc] shadow-sm">
-                      <img
-                        alt="Cardholder"
-                        className="h-full w-full object-cover grayscale-[0.2] contrast-125"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5-IKqTXvUTbe4S2F95imEmgfxEKep5sVj0exoHX0tu3uvM0XZsJ6AnWeP1E8dd0A4I-aRzgZAkIVfVz6Cha01EidMSbZcp5a7wVcXFUOnWcWyK3DGBbmOKOv8Z8pmlc3IqGLj2YKlf-gS30GxUztJte0IIGjz6cZj3W_PWpbIusz68_DowhfIeTpi1aqwbb4F6lZ3UA6ZuzEYXNU2TPtTEdksRTB3FhMwqjCu2_5ZjcfZzv3WfFxjnQyYIen1VM_MlvsQjI9KRZs"
-                      />
-                    </div>
+                  <div className="flex size-[7.5rem] shrink-0 items-center justify-center rounded-xl border border-sahara-border bg-[#ece6dc] font-serif text-3xl font-bold text-sahara-muted">
+                    {displayName !== "—"
+                      ? displayName
+                          .split(/\s+/)
+                          .map((w) => w[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()
+                      : "?"}
                   </div>
 
                   <div className="grid flex-1 grid-cols-2 gap-x-4 gap-y-6">
@@ -80,30 +201,49 @@ export default function HealthCardPage() {
                     <div className="col-span-2 grid grid-cols-3 gap-4">
                       <div>
                         <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Age</p>
-                        <p className="text-base font-bold">34</p>
+                        <p className="text-base font-bold">{ageYears ?? "—"}</p>
                       </div>
                       <div>
                         <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Sex</p>
-                        <p className="text-base font-bold">{sex}</p>
+                        <p className="text-base font-bold">{sexDisplay}</p>
                       </div>
                       <div>
                         <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Blood Type</p>
-                        <p className="text-base font-bold text-sahara-tertiary">O Negative</p>
+                        <p className="text-base font-bold text-sahara-tertiary">{bloodType}</p>
                       </div>
                     </div>
                     <div className="col-span-2">
-                      <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Known Conditions</p>
+                      <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Conditions</p>
                       <div className="flex flex-wrap gap-2">
-                        {conditions.map((condition) => (
-                          <span
-                            key={condition}
-                            className="rounded-full border border-sahara-border bg-[#ece6dc] px-2 py-0.5 text-xs font-medium text-sahara-muted"
-                          >
-                            {condition}
-                          </span>
-                        ))}
+                        {conditions.length ? (
+                          conditions.map((condition) => (
+                            <span
+                              key={condition}
+                              className="rounded-full border border-sahara-border bg-[#ece6dc] px-2 py-0.5 text-xs font-medium text-sahara-muted"
+                            >
+                              {condition}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-sahara-muted">None recorded</span>
+                        )}
                       </div>
                     </div>
+                    {allergies.length ? (
+                      <div className="col-span-2">
+                        <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-stone-400">Allergies</p>
+                        <div className="flex flex-wrap gap-2">
+                          {allergies.map((a) => (
+                            <span
+                              key={a}
+                              className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900"
+                            >
+                              {a}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -111,15 +251,15 @@ export default function HealthCardPage() {
                   <div className="flex gap-8">
                     <div>
                       <p className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Height</p>
-                      <p className="text-sm font-semibold">182 cm</p>
+                      <p className="text-sm font-semibold">{heightCm != null ? `${heightCm} cm` : "—"}</p>
                     </div>
                     <div>
                       <p className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Weight</p>
-                      <p className="text-sm font-semibold">78 kg</p>
+                      <p className="text-sm font-semibold">{weightKg != null ? `${weightKg} kg` : "—"}</p>
                     </div>
                   </div>
-                  <div className="max-w-[120px] text-right text-[8px] font-medium leading-tight text-stone-400">
-                    Issued by MedBridge AI Systems. Secure blockchain verified identity.
+                  <div className="max-w-[140px] text-right text-[8px] font-medium leading-tight text-stone-400">
+                    Record sync: demo API. Replace with your backend services.
                   </div>
                 </div>
               </div>
@@ -128,21 +268,21 @@ export default function HealthCardPage() {
             <div className="mt-8 flex flex-wrap justify-center gap-4 lg:justify-start">
               <button
                 type="button"
-                onClick={() => runAction("health_card_download_pdf")}
+                onClick={() => void handleDownloadPdf()}
                 disabled={actionLoading}
                 className="flex items-center gap-2 rounded-lg bg-sahara-primary px-6 py-3 font-bold text-white shadow-md transition-all hover:brightness-110 active:scale-95"
               >
                 <Download className="size-5" />
-                Download as PDF
+                Download summary
               </button>
               <button
                 type="button"
-                onClick={() => runAction("health_card_share_access")}
+                onClick={() => void handleShare()}
                 disabled={actionLoading}
                 className="flex items-center gap-2 rounded-lg border border-sahara-border bg-white px-6 py-3 font-bold text-sahara-fg transition-all hover:bg-sahara-surface-low active:scale-95"
               >
                 <Share2 className="size-5" />
-                Share Access
+                Share access
               </button>
             </div>
             {feedback ? <p className="mt-4 text-sm text-sahara-muted">{feedback}</p> : null}
@@ -150,25 +290,22 @@ export default function HealthCardPage() {
 
           <aside className="space-y-6 lg:col-span-4">
             <div className="flex flex-col items-center rounded-3xl border border-sahara-border bg-sahara-surface-low p-8 text-center shadow-sm">
-              <h4 className="mb-6 font-serif text-xl font-bold">Quick Scan Provider Access</h4>
-              <div className="relative mb-6 rounded-2xl border border-sahara-border bg-white p-4 shadow-inner">
-                <img
-                  alt="QR Code"
-                  className="h-40 w-40 object-cover opacity-80"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkRdR45MhttQaVjMsmhfEnZig-eRqtG5zILYbsTopJXIbZooUypKPkCb9WHUf07sUJ3kqrCj8nC09dDdPcMnbmCYlR8Kw-qASBZGOOeKrwlLPkD2QtE2wFXTDhDxvRPp2g-dmfFfug5Ob39OuMI8wn98DO7mvCKiFMYGjm_2Gk-8oyL-gonotAsKD7-rTtriP0Fz2BzZ6t4f92GOfDX_UCiRrXnMIdSuTn3JXkXjBNB3WBQ31Hi1zR_4qkG8br7anBnQoCYy97N_Y"
-                />
-              </div>
-              <p className="px-4 text-sm font-medium text-sahara-muted">
-                This code expires in <span className="font-bold text-sahara-primary">14:59</span>
+              <h4 className="mb-2 font-serif text-xl font-bold">Check-in QR</h4>
+              <p className="mb-6 max-w-xs text-xs text-sahara-muted">
+                Demo payload includes patient id and email. Production: short-lived signed token from your server.
               </p>
+              <div className="relative mb-4 rounded-2xl border border-sahara-border bg-white p-4 shadow-inner">
+                <img alt="Health card QR code" className="h-40 w-40 object-contain" src={qrImageUrl} width={160} height={160} />
+              </div>
+              <p className="px-4 text-sm font-medium text-sahara-muted">Refresh rotates the demo nonce.</p>
               <button
                 type="button"
-                onClick={() => runAction("health_card_refresh_qr")}
+                onClick={() => void handleRefreshQr()}
                 disabled={actionLoading}
                 className="mt-6 flex items-center gap-2 text-sm font-bold text-sahara-primary hover:underline"
               >
                 <RefreshCw className="size-4" />
-                Refresh Code
+                Refresh code
               </button>
             </div>
 
@@ -177,17 +314,15 @@ export default function HealthCardPage() {
                 <ShieldAlert className="size-5" />
               </div>
               <div>
-                <h5 className="text-sm font-bold text-red-900">Emergency Protocols</h5>
+                <h5 className="text-sm font-bold text-red-900">Emergency</h5>
                 <p className="mt-1 text-xs text-red-900/70">
-                  If this device is locked, responders can access your blood type and allergies by triple-tapping the
-                  power button.
+                  In production, surface emergency contacts and critical flags from your backend only.
                 </p>
               </div>
             </div>
           </aside>
         </div>
       </section>
-    </div>
+    </AppShell>
   );
 }
-
