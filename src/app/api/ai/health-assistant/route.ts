@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
 
 import { runHealthAssistant } from "@/lib/ai/aiService";
+import type { HealthAgentInput } from "@/lib/ai/agent";
 import { createCase } from "@/lib/backend/case-service";
 import { getAuthenticatedUser } from "@/lib/server/auth";
+import { emitEvent } from "@/lib/server/events";
 import { getRepositories } from "@/lib/server/repositories";
 import { env } from "@/lib/env";
 
 export async function POST(req: Request) {
   try {
+    // AI HEALTH ANALYSIS FLOW (primary implementation):
+    // API route -> aiService.runHealthAssistant -> repositories.timeline.createTimelineEvent
+    // -> emitEvent("ai:analysis_completed") -> response.
+    // Timeline write must happen before event emission.
     const user = await getAuthenticatedUser(req);
     if (!env.GEMINI_API_KEY?.trim()) {
       return NextResponse.json(
@@ -16,7 +22,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = (await req.json()) as HealthAgentInput & { skipTriage?: boolean; transcript?: string };
+    const body = (await req.json()) as HealthAgentInput & { patientId?: string; transcript?: string };
     const medix = await runHealthAssistant({
       message: typeof body.message === "string" ? body.message : undefined,
       symptoms: Array.isArray(body.symptoms) ? body.symptoms.filter((s): s is string => typeof s === "string") : undefined,
@@ -25,7 +31,7 @@ export async function POST(req: Request) {
         : undefined,
       bodyPart: typeof body.bodyPart === "string" ? body.bodyPart : body.bodyPart === null ? null : undefined,
       transcript: typeof body.transcript === "string" ? body.transcript : undefined,
-      skipTriage: body.skipTriage === true,
+      patientId: body.patientId ?? user.id,
     });
 
     const repos = getRepositories();
@@ -44,6 +50,11 @@ export async function POST(req: Request) {
             possibleConditions: medix.possibleConditions,
             redFlags: medix.redFlags,
           },
+        });
+        emitEvent('ai:analysis_completed', {
+          patientId,
+          urgency: medix.urgency,
+          createdAt: new Date().toISOString(),
         });
       } catch (error) {
         console.error('Failed to persist Medix timeline event', error);

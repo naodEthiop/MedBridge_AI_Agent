@@ -2,7 +2,7 @@ import { env } from '@/lib/env';
 import { fetchNearbyHospitalsGeoapify } from '@/lib/geo/geoapify-nearby';
 import { emitEvent } from '@/lib/server/events';
 import { getRepositories } from '@/lib/server/repositories';
-import type { MessageRecord, RiskPrediction } from '@/lib/types';
+import type { MessageRecord } from '@/lib/types';
 
 export type EmergencyTriggerPayload = {
   patientId: string;
@@ -32,6 +32,9 @@ export type EmergencyTriggerResult = {
 };
 
 export async function triggerEmergencyForPatient(payload: EmergencyTriggerPayload): Promise<EmergencyTriggerResult> {
+  // EMERGENCY FLOW:
+  // API route -> emergency.ts trigger -> repositories writes/routing + optional geo lookup -> emitEvent("emergency:triggered").
+  // This module intentionally contains no AI inference logic.
   const repos = getRepositories();
   const patient = await repos.patients.getPatient(payload.patientId);
   if (!patient) {
@@ -57,7 +60,7 @@ export async function triggerEmergencyForPatient(payload: EmergencyTriggerPayloa
   try {
     await repos.appointments.escalatePatientAppointments(patient.id, 'emergency');
     appointmentEscalated = true;
-  } catch (error) {
+  } catch {
     // best-effort escalation; continue
   }
 

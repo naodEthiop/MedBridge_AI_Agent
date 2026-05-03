@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { processUserInput } from "@/lib/ai/agent";
-import { analyzeImageFull } from "@/lib/ai/cloudflare";
+import { runImageAnalysis } from "@/lib/ai/aiService";
 import { env } from "@/lib/env";
 import { transcribeAudioBlob } from "@/lib/server/speech";
-import { createCase } from "@/lib/backend/case-service";
-import { getAccessTokenFromRequest } from "@/lib/server/authUser";
 
 function parseLatLng(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -59,6 +56,10 @@ function safeStringArray(value: unknown): string[] | undefined {
 
 export async function POST(req: Request) {
   try {
+    // AI HEALTH ANALYSIS FLOW (compat endpoint):
+    // API route (this compatibility parser) -> /api/ai/health-assistant -> aiService ->
+    // repositories.timeline -> emitEvent(ai:analysis_completed) -> response.
+    // This route must not run a second AI pass.
     if (!env.GEMINI_API_KEY?.trim()) {
       return NextResponse.json({ ok: false, error: "Medix AI requires GEMINI_API_KEY." }, { status: 503 });
     }
@@ -99,7 +100,7 @@ export async function POST(req: Request) {
 
       const image = form.get("image");
       if (image instanceof Blob && image.size > 0 && image.type.startsWith("image/")) {
-        const r = await analyzeImageFull(image);
+        const r = await runImageAnalysis(image);
         if (r.success) {
           imageFindings.push(...r.findings, ...r.possibleConditions.map((c) => `Visual (non-diagnostic): ${c}`));
           if (r.recommendation) imageFindings.push(`Image recommendation: ${r.recommendation}`);
@@ -121,31 +122,32 @@ export async function POST(req: Request) {
       }
     }
 
-    const medix = await processUserInput({
+    const payload = {
       message,
       symptoms,
       bodyPart,
       transcript,
       imageFindings: imageFindings.length ? imageFindings : undefined,
       skipTriage,
+      ...(location ? { lat: location.lat, lng: location.lng } : {}),
+    };
+    const res = await fetch(new URL("/api/ai/health-assistant", req.url), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(req.headers.get("authorization") ? { Authorization: req.headers.get("authorization")! } : {}),
+      },
+      body: JSON.stringify(payload),
     });
-
-    await appendNearbyHospitalsIfUrgent(req, medix as Record<string, unknown>, location);
-
-    const token = getAccessTokenFromRequest(req);
-    if (token && typeof message === "string" && message.trim()) {
-      void createCase(
-        {
-          symptoms: message.trim(),
-          urgency: medix.urgency === "urgent" ? "urgent" : "medium",
-          redFlags: medix.redFlags,
-          doctorSummary: medix.message,
-        },
-        token,
-      ).catch((error) => console.error("Auto-persist case failed", error));
+    const upstream = (await res.json()) as Record<string, unknown>;
+    if (!res.ok || upstream.ok !== true) {
+      return NextResponse.json(upstream, { status: res.status });
     }
-
-    return NextResponse.json({ ok: true, medix });
+    const medix = (upstream.data as { medix?: Record<string, unknown> } | undefined)?.medix;
+    if (medix) {
+      await appendNearbyHospitalsIfUrgent(req, medix, location);
+    }
+    return NextResponse.json(upstream, { status: res.status });
   } catch (error) {
     console.error("/api/ai/process failed", error);
     return NextResponse.json({ ok: false, error: "Medix AI could not process this request." }, { status: 500 });

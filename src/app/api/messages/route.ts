@@ -5,6 +5,8 @@ import { getRepositories } from '@/lib/server/repositories';
 
 export async function GET(request: Request) {
   try {
+    // MESSAGING FLOW (read): API route -> repositories.messages -> response.
+    // Messaging remains isolated from AI and medical timeline logic.
     const user = await getAuthenticatedUser(request);
     const { searchParams } = new URL(request.url);
     const otherUserId = searchParams.get('otherUserId');
@@ -14,7 +16,7 @@ export async function GET(request: Request) {
 
     const repos = getRepositories();
     const conversation = await repos.messages.listConversation(user.id, otherUserId);
-    return NextResponse.json({ ok: true, conversation });
+    return NextResponse.json({ ok: true, data: { conversation } });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 401 });
@@ -26,6 +28,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    // MESSAGING FLOW (write): API route -> repositories.messages.createMessage -> response.
+    // No AI orchestration or timeline side effects are allowed in this route.
     const user = await getAuthenticatedUser(request);
     const body = (await request.json()) as {
       receiverId: string;
@@ -46,7 +50,7 @@ export async function POST(request: Request) {
       attachments: body.attachments ?? {},
     });
 
-    return NextResponse.json({ ok: true, message: created });
+    return NextResponse.json({ ok: true, data: { message: created } });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 401 });

@@ -16,6 +16,15 @@ import {
   type DoctorCopilotReport,
   type RiskPrediction,
 } from "@/lib/backend/gemini";
+import { analyzeClinicalState, calculateRiskTrajectory } from "@/lib/ai/clinicalReasoner";
+import { getEarlyWarning } from "@/lib/ai/earlyWarning";
+import { buildPatientMemory, summarizePatientMemory } from "@/lib/ai/patientMemory";
+import { eventBus } from "@/lib/server/events";
+import { getDigitalTwin, upsertDigitalTwin } from "@/lib/ai/digitalTwin";
+import { canApplyTwinUpdate } from "@/lib/ai/digitalTwinGuard";
+import { buildForecast, buildRiskCurve } from "@/lib/ai/forecastEngine";
+import { buildPatientStateVector } from "@/lib/ai/patientStateVector";
+import { simulateTrajectories } from "@/lib/ai/trajectorySimulator";
 
 export type AiServiceRequest =
   | { mode: "symptom_triage"; message: string; bodyPart?: string | null }
@@ -48,6 +57,32 @@ export type AiServiceResponse =
   | DoctorCopilotReport
   | { error: string };
 
+
+async function refreshDigitalTwin(patientId: string) {
+  const ts = Date.now();
+  if (!canApplyTwinUpdate(patientId, ts)) return getDigitalTwin(patientId);
+  const memory = await buildPatientMemory(patientId);
+  const stateVector = buildPatientStateVector(memory);
+  const forecastModel = buildForecast(stateVector);
+  const simulationState = simulateTrajectories(forecastModel);
+  const twin = upsertDigitalTwin({ patientId, stateVector, forecastModel, simulationState });
+  const riskCurve = buildRiskCurve(forecastModel);
+
+  eventBus.emit("ai:digital_twin_updated", { patientId, version: twin.version, timestamp: new Date(ts).toISOString() });
+  eventBus.emit("ai:forecast_updated", { patientId, slopeAnalysis: forecastModel.slopeAnalysis, confidence: forecastModel.confidence, timestamp: new Date(ts).toISOString() });
+  eventBus.emit("ai:simulation_updated", { patientId, scenarioCount: simulationState.scenarios.length, timestamp: new Date(ts).toISOString() });
+
+  if (riskCurve.acceleration > 3) {
+    eventBus.emit("ai:trajectory_risk_detected", { patientId, acceleration: riskCurve.acceleration, inflectionPoints: riskCurve.inflectionPoints, timestamp: new Date(ts).toISOString() });
+    eventBus.emit("ai:intervention_recommendation", { patientId, reason: "High risk acceleration detected", timestamp: new Date(ts).toISOString() });
+  }
+
+  if (simulationState.scenarios.some((s) => s.riskCurve[s.riskCurve.length - 1] > 80)) {
+    eventBus.emit("ai:early_warning_escalation", { patientId, reason: "High-risk convergence across simulated scenarios", timestamp: new Date(ts).toISOString() });
+  }
+  return twin;
+}
+
 export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
@@ -66,11 +101,21 @@ export async function runImageAnalysis(image: File | Blob): Promise<MedicalImage
   return analyzeImageFull(image);
 }
 
-export async function runHealthAssistant(input: HealthAgentInput): Promise<HealthAgentOutput> {
-  return processUserInput(input);
+export async function runHealthAssistant(input: HealthAgentInput & { patientId?: string }): Promise<HealthAgentOutput> {
+  const memoryContext = input.patientId ? summarizePatientMemory(await buildPatientMemory(input.patientId)) : null;
+  const result = await processUserInput({
+    ...input,
+    message: [memoryContext ? `Longitudinal trend: ${memoryContext.trend}` : null, input.message ?? null].filter(Boolean).join("\n"),
+  });
+  if (input.patientId) {
+    eventBus.emit("ai:memory_updated", { patientId: input.patientId, timestamp: new Date().toISOString() });
+    await refreshDigitalTwin(input.patientId);
+  }
+  return result;
 }
 
 export async function runRiskPrediction(input: {
+  patientId?: string;
   demographics: string;
   symptomsHistory: string;
   timelineSummary: string;
@@ -81,6 +126,14 @@ export async function runRiskPrediction(input: {
   }
 
   try {
+    if (input.patientId) {
+      const memory = await buildPatientMemory(input.patientId);
+      const trajectory = calculateRiskTrajectory(memory);
+      eventBus.emit("ai:risk_trajectory_updated", { patientId: input.patientId, trajectory, timestamp: new Date().toISOString() });
+      const warning = getEarlyWarning(memory);
+      if (warning) eventBus.emit("ai:early_warning", warning);
+      await refreshDigitalTwin(input.patientId);
+    }
     return await geminiRiskPrediction(input);
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Risk prediction failed" };
@@ -88,6 +141,7 @@ export async function runRiskPrediction(input: {
 }
 
 export async function generateDoctorCopilotReport(input: {
+  patientId?: string;
   patientProfile: string;
   timelineSummary: string;
   labsSummary: string;
@@ -98,6 +152,16 @@ export async function generateDoctorCopilotReport(input: {
   }
 
   try {
+    if (input.patientId) {
+      const state = analyzeClinicalState(await buildPatientMemory(input.patientId));
+      eventBus.emit("ai:clinical_analysis_completed", {
+        patientId: input.patientId,
+        riskLevel: state.riskLevel,
+        confidence: state.confidence,
+        timestamp: new Date().toISOString(),
+      });
+      await refreshDigitalTwin(input.patientId);
+    }
     return await geminiDoctorCopilotReport(input);
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Doctor copilot report failed" };
