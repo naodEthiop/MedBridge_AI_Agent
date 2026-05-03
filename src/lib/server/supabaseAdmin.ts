@@ -1,15 +1,12 @@
-import { createClient } from "@supabase/supabase-js";
-
-import { env } from "@/lib/env";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 export function getSupabaseAdmin() {
-  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
     throw new Error(
       "Supabase admin is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
     );
   }
-  return createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false },
-  });
+  return supabase;
 }
 

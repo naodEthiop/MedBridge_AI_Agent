@@ -6,9 +6,10 @@ import { getRepositories } from "@/lib/server/repositories";
 
 type CaseInput = {
   symptoms: string;
-  urgency: "medium" | "urgent";
+  urgency: "low" | "medium" | "urgent";
   redFlags: string[];
   doctorSummary: string;
+  status?: "pending" | "monitoring" | "resolved";
   patientName?: string;
   nearestHospital?: {
     name: string;
@@ -110,11 +111,15 @@ export async function createCase(input: CaseInput, accessToken?: string) {
         urgency: input.urgency,
         red_flags: input.redFlags,
         doctor_summary: input.doctorSummary,
+        status: input.status ?? "pending",
         patient_name: input.patientName ?? null,
         nearest_hospital: input.nearestHospital ?? null,
       };
       const { data, error } = await supabase.from("cases").insert(payload).select("id, created_at").maybeSingle();
-      if (!error && data) {
+      if (error) {
+        throw error;
+      }
+      if (data) {
         return { id: data.id as string, createdAt: data.created_at as string, persisted: true };
       }
     } catch {

@@ -30,6 +30,13 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = getSupabaseServerClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: "Supabase is not configured." },
+        { status: 503 },
+      );
+    }
+
     const { data, error } = await supabase.auth.refreshSession({
       refresh_token: refreshToken,
     });

@@ -12,11 +12,13 @@ export async function POST(req: Request) {
   try {
     switch (body.tool) {
       case "symptom_checker": {
+        console.log("Using AI tool: symptom_checker");
         const triage = await geminiSymptomTriage({
           message: body.input.message,
           bodyPart: body.input.bodyPart ?? null,
         });
         return NextResponse.json({
+          ok: true,
           tool: body.tool,
           result: {
             possibleConditions: triage.possibleConditions,
@@ -28,10 +30,12 @@ export async function POST(req: Request) {
         });
       }
       case "analyze_image": {
+        console.log("Using AI tool: analyze_image");
         const analysis = await geminiAnalyzeImage(body.input);
-        return NextResponse.json({ tool: body.tool, result: analysis });
+        return NextResponse.json({ ok: true, tool: body.tool, result: analysis });
       }
       case "get_nearby_hospitals": {
+        console.log("Using GEO tool: get_nearby_hospitals");
         const catMap: Record<"hospital" | "clinic" | "pharmacy", string[]> = {
           hospital: ["healthcare.hospital"],
           clinic: ["healthcare.clinic", "healthcare.doctor"],
@@ -46,6 +50,7 @@ export async function POST(req: Request) {
           limit: 25,
         });
         return NextResponse.json({
+          ok: true,
           tool: body.tool,
           result: {
             places: places as NearbyPlace[],
@@ -54,14 +59,27 @@ export async function POST(req: Request) {
         });
       }
       case "get_patient_data": {
+        console.log("Using DB tool: get_patient_data");
         const repos = getRepositories();
         const patient = await repos.patients.getPatient(body.input.patientId);
-        if (!patient) return NextResponse.json({ error: "Not found" }, { status: 404 });
+        if (!patient) {
+          return NextResponse.json({ ok: false, tool: body.tool, error: "Not found" }, { status: 404 });
+        }
         const appointments = await repos.appointments.listAppointmentsForPatient(body.input.patientId);
-        return NextResponse.json({ tool: body.tool, result: { patient, appointments } });
+        return NextResponse.json({ ok: true, tool: body.tool, result: { patient, appointments } });
       }
       case "save_doctor_notes": {
-        const supabase = getSupabaseAdmin();
+        console.log("Using DB tool: save_doctor_notes");
+        let supabase = null;
+        try {
+          supabase = getSupabaseAdmin();
+        } catch (error) {
+          return NextResponse.json(
+            { ok: false, tool: body.tool, error: "Supabase admin is not configured." },
+            { status: 503 },
+          );
+        }
+
         const { data, error } = await supabase
           .from("doctor_notes")
           .insert({
@@ -75,15 +93,18 @@ export async function POST(req: Request) {
           })
           .select("*")
           .maybeSingle();
-        if (error) throw error;
-        return NextResponse.json({ tool: body.tool, result: { note: data } });
+        if (error || !data) {
+          const message = error?.message ?? "Doctor note insert failed";
+          return NextResponse.json({ ok: false, tool: body.tool, error: message }, { status: 500 });
+        }
+        return NextResponse.json({ ok: true, tool: body.tool, result: { note: data } });
       }
       default:
-        return NextResponse.json({ error: "Unknown tool" }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "Unknown tool" }, { status: 400 });
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Tool execution failed";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }
 

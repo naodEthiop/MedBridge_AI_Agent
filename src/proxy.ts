@@ -1,9 +1,7 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { readSessionFromCookieValue, SESSION_COOKIE } from "@/lib/auth/session-core";
-import { env, hasSupabasePublicEnv } from "@/lib/env";
 import { getAuthUserFromRequest } from "@/lib/server/authUser";
 
 function safeInternalPath(nextParam: string | null): string | null {
@@ -43,38 +41,6 @@ async function resolveSession(
       return { user: { role: sessionUser.role }, response: baseResponse, sealedInvalid: false };
     }
     return { user: null, response: baseResponse, sealedInvalid: true };
-  }
-
-  if (hasSupabasePublicEnv) {
-    let response = baseResponse;
-    const supabase = createServerClient(
-      env.NEXT_PUBLIC_SUPABASE_URL!,
-      env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-            response = NextResponse.next({ request });
-            cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-          },
-        },
-      },
-    );
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      return {
-        user: { role: String(user.user_metadata?.role ?? "patient") },
-        response,
-        sealedInvalid: false,
-      };
-    }
-    return { user: null, response, sealedInvalid: false };
   }
 
   const authUser = await getAuthUserFromRequest(request);

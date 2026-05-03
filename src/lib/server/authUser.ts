@@ -1,5 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { env, hasSupabasePublicEnv } from "@/lib/env";
 
 export type AuthUser = {
@@ -38,14 +37,8 @@ export function getAccessTokenFromRequest(req: Request) {
 }
 
 export function getSupabaseServerClient() {
-  if (!hasSupabasePublicEnv) {
-    throw new Error(
-      "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.",
-    );
-  }
-  return createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  if (!hasSupabasePublicEnv) return null;
+  return createSupabaseServerClient();
 }
 
 export async function getAuthUserFromRequest(req: Request): Promise<AuthUser | null> {
@@ -54,14 +47,7 @@ export async function getAuthUserFromRequest(req: Request): Promise<AuthUser | n
   const token = getAccessTokenFromRequest(req);
   if (!token) return null;
 
-  const supabase = createClient(
-    env.NEXT_PUBLIC_SUPABASE_URL!,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    },
-  );
+  const supabase = createSupabaseServerClient(token);
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return null;
 

@@ -22,6 +22,11 @@ export async function GET(req: Request) {
     });
 
     const supabase = getSupabaseServerClient();
+    if (!supabase) {
+      console.error("[auth] oauth callback endpoint missing Supabase configuration");
+      return NextResponse.redirect(new URL("/login?error=oauth_failed", url.origin));
+    }
+
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (error || !data.session) {
       const message = error?.message || "";
