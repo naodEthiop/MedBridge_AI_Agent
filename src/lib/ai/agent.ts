@@ -60,7 +60,7 @@ export async function generateHealthResponse(input: HealthAgentInput): Promise<H
     const message = input.message.trim();
     if (!isHealthQuery(message)) {
       return {
-        message: "I'm Medix AI, a health assistant. I can only help with medical or health-related concerns.",
+        message: "I'm Medix, your health assistant. I can only help with medical or health-related concerns.",
         urgency: "low",
         possibleConditions: [],
         nextSteps: ["Ask a health-related question when you're ready."],
@@ -79,7 +79,7 @@ export async function generateHealthResponse(input: HealthAgentInput): Promise<H
   if (!chunks.length) {
     return {
       message:
-        "I'm Medix AI. Share what you're feeling in your own words, or upload a relevant image, and I'll walk through possibilities and next steps.",
+        "I'm Medix. Share what you're feeling in your own words, or upload a relevant image, and I'll walk through possibilities and next steps.",
       urgency: "low",
       possibleConditions: [],
       nextSteps: ["Describe your symptoms or add a photo if it helps illustrate the concern."],
@@ -116,7 +116,7 @@ export async function processUserInput(input: ProcessUserInputArgs): Promise<Med
 
     if (combinedMessage && !isHealthQuery(combinedMessage) && !input.bodyPart && !input.imageFindings?.length) {
       return {
-        message: "I'm Medix AI, a health assistant. I only handle medical-related questions.",
+        message: "I'm Medix, your health assistant. I can only help with medical or health-related concerns.",
         urgency: "low",
         possibleConditions: [],
         nextSteps: [],

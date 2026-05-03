@@ -1,0 +1,149 @@
+
+<style>
+  .body-wrap { display: flex; gap: 24px; padding: 1rem 0; align-items: flex-start; }
+  .diagram-col { flex: 0 0 260px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .info-col { flex: 1; min-width: 0; }
+  .region { cursor: pointer; transition: opacity 0.15s; }
+  .region:hover { opacity: 0.75; }
+  .region.active { filter: drop-shadow(0 0 4px #378ADD); }
+  .selected-panel { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 12px; min-height: 80px; }
+  .selected-panel h3 { margin: 0 0 4px; font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+  .selected-panel p { margin: 0; font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; margin-bottom: 8px; }
+  .badge.active { background: var(--color-background-info); color: var(--color-text-info); }
+  .badge.none { background: var(--color-background-secondary); color: var(--color-text-secondary); }
+  .ask-btn { width: 100%; padding: 9px 16px; font-size: 14px; cursor: pointer; border-radius: var(--border-radius-md); margin-top: 8px; }
+  .ask-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .label-list { display: flex; flex-direction: column; gap: 6px; }
+  .label-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-text-secondary); cursor: pointer; padding: 6px 10px; border-radius: var(--border-radius-md); transition: background 0.1s; }
+  .label-item:hover { background: var(--color-background-secondary); }
+  .label-item.active { background: var(--color-background-info); color: var(--color-text-info); font-weight: 500; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .hint { font-size: 12px; color: var(--color-text-tertiary); text-align: center; margin-top: 4px; }
+</style>
+
+<h2 class="sr-only">Interactive body diagram for selecting symptom location</h2>
+
+<div class="body-wrap">
+  <div class="diagram-col">
+    <svg id="body-svg" viewBox="0 0 160 340" width="200" height="340" xmlns="http://www.w3.org/2000/svg">
+
+      <g class="region" id="r-head" data-id="head" data-label="Head &amp; Face" data-desc="Includes headache, facial pain, eye, ear, nose, and throat symptoms.">
+        <ellipse cx="80" cy="28" rx="26" ry="26" fill="#B5D4F4" stroke="#378ADD" stroke-width="1"/>
+      </g>
+
+      <g class="region" id="r-neck" data-id="neck" data-label="Neck" data-desc="Includes throat pain, stiffness, swollen lymph nodes, and neck tension.">
+        <rect x="68" y="54" width="24" height="18" rx="4" fill="#C0DD97" stroke="#639922" stroke-width="1"/>
+      </g>
+
+      <g class="region" id="r-chest" data-id="chest" data-label="Chest" data-desc="Includes chest pain, breathing difficulty, heart palpitations, and cough.">
+        <rect x="44" y="72" width="72" height="60" rx="6" fill="#F5C4B3" stroke="#D85A30" stroke-width="1"/>
+      </g>
+
+      <g class="region" id="r-abdomen" data-id="abdomen" data-label="Abdomen" data-desc="Includes stomach pain, nausea, bloating, digestion issues, and lower abdominal pain.">
+        <rect x="44" y="134" width="72" height="50" rx="6" fill="#FAC775" stroke="#BA7517" stroke-width="1"/>
+      </g>
+
+      <g class="region" id="r-left-arm" data-id="left-arm" data-label="Left Arm" data-desc="Includes shoulder, elbow, wrist, and hand pain or numbness on the left side.">
+        <rect x="10" y="72" width="28" height="90" rx="8" fill="#CECBF6" stroke="#7F77DD" stroke-width="1"/>
+      </g>
+
+      <g class="region" id="r-right-arm" data-id="right-arm" data-label="Right Arm" data-desc="Includes shoulder, elbow, wrist, and hand pain or numbness on the right side.">
+        <rect x="122" y="72" width="28" height="90" rx="8" fill="#CECBF6" stroke="#7F77DD" stroke-width="1"/>
+      </g>
+
+      <g class="region" id="r-pelvis" data-id="pelvis" data-label="Pelvis &amp; Groin" data-desc="Includes pelvic pain, urinary symptoms, reproductive symptoms, and groin discomfort.">
+        <rect x="44" y="186" width="72" height="36" rx="6" fill="#F4C0D1" stroke="#D4537E" stroke-width="1"/>
+      </g>
+
+      <g class="region" id="r-left-leg" data-id="left-leg" data-label="Left Leg" data-desc="Includes hip, knee, shin, ankle, and foot pain or swelling on the left side.">
+        <rect x="44" y="224" width="32" height="110" rx="8" fill="#9FE1CB" stroke="#1D9E75" stroke-width="1"/>
+      </g>
+
+      <g class="region" id="r-right-leg" data-id="right-leg" data-label="Right Leg" data-desc="Includes hip, knee, shin, ankle, and foot pain or swelling on the right side.">
+        <rect x="84" y="224" width="32" height="110" rx="8" fill="#9FE1CB" stroke="#1D9E75" stroke-width="1"/>
+      </g>
+
+      <g class="region" id="r-back" data-id="back" data-label="Back" data-desc="Includes upper back, lower back, and spine-related pain or stiffness.">
+        <rect x="116" y="134" width="30" height="76" rx="6" fill="#D3D1C7" stroke="#888780" stroke-width="1"/>
+        <text x="131" y="178" text-anchor="middle" font-size="9" fill="#444441">Back</text>
+      </g>
+
+    </svg>
+    <p class="hint">Click a region to select it</p>
+  </div>
+
+  <div class="info-col">
+    <div class="selected-panel" id="selected-panel">
+      <span class="badge none" id="badge">No region selected</span>
+      <h3 id="region-title" style="color: var(--color-text-secondary); font-weight: 400;">Select a body region</h3>
+      <p id="region-desc">Click any highlighted area on the diagram to focus your symptoms.</p>
+    </div>
+
+    <button class="ask-btn" id="ask-btn" disabled onclick="handleAsk()">Ask AI about this region ↗</button>
+
+    <div style="margin-top: 20px;">
+      <p style="font-size: 12px; font-weight: 500; color: var(--color-text-secondary); margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.05em;">All regions</p>
+      <div class="label-list" id="label-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const regions = [
+  { id: 'head',      label: 'Head & Face',     desc: 'Includes headache, facial pain, eye, ear, nose, and throat symptoms.',              color: '#378ADD' },
+  { id: 'neck',      label: 'Neck',             desc: 'Includes throat pain, stiffness, swollen lymph nodes, and neck tension.',           color: '#639922' },
+  { id: 'chest',     label: 'Chest',            desc: 'Includes chest pain, breathing difficulty, heart palpitations, and cough.',         color: '#D85A30' },
+  { id: 'abdomen',   label: 'Abdomen',          desc: 'Includes stomach pain, nausea, bloating, digestion issues.',                        color: '#BA7517' },
+  { id: 'left-arm',  label: 'Left Arm',         desc: 'Includes shoulder, elbow, wrist, and hand pain on the left side.',                  color: '#7F77DD' },
+  { id: 'right-arm', label: 'Right Arm',        desc: 'Includes shoulder, elbow, wrist, and hand pain on the right side.',                 color: '#7F77DD' },
+  { id: 'pelvis',    label: 'Pelvis & Groin',   desc: 'Includes pelvic pain, urinary, reproductive, and groin symptoms.',                  color: '#D4537E' },
+  { id: 'left-leg',  label: 'Left Leg',         desc: 'Includes hip, knee, ankle, and foot pain on the left side.',                       color: '#1D9E75' },
+  { id: 'right-leg', label: 'Right Leg',        desc: 'Includes hip, knee, ankle, and foot pain on the right side.',                      color: '#1D9E75' },
+  { id: 'back',      label: 'Back',             desc: 'Includes upper back, lower back, and spine-related pain or stiffness.',             color: '#888780' },
+];
+
+let selected = null;
+
+const labelList = document.getElementById('label-list');
+regions.forEach(r => {
+  const item = document.createElement('div');
+  item.className = 'label-item';
+  item.id = 'li-' + r.id;
+  item.innerHTML = `<span class="dot" style="background:${r.color}"></span>${r.label}`;
+  item.onclick = () => selectRegion(r.id);
+  labelList.appendChild(item);
+});
+
+document.querySelectorAll('.region').forEach(el => {
+  el.addEventListener('click', () => selectRegion(el.dataset.id));
+});
+
+function selectRegion(id) {
+  selected = id;
+  const r = regions.find(x => x.id === id);
+
+  document.querySelectorAll('.region').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.label-item').forEach(el => el.classList.remove('active'));
+
+  const svgEl = document.getElementById('r-' + id);
+  if (svgEl) svgEl.classList.add('active');
+  const liEl = document.getElementById('li-' + id);
+  if (liEl) liEl.classList.add('active');
+
+  document.getElementById('badge').textContent = 'Selected';
+  document.getElementById('badge').className = 'badge active';
+  document.getElementById('region-title').textContent = r.label;
+  document.getElementById('region-title').style.color = 'var(--color-text-primary)';
+  document.getElementById('region-title').style.fontWeight = '500';
+  document.getElementById('region-desc').textContent = r.desc;
+  document.getElementById('ask-btn').disabled = false;
+  document.getElementById('ask-btn').textContent = `Ask AI about ${r.label} symptoms ↗`;
+}
+
+function handleAsk() {
+  if (!selected) return;
+  const r = regions.find(x => x.id === selected);
+  sendPrompt(`The user selected "${r.label}" on the body diagram. Focus your symptom questions specifically on the ${r.label} region. Ask them to describe their symptoms in that area.`);
+}
+</script>

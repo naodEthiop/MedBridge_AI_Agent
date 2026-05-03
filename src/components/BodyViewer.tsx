@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useGLTF, Html } from "@react-three/drei";
+import { Html } from "@react-three/drei";
 import * as THREE from "three";
 
 interface BodyViewerProps {
@@ -20,9 +20,6 @@ const MESH_TO_API_MAP: Record<string, string> = {
 };
 
 function Model({ onSelectPart }: { onSelectPart: (part: string) => void }) {
-  // Assume the GLB has the required meshes
-  const { nodes } = useGLTF("/models/body.glb") as any;
-  
   const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -30,9 +27,10 @@ function Model({ onSelectPart }: { onSelectPart: (part: string) => void }) {
   const groupRef = useRef<THREE.Group>(null);
 
   // Small breathing animation
-  useFrame(({ clock }) => {
+  useFrame((state) => {
     if (groupRef.current) {
-      const scale = 1 + Math.sin(clock.getElapsedTime() * 2) * 0.005;
+      // Use state.clock.elapsedTime to power the breathing animation
+      const scale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.005;
       groupRef.current.scale.set(scale, scale, scale);
     }
   });
@@ -59,7 +57,7 @@ function Model({ onSelectPart }: { onSelectPart: (part: string) => void }) {
     try {
       const res = await fetch(`/api/symptoms/body-map?bodyPart=${apiPart}`);
       if (!res.ok) throw new Error("API Failed");
-      const data = await res.json();
+      await res.json();
       
       onSelectPart(apiPart);
     } catch (err) {
@@ -68,46 +66,76 @@ function Model({ onSelectPart }: { onSelectPart: (part: string) => void }) {
     }
   };
 
-  const targetMeshes = ["head", "chest", "abdomen", "arm_left", "arm_right", "leg_left", "leg_right"];
+  const createMaterialProps = (name: string) => {
+    const isHovered = hovered === name;
+    const isSelected = selected === name;
+    return {
+      color: isSelected ? "#ffaa00" : "#f1f5f9",
+      emissive: isHovered ? "#60a5fa" : isSelected ? "#f59e0b" : "#000000",
+      emissiveIntensity: isHovered ? 0.4 : isSelected ? 0.3 : 0,
+      transparent: true,
+      opacity: 0.9,
+      roughness: 0.6,
+    };
+  };
+
+  const renderTooltip = (name: string) => {
+    if (hovered !== name) return null;
+    return (
+      <Html position={[0, 0, 0]} center style={{ pointerEvents: 'none' }}>
+        <div className="bg-stone-900 text-white px-2 py-1 rounded text-xs font-medium whitespace-nowrap opacity-90 shadow-lg">
+          {name.replace("_", " ").toUpperCase()}
+        </div>
+      </Html>
+    );
+  };
 
   return (
     <group ref={groupRef} dispose={null} position={[0, -1, 0]}>
-      {targetMeshes.map((name) => {
-        const mesh = nodes[name];
-        if (!mesh) return null;
-
-        const isHovered = hovered === name;
-        const isSelected = selected === name;
-
-        return (
-          <mesh
-            key={name}
-            geometry={mesh.geometry}
-            onPointerOver={(e) => handlePointerOver(e, name)}
-            onPointerOut={handlePointerOut}
-            onClick={(e) => handleClick(e, name)}
-          >
-            <meshStandardMaterial
-              color={isSelected ? "#ffaa00" : "#f1f5f9"}
-              emissive={isHovered ? "#60a5fa" : isSelected ? "#f59e0b" : "#000000"}
-              emissiveIntensity={isHovered ? 0.4 : isSelected ? 0.3 : 0}
-              transparent
-              opacity={0.85}
-              roughness={0.6}
-            />
-            {isHovered && (
-              <Html position={[0, 0, 0]} center style={{ pointerEvents: 'none' }}>
-                <div className="bg-stone-900 text-white px-2 py-1 rounded text-xs font-medium whitespace-nowrap opacity-90 shadow-lg">
-                  {name.replace("_", " ").toUpperCase()}
-                </div>
-              </Html>
-            )}
-          </mesh>
-        );
-      })}
+      <mesh position={[0, 1.1, 0]} onPointerOver={(e) => handlePointerOver(e, "head")} onPointerOut={handlePointerOut} onClick={(e) => handleClick(e, "head")}> 
+        <sphereGeometry args={[0.3, 32, 32]} />
+        <meshStandardMaterial {...createMaterialProps("head")} />
+        {renderTooltip("head")}
+      </mesh>
       
+      <mesh position={[0, 0.5, 0]} onPointerOver={(e) => handlePointerOver(e, "chest")} onPointerOut={handlePointerOut} onClick={(e) => handleClick(e, "chest")}> 
+        <boxGeometry args={[0.8, 0.8, 0.4]} />
+        <meshStandardMaterial {...createMaterialProps("chest")} />
+        {renderTooltip("chest")}
+      </mesh>
+      
+      <mesh position={[0, -0.3, 0]} onPointerOver={(e) => handlePointerOver(e, "abdomen")} onPointerOut={handlePointerOut} onClick={(e) => handleClick(e, "abdomen")}> 
+        <boxGeometry args={[0.7, 0.7, 0.35]} />
+        <meshStandardMaterial {...createMaterialProps("abdomen")} />
+        {renderTooltip("abdomen")}
+      </mesh>
+      
+      <mesh position={[-0.8, 0.4, 0]} onPointerOver={(e) => handlePointerOver(e, "arm_left")} onPointerOut={handlePointerOut} onClick={(e) => handleClick(e, "arm_left")}> 
+        <boxGeometry args={[0.25, 0.7, 0.25]} />
+        <meshStandardMaterial {...createMaterialProps("arm_left")} />
+        {renderTooltip("arm_left")}
+      </mesh>
+      
+      <mesh position={[0.8, 0.4, 0]} onPointerOver={(e) => handlePointerOver(e, "arm_right")} onPointerOut={handlePointerOut} onClick={(e) => handleClick(e, "arm_right")}> 
+        <boxGeometry args={[0.25, 0.7, 0.25]} />
+        <meshStandardMaterial {...createMaterialProps("arm_right")} />
+        {renderTooltip("arm_right")}
+      </mesh>
+      
+      <mesh position={[-0.3, -1.0, 0]} onPointerOver={(e) => handlePointerOver(e, "leg_left")} onPointerOut={handlePointerOut} onClick={(e) => handleClick(e, "leg_left")}> 
+        <boxGeometry args={[0.25, 0.8, 0.25]} />
+        <meshStandardMaterial {...createMaterialProps("leg_left")} />
+        {renderTooltip("leg_left")}
+      </mesh>
+      
+      <mesh position={[0.3, -1.0, 0]} onPointerOver={(e) => handlePointerOver(e, "leg_right")} onPointerOut={handlePointerOut} onClick={(e) => handleClick(e, "leg_right")}> 
+        <boxGeometry args={[0.25, 0.8, 0.25]} />
+        <meshStandardMaterial {...createMaterialProps("leg_right")} />
+        {renderTooltip("leg_right")}
+      </mesh>
+
       {errorMsg && (
-        <Html position={[0, 2, 0]} center>
+        <Html position={[0, 2.0, 0]} center>
           <div className="bg-red-500/90 text-white px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap shadow-md">
             {errorMsg}
           </div>
@@ -137,5 +165,4 @@ export function BodyViewer({ onSelectPart }: BodyViewerProps) {
   );
 }
 
-// Preload the model
-useGLTF.preload("/models/body.glb");
+// Model preload disabled while the asset is not guaranteed to exist.
