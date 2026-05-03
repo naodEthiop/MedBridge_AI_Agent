@@ -20,8 +20,10 @@ export default function SymptomCheckerPage() {
     <div className="flex min-h-screen bg-sahara-bg text-sahara-fg lg:pl-64">
       <main className="flex flex-1 flex-col">
         <header className="sticky top-0 z-40 border-b border-stone-200/60 bg-sahara-bg px-8 py-5 shadow-ambient">
-          <h1 className="font-serif text-3xl">AI Symptom Checker</h1>
-          <p className="mt-1 text-sm text-sahara-muted">Select a body area and send your symptom note for triage.</p>
+          <h1 className="font-serif text-3xl">Medix AI · Symptom &amp; image assist</h1>
+          <p className="mt-1 text-sm text-sahara-muted">
+            Structured guidance from symptoms and optional photos — not a replacement for a clinician.
+          </p>
         </header>
 
         <div className="grid flex-1 gap-8 p-8 xl:grid-cols-[1fr_24rem]">

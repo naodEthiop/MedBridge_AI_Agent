@@ -59,19 +59,26 @@ export function PatientDetail(props: { id: string }) {
     setChatInput("");
     setChatLoading(true);
 
-    const res = await fetch("/api/agent", {
+    const res = await fetch("/api/ai/process", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ symptom: trimmed, followUpAnswer: "Doctor requested support from patient detail." }),
+      body: JSON.stringify({ message: trimmed, skipTriage: true }),
     });
-    const data = res.ok ? ((await res.json()) as { summary?: string; recommendation?: string; question?: string }) : null;
+    const data = res.ok
+      ? ((await res.json()) as {
+          ok?: boolean;
+          medix?: { message?: string; nextSteps?: string[] };
+          error?: string;
+        })
+      : null;
+    const medix = data?.ok !== false ? data?.medix : undefined;
 
     setMessages((current) => [
       ...current,
       {
         role: "assistant",
-        content: data
-          ? [data.summary, data.recommendation, data.question].filter(Boolean).join(" ")
+        content: medix
+          ? [medix.message, ...(medix.nextSteps ?? [])].filter(Boolean).slice(0, 2).join(" ")
           : "I could not reach the assistant endpoint. Please try again.",
       },
     ]);

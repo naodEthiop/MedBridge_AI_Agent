@@ -1,0 +1,65 @@
+import { NextResponse } from "next/server";
+
+import { processUserInput, type HealthAgentInput } from "@/lib/ai/agent";
+import { createCase } from "@/lib/backend/case-service";
+import { getAccessTokenFromRequest } from "@/lib/server/authUser";
+import { env } from "@/lib/env";
+
+export async function POST(req: Request) {
+  try {
+    if (!env.GEMINI_API_KEY?.trim()) {
+      return NextResponse.json(
+        { ok: false, error: "Medix AI text engine is not configured (GEMINI_API_KEY)." },
+        { status: 503 },
+      );
+    }
+
+    const body = (await req.json()) as HealthAgentInput & { skipTriage?: boolean; transcript?: string };
+    const medix = await processUserInput({
+      message: typeof body.message === "string" ? body.message : undefined,
+      symptoms: Array.isArray(body.symptoms) ? body.symptoms.filter((s): s is string => typeof s === "string") : undefined,
+      imageFindings: Array.isArray(body.imageFindings)
+        ? body.imageFindings.filter((s): s is string => typeof s === "string")
+        : undefined,
+      bodyPart: typeof body.bodyPart === "string" ? body.bodyPart : body.bodyPart === null ? null : undefined,
+      transcript: typeof body.transcript === "string" ? body.transcript : undefined,
+      skipTriage: body.skipTriage === true,
+    });
+
+    let persistedCase: { id: string; createdAt: string; persisted?: boolean } | null = null;
+    const token = getAccessTokenFromRequest(req);
+    if (token) {
+      try {
+        const symptoms =
+          typeof body.message === "string" && body.message.trim()
+            ? body.message.trim()
+            : Array.isArray(body.symptoms)
+            ? body.symptoms.filter((s): s is string => typeof s === "string").join("; ")
+            : "Health concern";
+        persistedCase = await createCase(
+          {
+            symptoms,
+            urgency: medix.urgency === "urgent" ? "urgent" : "medium",
+            redFlags: medix.redFlags,
+            doctorSummary: medix.message,
+          },
+          token,
+        );
+      } catch {
+        persistedCase = null;
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      data: {
+        medix,
+        recommendedActions: medix.nextSteps,
+        case: persistedCase,
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Medix AI failed to respond.";
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
+}

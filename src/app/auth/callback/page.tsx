@@ -1,12 +1,7 @@
 "use client";
 
-import { createClient } from "@supabase/supabase-js";
 import { useRouter, useSearchParams } from "next/navigation";
-<<<<<<< HEAD
 import { Suspense, useEffect, useState } from "react";
-
-=======
-import { Suspense, useEffect } from "react";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import {
@@ -16,59 +11,54 @@ import {
   upsertUserRoleRow,
 } from "@/lib/supabase/persistUserRole";
 
->>>>>>> 55794be (refactor: remove middleware and enhance auth pages with Suspense)
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [message, setMessage] = useState("Completing sign-in…");
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !anon) {
-      setMessage("Supabase is not configured.");
-      router.replace("/login?google=unavailable");
-      return;
-    }
-
-    const supabase = createClient(url, anon, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        flowType: "pkce",
-      },
-    });
-
     let cancelled = false;
 
     void (async () => {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (cancelled) return;
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (cancelled) return;
 
-      if (sessionError || !sessionData.session?.access_token) {
-        setMessage("Could not complete Google sign-in.");
-        router.replace("/login?error=oauth");
-        return;
-      }
+        if (sessionError || !sessionData.session?.access_token) {
+          setMessage("Could not complete Google sign-in.");
+          router.replace("/login?error=oauth");
+          return;
+        }
 
-      const sync = await fetch("/api/auth/sync", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
-      });
-      const body = (await sync.json()) as { user?: { role: "patient" | "doctor" }; error?: string };
-      if (!sync.ok) {
-        setMessage(body.error ?? "Sync failed.");
-        router.replace("/login?error=sync");
-        return;
-      }
+        const sync = await fetch("/api/auth/sync", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
+        });
+        const body = (await sync.json()) as { ok?: boolean; user?: { role: "patient" | "doctor" }; error?: string };
+        if (!sync.ok || body.ok === false) {
+          setMessage(body.error ?? "Sync failed.");
+          router.replace("/login?error=sync");
+          return;
+        }
 
-      const next = searchParams.get("next");
-      if (next && next.startsWith("/")) {
-        router.replace(next);
-        return;
+        const stored =
+          typeof window !== "undefined" ? window.localStorage.getItem(SELECTED_ROLE_STORAGE_KEY) : null;
+        const role = stored ? normalizeAppRole(stored) : normalizeAppRole(body.user?.role ?? "patient");
+        await upsertUserRoleRow(supabase, sessionData.session, role);
+
+        const next = searchParams.get("next");
+        if (next && next.startsWith("/")) {
+          router.replace(next);
+          return;
+        }
+        router.replace(postLoginPathForRole(role));
+      } catch {
+        if (!cancelled) {
+          setMessage("Something went wrong.");
+          router.replace("/login?error=sync");
+        }
       }
-      router.replace(body.user?.role === "doctor" ? "/doctor/dashboard" : "/patient");
     })();
 
     return () => {
@@ -81,18 +71,6 @@ function AuthCallbackContent() {
       <p className="font-serif text-xl text-sahara-fg">{message}</p>
       <p className="mt-2 text-sm text-sahara-muted">You will be redirected shortly.</p>
     </div>
-  );
-}
-
-export default function AuthCallbackPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-sahara-bg text-sahara-muted">Loading…</div>
-      }
-    >
-      <AuthCallbackContent />
-    </Suspense>
   );
 }
 

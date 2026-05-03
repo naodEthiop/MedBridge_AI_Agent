@@ -9,6 +9,14 @@ type ChatMessage = {
   content: string;
 };
 
+type MedixPayload = {
+  message: string;
+  urgency: "low" | "medium" | "urgent";
+  possibleConditions: string[];
+  nextSteps: string[];
+  redFlags: string[];
+};
+
 export function DoctorAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -27,19 +35,22 @@ export function DoctorAssistant() {
     setInput("");
     setLoading(true);
 
-    const res = await fetch("/api/agent", {
+    const res = await fetch("/api/ai/process", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ symptom: trimmed, followUpAnswer: "Doctor requested clinical support." }),
+      body: JSON.stringify({ message: trimmed, skipTriage: true }),
     });
-    const data = res.ok ? ((await res.json()) as { summary?: string; recommendation?: string; question?: string }) : null;
+    const data = res.ok
+      ? ((await res.json()) as { ok?: boolean; medix?: MedixPayload; error?: string })
+      : null;
+    const medix = data?.ok !== false ? data?.medix : undefined;
     setMessages((current) => [
       ...current,
       {
         role: "assistant",
-        content: data
-          ? [data.summary, data.recommendation, data.question].filter(Boolean).join(" ")
-          : "I could not reach the assistant endpoint. Please try again.",
+        content: medix
+          ? [medix.message, ...(medix.nextSteps ?? [])].filter(Boolean).slice(0, 2).join(" ")
+          : data?.error ?? "I could not reach the assistant endpoint. Please try again.",
       },
     ]);
     setLoading(false);

@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+import { apiFetchJson } from "@/lib/api/client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type ProfilePayload = {
   id: string;
@@ -10,6 +14,7 @@ type ProfilePayload = {
 };
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<ProfilePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,16 +22,25 @@ export default function ProfilePage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/user/profile", { cache: "no-store" });
-        const payload = (await res.json()) as {
-          ok: boolean;
-          profile?: ProfilePayload;
-          error?: string;
-        };
-        if (!res.ok || !payload.ok || !payload.profile) {
-          throw new Error(payload.error || "Unable to load profile");
+        const supabase = getSupabaseBrowserClient();
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        const result = await apiFetchJson<{ ok?: boolean; profile?: ProfilePayload }>("/api/user/profile", {
+          cache: "no-store",
+          bearerToken: token,
+        });
+        if (!result.success) {
+          if (result.status === 401) {
+            router.replace("/login?next=/profile");
+            return;
+          }
+          throw new Error(result.error);
         }
-        setProfile(payload.profile);
+        const p = result.data.profile;
+        if (!p) {
+          throw new Error("Unable to load profile");
+        }
+        setProfile(p);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to load profile");
       } finally {
@@ -34,7 +48,7 @@ export default function ProfilePage() {
       }
     }
     load();
-  }, []);
+  }, [router]);
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-3xl p-6">
