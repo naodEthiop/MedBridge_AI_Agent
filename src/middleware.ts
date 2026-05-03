@@ -30,7 +30,7 @@ async function resolveSession(
   request: NextRequest,
   baseResponse: NextResponse,
 ): Promise<{
-  user: { role: string } | null;
+  user: { role: string; tenantId?: string; id?: string } | null;
   response: NextResponse;
   sealedInvalid: boolean;
 }> {
@@ -38,20 +38,21 @@ async function resolveSession(
   if (sealed) {
     const sessionUser = await readSessionFromCookieValue(sealed);
     if (sessionUser) {
-      return { user: { role: sessionUser.role }, response: baseResponse, sealedInvalid: false };
+      return { user: { role: sessionUser.role, tenantId: sessionUser.tenantId, id: sessionUser.id }, response: baseResponse, sealedInvalid: false };
     }
     return { user: null, response: baseResponse, sealedInvalid: true };
   }
 
   const authUser = await getAuthUserFromRequest(request);
   if (authUser) {
-    return { user: { role: authUser.role }, response: baseResponse, sealedInvalid: false };
+    return { user: { role: authUser.role, tenantId: (authUser as any).tenantId, id: authUser.id }, response: baseResponse, sealedInvalid: false };
   }
 
   return { user: null, response: baseResponse, sealedInvalid: false };
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  console.log(`[Edge Middleware] Incoming request: ${request.method} ${request.url}`);
   const { pathname } = request.nextUrl;
   let response = NextResponse.next({ request });
 
@@ -102,6 +103,16 @@ export async function proxy(request: NextRequest) {
     return redirect(request, "/doctor/dashboard", sessionResponse);
   }
 
+  if (user.tenantId) {
+    sessionResponse.headers.set("x-tenant-id", user.tenantId);
+    console.log(`[Edge Middleware] Attached x-tenant-id: ${user.tenantId}`);
+  }
+  if (user.id) {
+    sessionResponse.headers.set("x-user-id", user.id);
+    console.log(`[Edge Middleware] Attached x-user-id: ${user.id}`);
+  }
+
+  console.log(`[Edge Middleware] Forwarding request downstream`);
   return sessionResponse;
 }
 

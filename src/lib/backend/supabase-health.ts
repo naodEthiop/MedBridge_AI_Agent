@@ -1,14 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
-
-import { env } from "@/lib/env";
-
-function getSupabase() {
-  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return null;
-  return createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-}
+import { supabase as sb } from "@/lib/db/supabaseClient";
 
 export async function fetchPatientClinicalProfile(patientId: string) {
-  const sb = getSupabase();
   if (!sb) return null;
 
   // Fallback-safe multi-query profile. Missing tables are tolerated.
@@ -37,7 +29,6 @@ export async function saveClinicalObservation(
   observation: string,
   meta: Record<string, unknown>,
 ) {
-  const sb = getSupabase();
   if (!sb) return `obs_${Date.now()}`;
 
   const { data, error } = await sb

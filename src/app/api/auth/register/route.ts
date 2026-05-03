@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
 
 import { env, hasSupabasePublicEnv } from '@/lib/env';
-import { createSupabaseAdminClient } from '@/lib/supabase/server';
+import { supabase } from '@/lib/db/supabaseClient';
 
 const ACCESS_COOKIE_NAME = 'medbridge-access-token';
 const REFRESH_COOKIE_NAME = 'medbridge-refresh-token';
@@ -42,15 +41,6 @@ const bodySchema = z.discriminatedUnion('role', [
   }),
 ]);
 
-function buildSupabaseClient() {
-  if (!hasSupabasePublicEnv) {
-    throw new Error('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
-  }
-  return createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
-
 function sanitizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
@@ -74,40 +64,24 @@ export async function POST(request: Request) {
   const email = sanitizeEmail(data.email);
   const role = data.role;
 
-  const supabase = buildSupabaseClient();
-  const admin = createSupabaseAdminClient();
-
   let userId: string | null = null;
   let signInResult;
 
   try {
-    if (admin) {
-      const { data: createData, error: createError } = await admin.auth.admin.createUser({
-        email,
-        password: data.password,
-        user_metadata: { role },
-        email_confirm: true,
-      });
-      if (createError) {
-        return NextResponse.json({ error: createError.message }, { status: 400 });
-      }
-      userId = createData.user?.id ?? null;
-      if (!userId) throw new Error('Failed to create Supabase user.');
-    } else {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password: data.password,
-        options: { data: { role } }
-      });
-      if (signUpError) {
-        return NextResponse.json({ error: signUpError.message }, { status: 400 });
-      }
-      userId = signUpData.user?.id ?? null;
-      if (!userId) throw new Error('Failed to create Supabase user.');
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password: data.password,
+      options: { data: { role } }
+    });
+    
+    if (signUpError) {
+      return NextResponse.json({ error: signUpError.message }, { status: 400 });
     }
+    
+    userId = signUpData.user?.id ?? null;
+    if (!userId) throw new Error('Failed to create Supabase user.');
 
-    const db = admin ?? supabase;
-    const { error: userError } = await db.from('users').insert({ id: userId, email, role });
+    const { error: userError } = await supabase.from('users').insert({ id: userId, email, role });
     if (userError) {
       return NextResponse.json({ error: userError.message }, { status: 500 });
     }
@@ -128,7 +102,7 @@ export async function POST(request: Request) {
           bloodType: data.patient.bloodType,
         },
       };
-      const { error: patientError } = await db.from('patients').insert(patientPayload);
+      const { error: patientError } = await supabase.from('patients').insert(patientPayload);
       if (patientError) {
         return NextResponse.json({ error: patientError.message }, { status: 500 });
       }
@@ -141,7 +115,7 @@ export async function POST(request: Request) {
         clinic_name: data.doctor.clinicName,
         license_number: data.doctor.licenseNumber ?? null,
       };
-      const { error: doctorError } = await db.from('doctors').insert(doctorPayload);
+      const { error: doctorError } = await supabase.from('doctors').insert(doctorPayload);
       if (doctorError) {
         return NextResponse.json({ error: doctorError.message }, { status: 500 });
       }

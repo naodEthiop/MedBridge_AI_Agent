@@ -1,11 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
-
 import { env, hasSupabasePublicEnv } from '@/lib/env';
+import { supabase } from '@/lib/db/supabaseClient';
 
 export type AuthenticatedUser = {
   id: string;
   email: string | null;
   role: 'patient' | 'doctor';
+  tenantId: string;
 };
 
 export class UnauthorizedError extends Error {
@@ -45,12 +45,7 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
     throw new UnauthorizedError();
   }
 
-  const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
-
-  const { data, error } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser(accessToken);
   if (error || !data.user) {
     throw new UnauthorizedError();
   }
@@ -59,5 +54,6 @@ export async function getAuthenticatedUser(request: Request): Promise<Authentica
     id: data.user.id,
     email: data.user.email ?? null,
     role: data.user.user_metadata?.role === 'doctor' ? 'doctor' : 'patient',
+    tenantId: data.user.user_metadata?.tenantId || 'default',
   };
 }

@@ -96,9 +96,6 @@ export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
 }): Promise<MedicalResponseShape | { error: string }> {
-  if (!env.GEMINI_API_KEY?.trim()) {
-    return { error: "AI unavailable" };
-  }
 
   return generateMedicalResponse({
     message: input.message,
@@ -138,9 +135,6 @@ export async function runRiskPrediction(input: {
   timelineSummary: string;
   labsSummary: string;
 }): Promise<RiskPrediction | { error: string }> {
-  if (!env.GEMINI_API_KEY?.trim()) {
-    return { error: "AI unavailable" };
-  }
 
   try {
     if (input.patientId) {
@@ -170,9 +164,6 @@ export async function generateDoctorCopilotReport(input: {
   labsSummary: string;
   appointmentsSummary: string;
 }): Promise<DoctorCopilotReport | { error: string }> {
-  if (!env.GEMINI_API_KEY?.trim()) {
-    return { error: "AI unavailable" };
-  }
 
   try {
     if (input.patientId) {

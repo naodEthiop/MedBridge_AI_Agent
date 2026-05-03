@@ -17,8 +17,10 @@ export type DoctorProfile = {
 };
 
 export type SessionUser = {
+  id?: string;
   email: string;
   role: UserRole;
+  tenantId?: string;
   patientProfile?: PatientProfile;
   doctorProfile?: DoctorProfile;
 };

@@ -28,23 +28,40 @@ async function geminiGenerateJSON(args: { system: string; user: string }) {
   const model = modelName();
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
 
+  const payload = {
+    contents: [{ role: "user", parts: [{ text: `${args.system}\n\n${args.user}` }] }],
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 800,
+      responseMimeType: "application/json",
+    },
+  };
+
+  console.log(`[Gemini API] Request Payload:`, JSON.stringify(payload, null, 2));
+  
+  const start = performance.now();
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: `${args.system}\n\n${args.user}` }] }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 800,
-        responseMimeType: "application/json",
-      },
-    }),
+    body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(await res.text());
+  const latency = performance.now() - start;
+  
+  console.log(`[Gemini API] Latency: ${latency.toFixed(2)}ms | Status: ${res.status}`);
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`[Gemini API] Error Response:`, errorText);
+    throw new Error(errorText);
+  }
+  
   const json = (await res.json()) as any;
+  console.log(`[Gemini API] Response:`, JSON.stringify(json, null, 2));
+
   const text =
     json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text).filter(Boolean).join("") ?? "";
   if (!text) throw new Error("Gemini returned empty response.");
+  
   const parsed = JSON.parse(text);
   return parsed;
 }
@@ -63,6 +80,7 @@ export async function geminiSymptomTriage(args: {
   ].join("\n");
 
   const user = `User symptom message: ${args.message}\nSelected body region: ${args.bodyPart ?? "unspecified"}`;
+  
   const raw = await geminiGenerateJSON({ system, user });
   return triageSchema.parse(raw) satisfies GeminiTriage;
 }
@@ -175,6 +193,7 @@ export async function geminiMedixHealthResponse(combinedUserContext: string) {
   ].join("\n");
 
   const user = `Context from the user (may include symptoms text and/or summarized image findings — all non-diagnostic until reviewed by a clinician):\n${combinedUserContext}`;
+  
   const raw = await geminiGenerateJSON({ system, user });
   return medixHealthSchema.parse(raw) satisfies MedixHealthResponse;
 }
@@ -269,24 +288,40 @@ export async function geminiAnalyzeImage(args: {
     .filter(Boolean)
     .join("\n");
 
+  const payload = {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType: args.mimeType, data: args.base64Data } },
+        ],
+      },
+    ],
+    generationConfig: { temperature: 0.2, maxOutputTokens: 900, responseMimeType: "application/json" },
+  };
+
+  console.log(`[Gemini API] Image Request Payload:`, JSON.stringify({ ...payload, contents: [{ ...payload.contents[0], parts: [{ text: prompt }, { inlineData: { mimeType: args.mimeType, data: "<BASE64_DATA>" } }] }] }, null, 2));
+
+  const start = performance.now();
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType: args.mimeType, data: args.base64Data } },
-          ],
-        },
-      ],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 900, responseMimeType: "application/json" },
-    }),
+    body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(await res.text());
+  const latency = performance.now() - start;
+  
+  console.log(`[Gemini API] Image Latency: ${latency.toFixed(2)}ms | Status: ${res.status}`);
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`[Gemini API] Image Error Response:`, errorText);
+    throw new Error(errorText);
+  }
+
   const json = (await res.json()) as any;
+  console.log(`[Gemini API] Image Response:`, JSON.stringify(json, null, 2));
+
   const text =
     json?.candidates?.[0]?.content?.parts?.map((p: any) => p?.text).filter(Boolean).join("") ?? "";
   if (!text) throw new Error("Gemini returned empty response.");

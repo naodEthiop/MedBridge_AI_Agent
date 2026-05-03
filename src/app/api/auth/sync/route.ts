@@ -1,10 +1,10 @@
 import { cookies } from "next/headers";
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 import { createSessionCookie, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/session-core";
 import type { SessionUser } from "@/lib/auth/types";
 import { env, hasSupabasePublicEnv } from "@/lib/env";
+import { supabase } from "@/lib/db/supabaseClient";
 
 /**
  * Bridges Supabase OAuth (or any Supabase session) into the app's httpOnly role cookie
@@ -21,11 +21,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing access token." }, { status: 401 });
   }
 
-  const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-  });
-
-  const { data, error } = await supabase.auth.getUser();
+  // Inject token dynamically for this single request check
+  const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user?.email) {
     return NextResponse.json({ error: "Invalid or expired Supabase session." }, { status: 401 });
   }

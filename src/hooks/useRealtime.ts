@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { supabase } from "@/lib/db/supabaseClient";
 
 type RealtimeHandlers = Record<string, (payload: Record<string, unknown>) => void>;
 
 export function useRealtime(channelName: string, handlers: RealtimeHandlers, onReconnect?: () => void) {
-  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+  // Use the singleton supabase
   const handlersRef = useRef(handlers);
   const reconnectRef = useRef(onReconnect);
   const lastProcessedEventTimestampRef = useRef<number>(0);

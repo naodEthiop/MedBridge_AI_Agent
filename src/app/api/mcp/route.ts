@@ -6,6 +6,7 @@ import type { McpToolRequest, NearbyPlace } from '@/lib/backend/types';
 import { getRepositories } from '@/lib/server/repositories';
 import { getSupabaseAdmin } from '@/lib/server/supabaseAdmin';
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
+import { createDBGateway } from '@/lib/db/dbGateway';
 
 function base64ToBlob(base64: string, mimeType: string): Blob {
   const bytes = Buffer.from(base64, 'base64');
@@ -77,11 +78,20 @@ export async function POST(request: Request) {
         }
 
         console.log('Using DB tool: get_patient_data');
-        const patient = await repos.patients.getPatient(body.input.patientId);
+        const dbGateway = createDBGateway({ tenantId: user.tenantId, userId: user.id, role: user.role });
+        
+        // Wait, patient fetch uses repositories. Let's pass the tenant filter if repositories use dbGateway.
+        // The user says: "Ensure every API route validates session first and injects tenantId into MCP query"
+        // And "All DB queries go through dbGateway".
+        // The repositories use normal supabase queries, so we need to either change repositories or use DBGateway here directly.
+        // Let's use DBGateway directly for the patient data as per the plan: "All DB queries go through dbGateway"
+        const patients = await dbGateway.query('patients', { where: `id = '${body.input.patientId}'`, limit: 1 });
+        const patient = patients[0];
+        
         if (!patient) {
           return NextResponse.json({ ok: false, tool: body.tool, error: 'Patient not found' }, { status: 404 });
         }
-        const appointments = await repos.appointments.listAppointmentsForPatient(patient.id);
+        const appointments = await dbGateway.query('appointments', { where: `patient_id = '${patient.id}'` });
         return NextResponse.json({ ok: true, tool: body.tool, result: { patient, appointments } });
       }
       case 'save_doctor_notes': {
@@ -90,7 +100,10 @@ export async function POST(request: Request) {
         }
 
         console.log('Using DB tool: save_doctor_notes');
-        const doctor = await repos.doctors.getDoctor(user.id);
+        const dbGateway = createDBGateway({ tenantId: user.tenantId, userId: user.id, role: user.role });
+        
+        const doctors = await dbGateway.query('doctors', { where: `id = '${user.id}'`, limit: 1 });
+        const doctor = doctors[0];
         if (!doctor) {
           return NextResponse.json({ ok: false, tool: body.tool, error: 'Doctor record not found' }, { status: 403 });
         }
@@ -98,24 +111,14 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: false, tool: body.tool, error: 'Doctor mismatch' }, { status: 403 });
         }
 
-        const patient = await repos.patients.getPatient(body.input.patientId);
+        const patients = await dbGateway.query('patients', { where: `id = '${body.input.patientId}'`, limit: 1 });
+        const patient = patients[0];
         if (!patient) {
           return NextResponse.json({ ok: false, tool: body.tool, error: 'Patient not found' }, { status: 404 });
         }
 
-        let supabase = null;
         try {
-          supabase = getSupabaseAdmin();
-        } catch (error) {
-          return NextResponse.json(
-            { ok: false, tool: body.tool, error: 'Supabase admin is not configured.' },
-            { status: 503 },
-          );
-        }
-
-        const { data, error } = await supabase
-          .from('doctor_notes')
-          .insert({
+          const result = await dbGateway.insert('doctor_notes', {
             patient_id: patient.id,
             doctor_id: doctor.id,
             subjective: body.input.subjective,
@@ -123,14 +126,12 @@ export async function POST(request: Request) {
             heart_rate: body.input.heartRate,
             assessment: body.input.assessment,
             status: body.input.status,
-          })
-          .select('*')
-          .maybeSingle();
-        if (error || !data) {
-          const message = error?.message ?? 'Doctor note insert failed';
+          });
+          return NextResponse.json({ ok: true, tool: body.tool, result: { note: result } });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Doctor note insert failed';
           return NextResponse.json({ ok: false, tool: body.tool, error: message }, { status: 500 });
         }
-        return NextResponse.json({ ok: true, tool: body.tool, result: { note: data } });
       }
       default:
         return NextResponse.json({ ok: false, error: 'Unknown tool' }, { status: 400 });

@@ -1,10 +1,11 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { env, hasSupabasePublicEnv } from "@/lib/env";
+import { supabase } from "@/lib/db/supabaseClient";
 
 export type AuthUser = {
   id: string;
   email: string | null;
   role: string;
+  tenantId: string;
 };
 
 export function getAccessTokenFromRequest(req: Request) {
@@ -38,7 +39,7 @@ export function getAccessTokenFromRequest(req: Request) {
 
 export function getSupabaseServerClient() {
   if (!hasSupabasePublicEnv) return null;
-  return createSupabaseServerClient();
+  return supabase;
 }
 
 export async function getAuthUserFromRequest(req: Request): Promise<AuthUser | null> {
@@ -47,13 +48,13 @@ export async function getAuthUserFromRequest(req: Request): Promise<AuthUser | n
   const token = getAccessTokenFromRequest(req);
   if (!token) return null;
 
-  const supabase = createSupabaseServerClient(token);
-  const { data, error } = await supabase.auth.getUser();
+  const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) return null;
 
   return {
     id: data.user.id,
     email: data.user.email ?? null,
     role: String(data.user.user_metadata?.role ?? "patient"),
+    tenantId: String(data.user.user_metadata?.tenantId ?? "default"),
   };
 }

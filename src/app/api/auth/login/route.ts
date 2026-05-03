@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
 
 import { env, hasSupabasePublicEnv } from '@/lib/env';
+import { supabase } from '@/lib/db/supabaseClient';
 
 const ACCESS_COOKIE_NAME = 'medbridge-access-token';
 const REFRESH_COOKIE_NAME = 'medbridge-refresh-token';
@@ -11,15 +11,6 @@ const bodySchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
-
-function buildSupabaseClient() {
-  if (!hasSupabasePublicEnv) {
-    throw new Error('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
-  }
-  return createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
 
 function sanitizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -38,7 +29,6 @@ export async function POST(request: Request) {
 
   const { email: rawEmail, password } = parsed.data;
   const email = sanitizeEmail(rawEmail);
-  const supabase = buildSupabaseClient();
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data.session) {

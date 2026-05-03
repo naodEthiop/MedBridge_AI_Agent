@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { apiFetchJson, normalizeCaseRow, type CaseItemNormalized } from "@/lib/api/client";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { supabase } from "@/lib/db/supabaseClient";
 
 type CaseItem = CaseItemNormalized;
 
@@ -16,7 +16,6 @@ export default function CasesPage() {
   useEffect(() => {
     async function load() {
       try {
-        const supabase = getSupabaseBrowserClient();
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
         const result = await apiFetchJson<{ ok?: boolean; cases?: Record<string, unknown>[] }>("/api/cases?limit=20", {
