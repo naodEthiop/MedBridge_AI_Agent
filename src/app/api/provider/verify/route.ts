@@ -1,41 +1,55 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
-import { getRepositories } from "@/lib/server/repositories";
+import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
+import { getRepositories } from '@/lib/server/repositories';
 
-export async function POST(req: Request) {
-  const body = (await req.json()) as {
-    providerName?: string;
-    licenseNumber?: string;
-    clinic?: string;
-  };
+export async function POST(request: Request) {
+  try {
+    await getAuthenticatedUser(request);
 
-  const providerName = body.providerName?.trim();
-  if (!providerName) {
-    return NextResponse.json({ error: "providerName is required" }, { status: 400 });
-  }
+    const body = (await request.json()) as {
+      providerName?: string;
+      licenseNumber?: string;
+      clinic?: string;
+    };
 
-  const repos = getRepositories();
-  const doctors = await repos.doctors.listDoctors();
-  const matched = doctors.find((d) => d.fullName.toLowerCase().includes(providerName.toLowerCase()));
+    const providerName = body.providerName?.trim();
+    if (!providerName) {
+      return NextResponse.json({ ok: false, error: 'providerName is required' }, { status: 400 });
+    }
 
-  return NextResponse.json({
-    providerName,
-    verified: !!matched,
-    status: matched ? "verified" : "not_found",
-    details: matched
-      ? {
-          doctorId: matched.id,
-          specialty: matched.specialty,
-          clinic: matched.clinicName ?? body.clinic ?? null,
-          note: "Provider matched existing doctor records.",
-        }
-      : {
-          note: "No matching provider record found in current backend data.",
+    const repos = getRepositories();
+    const doctors = await repos.doctors.listDoctors();
+    const matched = doctors.find((d) => d.fullName.toLowerCase().includes(providerName.toLowerCase()));
+
+    return NextResponse.json({
+      ok: true,
+      data: {
+        providerName,
+        verified: !!matched,
+        status: matched ? 'verified' : 'not_found',
+        details: matched
+          ? {
+              doctorId: matched.id,
+              specialty: matched.specialty,
+              clinic: matched.clinicName ?? body.clinic ?? null,
+              note: 'Provider matched existing doctor records.',
+            }
+          : {
+              note: 'No matching provider record found in current backend data.',
+            },
+        submitted: {
+          licenseNumber: body.licenseNumber ?? null,
+          clinic: body.clinic ?? null,
         },
-    submitted: {
-      licenseNumber: body.licenseNumber ?? null,
-      clinic: body.clinic ?? null,
-    },
-  });
+      },
+    });
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: 401 });
+    }
+    const message = error instanceof Error ? error.message : 'Unable to verify provider';
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
 }
 

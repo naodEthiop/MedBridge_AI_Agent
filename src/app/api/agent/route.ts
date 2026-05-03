@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { buildFinalAgentResponse, buildInitialAgentResponse } from "@/lib/backend/agent";
 import { getEmergencySteps, getNearbyHospitals } from "@/lib/backend/mcp";
-import { processUserInput } from "@/lib/ai/agent";
+import { runHealthAssistant } from "@/lib/ai/aiService";
 
 export async function POST(request: Request) {
   const body = (await request.json()) as { symptom?: string; followUpAnswer?: string };
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, data: buildInitialAgentResponse(symptom) });
   }
 
-  const medix = await processUserInput({
+  const medix = await runHealthAssistant({
     message: `${symptom}. ${followUpAnswer}`,
     skipTriage: true,
   });

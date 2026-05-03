@@ -1,9 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
-import { getSessionFromRequestCookies } from "@/lib/server/session-cookie";
+import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
 
-export async function GET() {
-  const user = await getSessionFromRequestCookies();
-  if (!user) return NextResponse.json({ authenticated: false }, { status: 401 });
-  return NextResponse.json({ authenticated: true, mode: "demo", user });
+export async function GET(request: Request) {
+  try {
+    const user = await getAuthenticatedUser(request);
+    return NextResponse.json({ ok: true, authenticated: true, mode: 'supabase', user });
+  } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ ok: false, authenticated: false, error: error.message }, { status: 401 });
+    }
+    const message = error instanceof Error ? error.message : 'Unable to validate session';
+    return NextResponse.json({ ok: false, authenticated: false, error: message }, { status: 500 });
+  }
 }

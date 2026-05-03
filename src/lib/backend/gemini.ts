@@ -179,6 +179,76 @@ export async function geminiMedixHealthResponse(combinedUserContext: string) {
   return medixHealthSchema.parse(raw) satisfies MedixHealthResponse;
 }
 
+const riskPredictionSchema = z.object({
+  risk_score: z.number().min(0).max(100),
+  risk_level: z.enum(['low', 'medium', 'high', 'critical']),
+  predicted_conditions: z.array(z.string()).default([]),
+  recommended_actions: z.array(z.string()).default([]),
+  escalation_required: z.boolean(),
+  rationale: z.string(),
+});
+export type RiskPrediction = z.infer<typeof riskPredictionSchema>;
+
+export async function geminiRiskPrediction(args: {
+  demographics: string;
+  symptomsHistory: string;
+  timelineSummary: string;
+  labsSummary: string;
+}) {
+  const system = [
+    'You are a clinical risk prediction engine for a healthcare platform.',
+    'Return ONLY valid JSON (no markdown).',
+    'Use the input to assess current risk and decide whether escalation is required.',
+    'JSON schema:',
+    `{ "risk_score": number, "risk_level": "low"|"medium"|"high"|"critical", "predicted_conditions": string[], "recommended_actions": string[], "escalation_required": boolean, "rationale": string }`,
+  ].join('\n');
+
+  const user = [
+    `Demographics: ${args.demographics}`,
+    `Symptoms history: ${args.symptomsHistory}`,
+    `Timeline summary: ${args.timelineSummary}`,
+    `Lab summary: ${args.labsSummary}`,
+  ].join('\n\n');
+
+  const raw = await geminiGenerateJSON({ system, user });
+  return riskPredictionSchema.parse(raw) satisfies RiskPrediction;
+}
+
+const doctorCopilotSchema = z.object({
+  patientSummary: z.string(),
+  abnormalities: z.array(z.string()).default([]),
+  differentialDiagnoses: z.array(z.string()).default([]),
+  treatmentRecommendations: z.array(z.string()).default([]),
+  doctorNotes: z.string(),
+  takeaway: z.string(),
+});
+export type DoctorCopilotReport = z.infer<typeof doctorCopilotSchema>;
+
+export async function geminiDoctorCopilotReport(args: {
+  patientProfile: string;
+  timelineSummary: string;
+  labsSummary: string;
+  appointmentsSummary: string;
+}) {
+  const system = [
+    'You are a clinical doctor copilot for a healthcare provider.',
+    'Return ONLY valid JSON (no markdown).',
+    'Summarize patient history, highlight abnormalities, propose differential diagnoses, suggest treatment paths, and auto-generate doctor notes.',
+    'JSON schema:',
+    `{ "patientSummary": string, "abnormalities": string[], "differentialDiagnoses": string[], "treatmentRecommendations": string[], "doctorNotes": string, "takeaway": string }`,
+  ].join('\n');
+
+  const user = [
+    `Patient profile: ${args.patientProfile}`,
+    `Timeline summary: ${args.timelineSummary}`,
+    `Lab summary: ${args.labsSummary}`,
+    `Appointments summary: ${args.appointmentsSummary}`,
+  ].join('\n\n');
+
+  const raw = await geminiGenerateJSON({ system, user });
+  return doctorCopilotSchema.parse(raw) satisfies DoctorCopilotReport;
+}
+
 export async function geminiAnalyzeImage(args: {
   kind: "prescription" | "derm" | "medication";
   mimeType: string;

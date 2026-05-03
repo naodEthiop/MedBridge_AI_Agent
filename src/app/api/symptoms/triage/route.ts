@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { geminiSymptomTriage } from "@/lib/backend/gemini";
+import { runSymptomTriage } from "@/lib/ai/aiService";
 
 const BODY_PART_HINTS: Record<string, string[]> = {
   head: ["headache", "dizziness", "vision changes"],
@@ -18,10 +18,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "message is required" }, { status: 400 });
     }
 
-    const triage = await geminiSymptomTriage({
+    const triage = await runSymptomTriage({
       message: body.message.trim(),
       bodyPart: body.bodyPart ?? null,
     });
+    if ('error' in triage) {
+      return NextResponse.json({ ok: false, error: triage.error }, { status: 503 });
+    }
+
     const linkedSymptoms = body.bodyPart ? (BODY_PART_HINTS[body.bodyPart] ?? []) : [];
 
     return NextResponse.json({
