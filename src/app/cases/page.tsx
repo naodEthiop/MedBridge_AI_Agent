@@ -3,15 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { apiFetchJson, normalizeCaseRow, type CaseItemNormalized } from "@/lib/api/client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-type CaseItem = {
-  id: string;
-  createdAt: string;
-  symptoms: string;
-  urgency: "medium" | "urgent";
-  doctorSummary: string;
-};
+type CaseItem = CaseItemNormalized;
 
 export default function CasesPage() {
   const [items, setItems] = useState<CaseItem[]>([]);
@@ -24,15 +19,16 @@ export default function CasesPage() {
         const supabase = getSupabaseBrowserClient();
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
-        const headers: HeadersInit = {};
-        if (token) {
-          headers.Authorization = `Bearer ${token}`;
+        const result = await apiFetchJson<{ ok?: boolean; cases?: Record<string, unknown>[] }>("/api/cases?limit=20", {
+          cache: "no-store",
+          bearerToken: token,
+        });
+        if (!result.success) {
+          if (result.status === 401) throw new Error("Sign in to view your cases.");
+          throw new Error(result.error);
         }
-        const res = await fetch("/api/cases?limit=20", { cache: "no-store", headers });
-        const payload = (await res.json()) as { ok: boolean; cases?: CaseItem[]; error?: string };
-        if (res.status === 401) throw new Error("Sign in to view your cases.");
-        if (!res.ok || !payload.ok) throw new Error(payload.error || "Failed to load cases");
-        setItems(payload.cases ?? []);
+        const rows = result.data.cases ?? [];
+        setItems(rows.map((row) => normalizeCaseRow(row)));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load cases");
       } finally {

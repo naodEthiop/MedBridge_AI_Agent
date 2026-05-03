@@ -16,6 +16,8 @@ const envSchema = z.object({
   CLOUDFLARE_AI_GATEWAY_TOKEN: z.string().optional(),
   CLOUDFLARE_AI_ENABLED: z.string().optional(),
   CLOUDFLARE_AI_MODEL: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_TRANSCRIPTION_MODEL: z.string().optional(),
 });
 
 export const env = envSchema.parse({
@@ -34,6 +36,8 @@ export const env = envSchema.parse({
   CLOUDFLARE_AI_GATEWAY_TOKEN: process.env.CLOUDFLARE_AI_GATEWAY_TOKEN,
   CLOUDFLARE_AI_ENABLED: process.env.CLOUDFLARE_AI_ENABLED,
   CLOUDFLARE_AI_MODEL: process.env.CLOUDFLARE_AI_MODEL,
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  OPENAI_TRANSCRIPTION_MODEL: process.env.OPENAI_TRANSCRIPTION_MODEL,
 });
 
 export const hasSupabasePublicEnv =
