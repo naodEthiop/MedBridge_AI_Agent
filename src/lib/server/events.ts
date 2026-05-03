@@ -16,7 +16,16 @@ export type SystemEventName =
   | 'ai:simulation_updated'
   | 'ai:trajectory_risk_detected'
   | 'ai:intervention_recommendation'
-  | 'ai:early_warning_escalation';
+  | 'ai:early_warning_escalation'
+  | 'ai:request_logged'
+  | 'ai:request_failed'
+  | 'ai:request_completed'
+  | 'ai:metrics_updated'
+  | 'ai:safety_escalation'
+  | 'ai:system_health_ok'
+  | 'ai:degraded_mode_active'
+  | 'ai:fallback_triggered'
+  | 'ai:cost_threshold_warning';
 
 const recentlyEmitted = new Map<string, number>();
 

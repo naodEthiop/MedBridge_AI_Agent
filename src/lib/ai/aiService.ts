@@ -25,6 +25,14 @@ import { canApplyTwinUpdate } from "@/lib/ai/digitalTwinGuard";
 import { buildForecast, buildRiskCurve } from "@/lib/ai/forecastEngine";
 import { buildPatientStateVector } from "@/lib/ai/patientStateVector";
 import { simulateTrajectories } from "@/lib/ai/trajectorySimulator";
+import { appendAuditTrail } from "@/lib/ai/auditTrail";
+import { trackAiRequest } from "@/lib/ai/aiObservability";
+import { generateExplanation } from "@/lib/ai/explainability";
+import { withFailureRecovery } from "@/lib/ai/failureHandler";
+import { getModelRegistry } from "@/lib/ai/modelRegistry";
+import { redactObject } from "@/lib/ai/privacyFilter";
+import { normalizeAiResponse } from "@/lib/ai/responseNormalizer";
+import { enforceSafety } from "@/lib/ai/safetyGuard";
 
 export type AiServiceRequest =
   | { mode: "symptom_triage"; message: string; bodyPart?: string | null }
@@ -80,6 +88,7 @@ async function refreshDigitalTwin(patientId: string) {
   if (simulationState.scenarios.some((s) => s.riskCurve[s.riskCurve.length - 1] > 80)) {
     eventBus.emit("ai:early_warning_escalation", { patientId, reason: "High-risk convergence across simulated scenarios", timestamp: new Date(ts).toISOString() });
   }
+  eventBus.emit("ai:system_health_ok", { patientId, timestamp: new Date(ts).toISOString() });
   return twin;
 }
 
@@ -103,14 +112,22 @@ export async function runImageAnalysis(image: File | Blob): Promise<MedicalImage
 
 export async function runHealthAssistant(input: HealthAgentInput & { patientId?: string }): Promise<HealthAgentOutput> {
   const memoryContext = input.patientId ? summarizePatientMemory(await buildPatientMemory(input.patientId)) : null;
-  const result = await processUserInput({
+  const result = await trackAiRequest({
+    patientId: input.patientId,
+    endpoint: "runHealthAssistant",
+    model: "gemini",
+    run: async () => processUserInput({
     ...input,
     message: [memoryContext ? `Longitudinal trend: ${memoryContext.trend}` : null, input.message ?? null].filter(Boolean).join("\n"),
+    }),
   });
   if (input.patientId) {
     eventBus.emit("ai:memory_updated", { patientId: input.patientId, timestamp: new Date().toISOString() });
     await refreshDigitalTwin(input.patientId);
   }
+  enforceSafety({ patientId: input.patientId, text: result.message, riskLevel: result.urgency });
+  const modelVersion = getModelRegistry().gemini.version;
+  await appendAuditTrail({ patientId: input.patientId, input: redactObject(input), output: redactObject(result), reasoningSummary: "health assistant longitudinal reasoning", modelVersion });
   return result;
 }
 
@@ -134,7 +151,13 @@ export async function runRiskPrediction(input: {
       if (warning) eventBus.emit("ai:early_warning", warning);
       await refreshDigitalTwin(input.patientId);
     }
-    return await geminiRiskPrediction(input);
+    const prediction = await withFailureRecovery(
+      () => trackAiRequest({ patientId: input.patientId, endpoint: "runRiskPrediction", model: "gemini", run: () => geminiRiskPrediction(input) }),
+      { patientId: input.patientId },
+    );
+    enforceSafety({ patientId: input.patientId, text: prediction.rationale, riskLevel: prediction.risk_level });
+    await appendAuditTrail({ patientId: input.patientId, input: redactObject(input), output: redactObject(prediction), reasoningSummary: "risk prediction trajectory", modelVersion: getModelRegistry().gemini.version });
+    return prediction;
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Risk prediction failed" };
   }
@@ -162,7 +185,14 @@ export async function generateDoctorCopilotReport(input: {
       });
       await refreshDigitalTwin(input.patientId);
     }
-    return await geminiDoctorCopilotReport(input);
+    const report = await withFailureRecovery(
+      () => trackAiRequest({ patientId: input.patientId, endpoint: "generateDoctorCopilotReport", model: "gemini", run: () => geminiDoctorCopilotReport(input) }),
+      { patientId: input.patientId },
+    );
+    const explanation = generateExplanation({ result: report });
+    await appendAuditTrail({ patientId: input.patientId, input: redactObject(input), output: redactObject(report), reasoningSummary: explanation.summary, modelVersion: getModelRegistry().gemini.version });
+    void normalizeAiResponse({ data: { report }, model: "gemini", explanation, confidence: 0.78, riskLevel: "medium" });
+    return report;
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Doctor copilot report failed" };
   }
