@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CheckCircle2, Hospital } from "lucide-react";
 
-import { BodySelector } from "@/components/ui/BodySelector";
+import { BodyViewer } from "@/components/BodyViewer";
 import { SymptomCheckerClient } from "@/components/views/SymptomCheckerClient";
 
 export default function SymptomCheckerPage() {
@@ -28,7 +28,7 @@ export default function SymptomCheckerPage() {
 
         <div className="grid flex-1 gap-8 p-8 xl:grid-cols-[1fr_24rem]">
           <div className="space-y-6">
-            <BodySelector value={bodyPart} onChange={setBodyPart} />
+            <BodyViewer onSelectPart={(part) => setBodyPart(part as any)} />
             <SymptomCheckerClient onResultChange={setTriageResult} bodyPart={bodyPart} />
           </div>
 
