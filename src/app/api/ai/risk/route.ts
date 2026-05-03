@@ -8,6 +8,10 @@ import { triggerEmergencyForPatient } from '@/lib/server/emergency';
 
 export async function POST(request: Request) {
   try {
+    // RISK PREDICTION FLOW:
+    // API route -> aiService.runRiskPrediction -> repositories.timeline.createTimelineEvent
+    // -> emitEvent("patient:risk_updated") -> response.
+    // Persisted risk timeline event must be written before event emission.
     const user = await getAuthenticatedUser(request);
     const body = (await request.json()) as {
       patientId: string;

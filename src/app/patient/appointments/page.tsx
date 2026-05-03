@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { format } from "date-fns";
-import { CalendarPlus, RefreshCw } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { CalendarPlus } from "lucide-react";
 import { useState } from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
@@ -14,7 +13,6 @@ import { useDoctors } from "@/hooks/useDoctors";
 import { triggerUiAction } from "@/lib/apiClient";
 
 export default function PatientAppointmentsPage() {
-  const router = useRouter();
   const appts = useAppointments();
   const doctors = useDoctors();
   const [booking, setBooking] = useState(false);
@@ -30,11 +28,6 @@ export default function PatientAppointmentsPage() {
     .slice()
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-  const handleRefresh = async () => {
-    const res = await triggerUiAction("patient_appointments_refresh", {});
-    setFeedback(res.ok ? (res.data.message ?? "Schedule refreshed.") : "Could not refresh.");
-    router.refresh();
-  };
 
   const handleBook = async () => {
     setBooking(true);
@@ -48,17 +41,9 @@ export default function PatientAppointmentsPage() {
     <AppShell title="Appointments" subtitle="Your visits and scheduling">
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <p className="max-w-xl text-sahara-muted">Upcoming visits pulled from your care record. Use refresh after changes.</p>
+          <p className="max-w-xl text-sahara-muted">Upcoming visits pulled from your care record and synced in real time.</p>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={handleRefresh}
-              className="inline-flex items-center gap-2 rounded-xl border border-sahara-border bg-white px-4 py-2 text-sm font-semibold text-sahara-fg hover:bg-sahara-surface-low"
-            >
-              <RefreshCw className="size-4" />
-              Refresh
-            </button>
-            <button
+                        <button
               type="button"
               disabled={booking}
               onClick={handleBook}
