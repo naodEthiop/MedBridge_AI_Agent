@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="1600" viewBox="0 0 360 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Medical body outline with selectable regions</title>
+  <desc id="desc">A minimal 2D front-facing human body outline divided into head, chest, abdomen, arms, and legs for symptom selection.</desc>
+  <defs>
+    <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#F6FAFF" />
+      <stop offset="100%" stop-color="#E8F1FB" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#A6C8FF" flood-opacity="0.18" />
+    </filter>
+    <style>
+      .region { fill: #ffffff; stroke: #8EAEDC; stroke-width: 2; cursor: pointer; }
+      .region-hover { fill: #E8F2FF; }
+      .region-active { fill: #d7e8ff; }
+      .outline { fill: none; stroke: #5F7FA8; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+      .divider { fill: none; stroke: #B7CAE1; stroke-width: 1.5; stroke-dasharray: 6 6; }
+    </style>
+  </defs>
+
+  <rect width="360" height="480" rx="24" fill="url(#bodyGradient)" />
+
+  <g transform="translate(48 24) scale(0.8)"> 
+    <g id="body-outline" filter="url(#glow)">
+      <path class="outline" d="M132 40c0-12 12-22 26-22s26 10 26 22v18c0 12-8 18-18 18h-16c-10 0-18-6-18-18V40z" />
+      <path class="outline" d="M102 74c0 0 20 8 42 8s42-8 42-8 18-4 30 12 8 116 8 116v54c0 16-14 28-30 28h-112c-16 0-30-12-30-28v-54s-4-104 8-116 30-12 30-12z" />
+      <path class="outline" d="M70 166s-36 24-32 94c4 66 56 126 112 126s108-60 112-126c4-70-32-94-32-94" />
+      <path class="outline" d="M102 208c-28 0-46 34-46 78 0 8 6 14 14 14h24c8 0 14-6 14-14v-78z" />
+      <path class="outline" d="M178 208c28 0 46 34 46 78 0 8-6 14-14 14h-24c-8 0-14-6-14-14v-78z" />
+    </g>
+
+    <g id="regions">
+      <path id="head" class="region" d="M132 40c0-12 12-22 26-22s26 10 26 22v18c0 12-8 18-18 18h-16c-10 0-18-6-18-18V40z" />
+      <path id="chest" class="region" d="M96 74c0-2 16 4 42 4s42-6 42-4 20-4 30 12c10 16 8 90 8 90H90s-2-74 8-90c10-16 30-14 30-12z" />
+      <path id="abdomen" class="region" d="M90 154c0 0 38 36 76 36s76-36 76-36 8 4 8 16v26c0 10-8 18-18 18H108c-10 0-18-8-18-18v-26c0-12 8-16 8-16z" />
+      <path id="leftArm" class="region" d="M50 92c16-2 24 18 24 18v92c0 10-6 16-14 16h-10c-8 0-14-6-14-16V110c0-12 8-20 14-18z" />
+      <path id="rightArm" class="region" d="M226 92c-16-2-24 18-24 18v92c0 10 6 16 14 16h10c8 0 14-6 14-16V110c0-12-8-20-14-18z" />
+      <path id="leftLeg" class="region" d="M106 238c0 18-2 46-2 62 0 14 8 24 20 24h16c12 0 20-10 20-24v-58c0-16-18-22-34-22s-20 8-20 18z" />
+      <path id="rightLeg" class="region" d="M194 238c0 18 2 46 2 62 0 14-8 24-20 24h-16c-12 0-20-10-20-24v-58c0-16 18-22 34-22s20 8 20 18z" />
+    </g>
+
+    <g class="divider">
+      <path d="M136 90c16 14 32 14 48 0" />
+      <path d="M136 142c16 12 32 12 48 0" />
+    </g>
+  </g>
+</svg>
