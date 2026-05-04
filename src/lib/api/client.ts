@@ -38,11 +38,20 @@ export async function apiFetchJson<T>(path: string, init: RequestInit & { bearer
     headers.set("Accept", "application/json");
   }
 
-  const res = await fetch(resolveFetchUrl(path), {
-    ...rest,
-    credentials: "include",
-    headers,
-  });
+  let res: Response;
+  try {
+    res = await fetch(resolveFetchUrl(path), {
+      ...rest,
+      credentials: "include",
+      headers,
+    });
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Network request failed",
+      status: 0,
+    };
+  }
 
   const text = await res.text();
   let body: unknown = null;

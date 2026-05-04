@@ -94,32 +94,35 @@ async function refreshDigitalTwin(patientId: string, principal: RepositoryPrinci
   return twin;
 }
 
+const triageFallback = {
+  diagnosis: "AI unavailable",
+  riskLevel: "low" as const,
+  confidence: 0,
+  recommendations: ["Please consult a healthcare professional for proper evaluation"],
+};
+
+const TRIAGE_SYSTEM_PROMPT = [
+  "You are MedBridge AI triage assistant.",
+  "Return concise clinical guidance without diagnosis certainty claims.",
+  "Prioritize red-flag escalation, safety, and plain language.",
+].join(" ");
+
 export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
 }): Promise<{ diagnosis: string; riskLevel: "low" | "medium" | "high"; confidence: number; recommendations: string[] } | { error: string }> {
   if (!env.GEMINI_API_KEY?.trim()) {
-    return {
-      diagnosis: "Unable to analyze symptoms",
-      riskLevel: "unknown" as any,
-      confidence: 0,
-      recommendations: ["Please consult a healthcare professional for proper evaluation"]
-    };
+    return triageFallback;
   }
 
   try {
     const response = await generateMedicalResponse({
-      message: input.message,
+      message: `${TRIAGE_SYSTEM_PROMPT}\nPatient input: ${input.message}`,
       bodyPart: input.bodyPart,
     });
 
     if ('error' in response) {
-      return {
-        diagnosis: "Unable to analyze symptoms",
-        riskLevel: "unknown" as any,
-        confidence: 0,
-        recommendations: ["Please consult a healthcare professional for proper evaluation"]
-      };
+      return triageFallback;
     }
 
     // Transform MedicalResponseShape to the required format
@@ -136,12 +139,7 @@ export async function runSymptomTriage(input: {
     };
   } catch (error) {
     console.error('Symptom triage error:', error);
-    return {
-      diagnosis: "Unable to analyze symptoms",
-      riskLevel: "unknown" as any,
-      confidence: 0,
-      recommendations: ["Please consult a healthcare professional for proper evaluation"]
-    };
+    return triageFallback;
   }
 }
 
