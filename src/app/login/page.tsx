@@ -15,11 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { FormEvent, Suspense, startTransition, useEffect, useState } from "react";
-<<<<<<< Updated upstream
 import { env } from "@/lib/env";
-=======
-import { API_URL, env } from "@/lib/env";
->>>>>>> Stashed changes
 
 type Role = "patient" | "doctor";
 type AuthTab = "login" | "signup";
@@ -119,11 +115,7 @@ function LoginPageContent() {
     try {
       const { getSupabaseBrowserClient } = await import("@/lib/db/supabaseClient");
       const supabase = getSupabaseBrowserClient();
-<<<<<<< Updated upstream
       const SITE_URL = env.NEXT_PUBLIC_SITE_URL ?? "https://med-bridge-ai-agent.vercel.app";
-=======
-      const SITE_URL = env.NEXT_PUBLIC_SITE_URL || API_URL;
->>>>>>> Stashed changes
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: `${SITE_URL}/auth/callback` },

@@ -29,7 +29,6 @@ function errorMessageFromBody(body: unknown, fallback: string): string {
 }
 
 export async function apiFetchJson<T>(path: string, init: RequestInit & { bearerToken?: string | null } = {}): Promise<ApiResult<T>> {
-<<<<<<< Updated upstream
   const { bearerToken, headers: initHeaders, ...rest } = init;
   const headers = new Headers(initHeaders);
   if (bearerToken) {
@@ -61,63 +60,34 @@ export async function apiFetchJson<T>(path: string, init: RequestInit & { bearer
       body = JSON.parse(text) as unknown;
     } catch {
       body = { raw: text };
-=======
-  try {
-    const { bearerToken, headers: initHeaders, ...rest } = init;
-    const headers = new Headers(initHeaders);
-    if (bearerToken) {
-      headers.set("Authorization", `Bearer ${bearerToken}`);
     }
-    if (!headers.has("Accept")) {
-      headers.set("Accept", "application/json");
->>>>>>> Stashed changes
-    }
-
-    const res = await fetch(resolveFetchUrl(path), {
-      ...rest,
-      credentials: "include",
-      headers,
-    });
-
-    const text = await res.text();
-    let body: unknown = null;
-    if (text) {
-      try {
-        body = JSON.parse(text) as unknown;
-      } catch {
-        body = { raw: text };
-      }
-    }
-
-    if (res.status === 401) {
-      return {
-        success: false,
-        error: errorMessageFromBody(body, "Unauthorized"),
-        status: 401,
-      };
-    }
-
-    if (!res.ok) {
-      return {
-        success: false,
-        error: errorMessageFromBody(body, `Request failed (${res.status})`),
-        status: res.status,
-      };
-    }
-
-    if (body && typeof body === "object" && "ok" in body && (body as { ok: unknown }).ok === false) {
-      return {
-        success: false,
-        error: errorMessageFromBody(body, "Request failed"),
-        status: res.status,
-      };
-    }
-
-    return { success: true, data: body as T, status: res.status };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Network error";
-    return { success: false, error: message, status: 500 };
   }
+
+  if (res.status === 401) {
+    return {
+      success: false,
+      error: errorMessageFromBody(body, "Unauthorized"),
+      status: 401,
+    };
+  }
+
+  if (!res.ok) {
+    return {
+      success: false,
+      error: errorMessageFromBody(body, `Request failed (${res.status})`),
+      status: res.status,
+    };
+  }
+
+  if (body && typeof body === "object" && "ok" in body && (body as { ok: unknown }).ok === false) {
+    return {
+      success: false,
+      error: errorMessageFromBody(body, "Request failed"),
+      status: res.status,
+    };
+  }
+
+  return { success: true, data: body as T, status: res.status };
 }
 
 export type CaseItemNormalized = {
@@ -161,19 +131,7 @@ export function extractTriagePayload(parsed: Record<string, unknown>): Record<st
 /** Normalize `/api/symptoms/triage` body for display or downstream Medix context. */
 export function triageToContextLines(parsed: Record<string, unknown>): string[] {
   const t = extractTriagePayload(parsed);
-  const diagnosis = typeof t.diagnosis === "string" ? t.diagnosis : null;
-  const riskLevel = typeof t.riskLevel === "string" ? t.riskLevel : null;
-  const recommendations = Array.isArray(t.recommendations) ? (t.recommendations as string[]) : [];
   const lines: string[] = [];
-  if (diagnosis) {
-    lines.push(`Triage narrative: ${diagnosis}`);
-  }
-  if (riskLevel) {
-    lines.push(`Triage urgency: ${riskLevel}`);
-  }
-  if (recommendations.length) {
-    lines.push(`Triage next steps: ${recommendations.join("; ")}`);
-  }
   if (typeof t.message === "string" && t.message.trim()) {
     lines.push(`Triage narrative: ${t.message.trim()}`);
   }
