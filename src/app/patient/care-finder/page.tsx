@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
-import { NearbyMedicalMap } from "@/components/patient/NearbyMedicalMap";
+import { GoapifyMap } from "@/components/maps/GoapifyMap";
 import { CareFinderClient } from "@/components/views/CareFinderClient";
 
 export default function CareFinderPage() {
@@ -122,7 +122,7 @@ export default function CareFinderPage() {
 
           {/* Right Panel — always show interactive map */}
           <div className="min-h-[560px] lg:col-span-7">
-            <NearbyMedicalMap />
+            <GoapifyMap />
           </div>
         </section>
 

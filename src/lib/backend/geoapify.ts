@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { env, mapApiKey } from "@/lib/env";
 
 export type GeoapifyPlace = {
   id: string;
@@ -12,15 +12,15 @@ export type GeoapifyPlace = {
   website: string | null;
 };
 
-function requireGeoapifyKey() {
-  if (!env.GEOAPIFY_API_KEY) throw new Error("Geoapify is not configured. Set GEOAPIFY_API_KEY.");
-  return env.GEOAPIFY_API_KEY;
+function requireMapApiKey() {
+  if (!mapApiKey) throw new Error("Goapify is not configured. Set GOAPIFY_API_KEY or GEOAPIFY_API_KEY.");
+  return mapApiKey;
 }
 
 function buildPlacesUrl(params: Record<string, string>) {
   const url = new URL("https://api.geoapify.com/v2/places");
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  url.searchParams.set("apiKey", requireGeoapifyKey());
+  url.searchParams.set("apiKey", requireMapApiKey());
   return url.toString();
 }
 

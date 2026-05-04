@@ -1,10 +1,8 @@
 import { env } from "@/lib/env";
 import { analyzeImageFull } from "@/lib/ai/cloudflare";
 import type { MedicalImageResult } from "@/lib/ai/imageAnalysis";
-import {
-  generateMedicalResponse,
-  type MedicalResponseShape,
-} from "@/lib/ai/gemini";
+import type { MedicalResponseShape } from "@/lib/ai/gemini";
+import { generateGeminiResponse } from "@/lib/ai/geminiClient";
 import {
   processUserInput,
   type HealthAgentInput,
@@ -64,7 +62,7 @@ export type AiServiceResponse =
   | HealthAgentOutput
   | RiskPrediction
   | DoctorCopilotReport
-  | { diagnosis: string; riskLevel: "low" | "medium" | "high"; confidence: number; recommendations: string[] }
+  | { diagnosis: string; riskLevel: "low" | "medium" | "high" | "unknown"; confidence: number; recommendations: string[] }
   | { error: string };
 
 
@@ -95,10 +93,10 @@ async function refreshDigitalTwin(patientId: string, principal: RepositoryPrinci
 }
 
 const triageFallback = {
-  diagnosis: "AI unavailable",
-  riskLevel: "low" as const,
+  diagnosis: "AI failed",
+  riskLevel: "unknown" as const,
   confidence: 0,
-  recommendations: ["Please consult a healthcare professional for proper evaluation"],
+  recommendations: ["Retry"],
 };
 
 const TRIAGE_SYSTEM_PROMPT = [
@@ -110,35 +108,42 @@ const TRIAGE_SYSTEM_PROMPT = [
 export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
-}): Promise<{ diagnosis: string; riskLevel: "low" | "medium" | "high"; confidence: number; recommendations: string[] } | { error: string }> {
+}): Promise<{ diagnosis: string; riskLevel: "low" | "medium" | "high" | "unknown"; confidence: number; recommendations: string[] } | { error: string }> {
   if (!env.GEMINI_API_KEY?.trim()) {
     return triageFallback;
   }
 
+  const prompt = `You are a medical AI. Analyze symptoms and return JSON:
+{
+  "diagnosis": "string",
+  "riskLevel": "low" | "medium" | "high",
+  "confidence": number,
+  "recommendations": ["string"]
+}
+
+Patient Message: "${input.message.trim()}"
+${input.bodyPart ? `Body Part: ${input.bodyPart}` : ""}`;
+
   try {
-    const response = await generateMedicalResponse({
-      message: `${TRIAGE_SYSTEM_PROMPT}\nPatient input: ${input.message}`,
-      bodyPart: input.bodyPart,
-    });
+    const responseText = await generateGeminiResponse(prompt);
+    const cleaned = String(responseText).replace(/```json/i, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleaned) as Record<string, unknown>;
 
-    if ('error' in response) {
-      return triageFallback;
-    }
-
-    // Transform MedicalResponseShape to the required format
-    const diagnosis = response.possibleConditions?.[0] || "Symptoms require professional evaluation";
-    const riskLevel = response.urgency === "urgent" ? "high" : response.urgency === "medium" ? "medium" : "low";
-    const confidence = response.urgency === "urgent" ? 0.9 : response.urgency === "medium" ? 0.7 : 0.5;
-    const recommendations = response.nextSteps || ["Please consult a healthcare professional"];
+    const diagnosis = typeof parsed.diagnosis === "string" && parsed.diagnosis.trim() ? parsed.diagnosis : "Unable to analyze symptoms";
+    const riskLevel = parsed.riskLevel === "high" || parsed.riskLevel === "medium" ? parsed.riskLevel : "low";
+    const confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0;
+    const recommendations = Array.isArray(parsed.recommendations)
+      ? parsed.recommendations.filter((item): item is string => typeof item === "string")
+      : [];
 
     return {
       diagnosis,
       riskLevel,
       confidence,
-      recommendations
+      recommendations: recommendations.length ? recommendations : ["Please consult a healthcare professional"],
     };
   } catch (error) {
-    console.error('Symptom triage error:', error);
+    console.error("Symptom triage error:", error);
     return triageFallback;
   }
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { env } from "@/lib/env";
+import { mapApiKey } from "@/lib/env";
 import { fetchWithTimeout, jsonError } from "@/lib/server/http";
 import { rateLimitOrThrow } from "@/lib/server/rateLimit";
 
@@ -9,8 +9,8 @@ function isIntString(v: string) {
 }
 
 export async function GET(req: Request, ctx: { params: Promise<{ z: string; x: string; y: string }> }) {
-  if (!env.GEOAPIFY_API_KEY) {
-    return NextResponse.json(jsonError("Geoapify is not configured. Set GEOAPIFY_API_KEY."), { status: 500 });
+  if (!mapApiKey) {
+    return NextResponse.json(jsonError("Goapify is not configured. Set GOAPIFY_API_KEY or GEOAPIFY_API_KEY."), { status: 500 });
   }
 
   try {
@@ -29,7 +29,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ z: string; x: s
   }
 
   const tileUrl = `https://maps.geoapify.com/v1/tile/carto/${z}/${x}/${y}.png?apiKey=${encodeURIComponent(
-    env.GEOAPIFY_API_KEY,
+    mapApiKey,
   )}`;
 
   try {

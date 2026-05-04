@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { generateGeminiResponse } from "@/lib/ai/geminiClient";
 import { RiskPrediction, DoctorCopilotReport } from "@/lib/types";
 export { type RiskPrediction, type DoctorCopilotReport };
 
@@ -19,38 +19,14 @@ export type AiTriageResponse = {
 };
 
 async function callGemini(prompt: string) {
-  const apiKey = env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is not configured.");
+  const raw = await generateGeminiResponse(prompt);
+  const cleaned = String(raw).replace(/```json/i, "").replace(/```/g, "").trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (error) {
+    throw new Error(`Gemini parse failed: ${error instanceof Error ? error.message : String(error)}; raw=${cleaned}`);
   }
-
-  const model = env.GEMINI_MODEL || "gemini-1.5-flash";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        response_mime_type: "application/json",
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Gemini API failed with status ${response.status}`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error("Gemini returned an empty response.");
-  }
-
-  return JSON.parse(text);
 }
 
 export async function geminiSymptomTriage(input: { message: string; bodyPart: string | null }): Promise<AiTriageResponse> {

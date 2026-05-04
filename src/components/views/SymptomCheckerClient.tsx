@@ -57,18 +57,8 @@ export function SymptomCheckerClient(props: {
         (parsed.triage as Record<string, unknown>) ??
         (parsed.result as Record<string, unknown>) ??
         (parsed.tool === "symptom_checker" ? (parsed.result as Record<string, unknown>) : parsed);
-      const normalized =
-        typeof resultObj.riskLevel === "string" || typeof resultObj.diagnosis === "string"
-          ? {
-              urgency: resultObj.riskLevel === "high" ? "urgent" : resultObj.riskLevel ?? "medium",
-              message: resultObj.diagnosis ?? "Triage response received",
-              possibleConditions: [],
-              redFlags: [],
-              nextSteps: Array.isArray(resultObj.recommendations) ? resultObj.recommendations : [],
-            }
-          : resultObj;
-      setResult(normalized ?? null);
-      props.onResultChange?.(normalized ?? null);
+      setResult(resultObj ?? null);
+      props.onResultChange?.(resultObj ?? null);
     } finally {
       setLoading(false);
     }
@@ -238,24 +228,17 @@ export function SymptomCheckerClient(props: {
 
       {result ? (
         <div className="mx-auto w-full max-w-4xl space-y-2 rounded-2xl border border-sahara-border/60 bg-sahara-surface-low p-5">
-          <p className="font-semibold">Urgency: {String(result.urgency ?? "unknown")}</p>
-          <p className="text-sm text-sahara-muted">{String(result.message ?? "")}</p>
-          {Array.isArray(result.possibleConditions) && result.possibleConditions.length ? (
+          <p className="font-semibold">Risk Level: {String(result.riskLevel ?? "unknown")}</p>
+          <p className="text-sm text-sahara-muted">{String(result.diagnosis ?? "")}</p>
+          {Array.isArray(result.recommendations) && result.recommendations.length ? (
             <p className="text-sm">
-              <span className="font-semibold">Possible considerations:</span>{" "}
-              {(result.possibleConditions as string[]).join(", ")}
+              <span className="font-semibold">Recommendations:</span>{" "}
+              {(result.recommendations as string[]).join(", ")}
             </p>
           ) : null}
-          {Array.isArray(result.redFlags) && result.redFlags.length ? (
-            <p className="text-sm">
-              <span className="font-semibold">Red flags:</span> {(result.redFlags as string[]).join(", ")}
-            </p>
-          ) : null}
-          {Array.isArray(result.nextSteps) && result.nextSteps.length ? (
-            <p className="text-sm">
-              <span className="font-semibold">Next steps:</span> {(result.nextSteps as string[]).join(", ")}
-            </p>
-          ) : null}
+          {typeof result.confidence === 'number' && (
+            <p className="text-sm text-stone-500">Confidence: {Math.round(result.confidence * 100)}%</p>
+          )}
         </div>
       ) : !loading && !error ? (
         <p className="mx-auto max-w-4xl text-center text-xs text-sahara-muted">Results appear here after you send a symptom message.</p>

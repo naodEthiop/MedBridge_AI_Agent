@@ -1,4 +1,4 @@
-import { env } from '@/lib/env';
+import { mapApiKey } from '@/lib/env';
 import { fetchNearbyHospitalsGeoapify } from '@/lib/geo/geoapify-nearby';
 import { emitEvent } from '@/lib/server/events';
 import { getRepositories, type RepositoryPrincipal } from '@/lib/server/repositories';
@@ -66,11 +66,11 @@ export async function triggerEmergencyForPatient(payload: EmergencyTriggerPayloa
   }
 
   let hospitalSuggestions: EmergencyTriggerResult['hospitalSuggestions'] = undefined;
-  if (payload.location && env.GEOAPIFY_API_KEY) {
+  if (payload.location && mapApiKey) {
     const nearby = await fetchNearbyHospitalsGeoapify({
       lat: payload.location.lat,
       lng: payload.location.lng,
-      apiKey: env.GEOAPIFY_API_KEY,
+      apiKey: mapApiKey,
       radiusM: 10000,
       limit: 6,
     });

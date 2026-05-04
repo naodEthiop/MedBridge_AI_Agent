@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { fetchNearbyHospitalsGeoapify } from '@/lib/geo/geoapify-nearby';
-import { env } from '@/lib/env';
+import { mapApiKey } from '@/lib/env';
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
 import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 import { rateLimitOrThrow } from '@/lib/server/rateLimit';
@@ -14,8 +14,8 @@ export async function GET(request: Request) {
   try {
     const authUser = await getAuthenticatedUser(request);
 
-    if (!env.GEOAPIFY_API_KEY) {
-      return NextResponse.json({ ok: false, error: 'Geoapify is not configured. Set GEOAPIFY_API_KEY.' }, { status: 500 });
+    if (!mapApiKey) {
+      return NextResponse.json({ ok: false, error: 'Goapify is not configured. Set GOAPIFY_API_KEY or GEOAPIFY_API_KEY.' }, { status: 500 });
     }
 
     rateLimitOrThrow({ req: request, key: 'geoapify:nearby-hospitals' });
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     const result = await fetchNearbyHospitalsGeoapify({
       lat: latNum,
       lng: lngNum,
-      apiKey: env.GEOAPIFY_API_KEY,
+      apiKey: mapApiKey,
     });
 
     if (!result.ok) {

@@ -26,6 +26,9 @@ const envSchema = z.object({
   CLOUDFLARE_AI_TIMEOUT_MS: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_TRANSCRIPTION_MODEL: z.string().optional(),
+  NEXT_PUBLIC_GOAPIFY_API_KEY: z.string().optional(),
+  NEXT_PUBLIC_MAP_PROVIDER: z.string().optional(),
+  GOAPIFY_API_KEY: z.string().optional(),
   NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
 });
 
@@ -43,6 +46,9 @@ const parsedEnv = envSchema.parse({
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   GEMINI_MODEL: process.env.GEMINI_MODEL,
   GEOAPIFY_API_KEY: process.env.GEOAPIFY_API_KEY,
+  NEXT_PUBLIC_GOAPIFY_API_KEY: process.env.NEXT_PUBLIC_GOAPIFY_API_KEY,
+  NEXT_PUBLIC_MAP_PROVIDER: process.env.NEXT_PUBLIC_MAP_PROVIDER,
+  GOAPIFY_API_KEY: process.env.GOAPIFY_API_KEY,
   CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID,
   CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN,
   CLOUDFLARE_AI_GATEWAY_BASE_URL: process.env.CLOUDFLARE_AI_GATEWAY_BASE_URL,
@@ -63,6 +69,14 @@ export const env = {
     parsedEnv.NEXT_PUBLIC_API_URL?.trim() ||
     (process.env.NODE_ENV === "development" ? "http://localhost:3000" : undefined),
 };
+
+export const mapApiKey =
+  env.GEOAPIFY_API_KEY || env.GOAPIFY_API_KEY || env.NEXT_PUBLIC_GOAPIFY_API_KEY;
+
+export function getMapProvider() {
+  return env.NEXT_PUBLIC_MAP_PROVIDER?.trim().toLowerCase() ||
+    (mapApiKey ? "goapify" : undefined);
+}
 
 export const hasSupabasePublicEnv =
   !!env.NEXT_PUBLIC_SUPABASE_URL && !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

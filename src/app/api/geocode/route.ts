@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { env } from "@/lib/env";
+import { mapApiKey } from "@/lib/env";
 import { fetchWithTimeout, jsonError } from "@/lib/server/http";
 import { rateLimitOrThrow } from "@/lib/server/rateLimit";
 
 export async function GET(req: Request) {
-  if (!env.GEOAPIFY_API_KEY) {
+  if (!mapApiKey) {
     return NextResponse.json(
-      jsonError("Geoapify is not configured. Set GEOAPIFY_API_KEY."),
+      jsonError("Goapify is not configured. Set GOAPIFY_API_KEY or GEOAPIFY_API_KEY."),
       { status: 500 },
     );
   }
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 
   const url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(
     text.trim(),
-  )}&apiKey=${encodeURIComponent(env.GEOAPIFY_API_KEY)}`;
+  )}&apiKey=${encodeURIComponent(mapApiKey)}`;
 
   try {
     const res = await fetchWithTimeout(url, {
