@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 
 import { scanPrescription } from "@/lib/apiClient";
+import { cleanErrorMessage } from "@/lib/userErrors";
 
 export function ScannerClient() {
   const [file, setFile] = useState<File | null>(null);
@@ -21,7 +22,8 @@ export function ScannerClient() {
     const res = await scanPrescription(file);
     setLoading(false);
     if (!res.ok) {
-      setError(typeof res.error === "string" ? res.error : "Scan failed. Check GEMINI_API_KEY and try another image.");
+      const friendlyError = cleanErrorMessage(res.error ?? "Unable to scan. Please try again.");
+      setError(friendlyError);
       return;
     }
     setResult(res.data as Record<string, unknown>);
@@ -72,19 +74,85 @@ export function ScannerClient() {
           {loading ? "Analyzing..." : "Analyze scan"}
         </button>
       </form>
-      <div className="min-h-[220px] rounded-2xl border-2 border-dashed border-sahara-primary/35 bg-white p-5 shadow-inner">
-        <p className="text-xs font-bold uppercase tracking-widest text-sahara-primary">MedBridge AI API response</p>
-        <p className="mt-1 text-xs text-sahara-muted">
-          Structured output from <code className="rounded bg-sahara-surface-low px-1">/api/prescription</code> appears here.
-          Swap this client for your backend URL when integrating.
-        </p>
+      <div className="min-h-[240px] rounded-2xl border-2 border-dashed border-sahara-primary/35 bg-white p-5 shadow-inner">
         <div className="mt-4">
           {loading ? (
-            <div className="animate-pulse space-y-2">
-              <div className="h-4 w-[68%] rounded bg-sahara-border" />
-              <div className="h-3 w-full rounded bg-sahara-border/80" />
-              <div className="h-3 w-5/6 rounded bg-sahara-border/80" />
+            <div className="space-y-4">
+              <div className="animate-pulse space-y-2">
+                <div className="h-6 w-2/3 rounded bg-sahara-border" />
+                <div className="h-4 w-full rounded bg-sahara-border/80" />
+                <div className="h-4 w-5/6 rounded bg-sahara-border/80" />
+              </div>
             </div>
+          ) : error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50/80 p-4 text-sm">
+              <p className="font-semibold text-red-900">Unable to analyze</p>
+              <p className="mt-1 text-red-800">Check your internet connection and try another image.</p>
+            </div>
+          ) : analysis ? (
+            <div className="space-y-5">
+              <div>
+                <h3 className="text-lg font-bold text-sahara-fg">{String(analysis.medicine ?? "Medication")}</h3>
+                <p className="mt-1 text-xs text-sahara-muted">Confidence: {Math.round((Number(analysis.confidence) || 0) * 100)}%</p>
+              </div>
+
+              {analysis.summary ? (
+                <div>
+                  <h4 className="text-sm font-semibold text-sahara-fg">What is it used for?</h4>
+                  <p className="mt-1 text-sm leading-relaxed text-sahara-fg">{String(analysis.summary)}</p>
+                </div>
+              ) : null}
+
+              {analysis.dosage ? (
+                <div>
+                  <h4 className="text-sm font-semibold text-sahara-fg">How to take it</h4>
+                  <p className="mt-1 text-sm leading-relaxed text-sahara-fg">{String(analysis.dosage)}</p>
+                  {analysis.timing ? <p className="mt-1 text-sm text-sahara-muted">Timing: {String(analysis.timing)}</p> : null}
+                </div>
+              ) : null}
+
+              {Array.isArray(analysis.usage) && analysis.usage.length ? (
+                <div>
+                  <h4 className="text-sm font-semibold text-sahara-fg">Important information</h4>
+                  <ul className="mt-2 space-y-1">
+                    {(analysis.usage as string[]).map((item, i) => (
+                      <li key={i} className="flex gap-2 text-sm text-sahara-fg">
+                        <span className="text-sahara-primary">•</span> {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {Array.isArray(analysis.warnings) && analysis.warnings.length ? (
+                <div className="rounded-lg border border-amber-200/50 bg-amber-50/60 p-4">
+                  <h4 className="text-sm font-semibold text-amber-900">Warnings</h4>
+                  <ul className="mt-2 space-y-1">
+                    {(analysis.warnings as string[]).map((warning, i) => (
+                      <li key={i} className="flex gap-2 text-sm text-amber-800">
+                        <span className="text-amber-600">⚠</span> {warning}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              <button
+                type="button"
+                className="w-full rounded-lg bg-sahara-primary px-4 py-3 font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                Set Reminder
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-sahara-muted">
+              {file
+                ? "Tap "Analyze scan" to see your medication details and safety information."
+                : "Choose an image first. Your prescription analysis will display here."}
+            </p>
+          )}
+        </div>
+      </div>
           ) : error ? (
             <div className="rounded-xl border border-red-200 bg-red-50/80 p-3 text-sm text-red-900">
               <p className="font-semibold">Error</p>
