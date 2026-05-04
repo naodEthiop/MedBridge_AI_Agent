@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/db/supabaseServer'
+import { env } from '@/lib/env'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
@@ -11,5 +12,6 @@ export async function GET(request: Request) {
   }
 
   // Redirect to the dashboard or proper page after auth
-  return NextResponse.redirect(new URL('/patient', request.url))
+  const siteUrl = env.NEXT_PUBLIC_SITE_URL || requestUrl.origin;
+  return NextResponse.redirect(new URL('/dashboard', siteUrl))
 }

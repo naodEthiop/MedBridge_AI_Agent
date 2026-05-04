@@ -27,6 +27,7 @@ const envSchema = z.object({
   CLOUDFLARE_AI_TIMEOUT_MS: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_TRANSCRIPTION_MODEL: z.string().optional(),
+  NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
 });
 
 export const env = envSchema.parse({
@@ -55,6 +56,7 @@ export const env = envSchema.parse({
   CLOUDFLARE_AI_TIMEOUT_MS: process.env.CLOUDFLARE_AI_TIMEOUT_MS,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   OPENAI_TRANSCRIPTION_MODEL: process.env.OPENAI_TRANSCRIPTION_MODEL,
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
 });
 
 export const hasSupabasePublicEnv =

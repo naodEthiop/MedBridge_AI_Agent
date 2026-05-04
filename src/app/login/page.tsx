@@ -114,9 +114,10 @@ function LoginPageContent() {
       const supabase = createClient(url, anon, {
         auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true },
       });
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo: `${siteUrl}/auth/callback` },
       });
       if (oauthError) {
         setError(oauthError.message);
