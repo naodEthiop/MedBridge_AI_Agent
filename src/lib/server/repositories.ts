@@ -272,14 +272,14 @@ export function getRepositories(principal: RepositoryPrincipal): Repositories {
     patients: {
       async listPatients() {
         const data = await dbGateway.query('patients', {
-          orderBy: 'full_name ASC'
+          orderBy: { column: 'full_name', ascending: true }
         });
         return data.map((row: any) => mapPatient(row));
       },
       async getPatient(id) {
         // MCP query with OR condition - simplified for now
         const data = await dbGateway.query('patients', {
-          where: `id = '${id}' OR user_id = '${id}'`,
+          or: `id.eq.${id},user_id.eq.${id}`,
           limit: 1
         });
         return data.length > 0 ? mapPatient(data[0]) : null;
@@ -300,13 +300,13 @@ export function getRepositories(principal: RepositoryPrincipal): Repositories {
     doctors: {
       async listDoctors() {
         const data = await dbGateway.query('doctors', {
-          orderBy: 'full_name ASC'
+          orderBy: { column: 'full_name', ascending: true }
         });
         return data.map((row: any) => mapDoctor(row));
       },
       async getDoctor(id) {
         const data = await dbGateway.query('doctors', {
-          where: `id = '${id}' OR user_id = '${id}'`,
+          or: `id.eq.${id},user_id.eq.${id}`,
           limit: 1
         });
         return data.length > 0 ? mapDoctor(data[0]) : null;
@@ -326,21 +326,21 @@ export function getRepositories(principal: RepositoryPrincipal): Repositories {
     appointments: {
       async listAppointments() {
         const data = await dbGateway.query('appointments', {
-          orderBy: 'scheduled_at DESC'
+          orderBy: { column: 'scheduled_at', ascending: false }
         });
         return data.map((row: any) => mapAppointment(row));
       },
       async listAppointmentsForPatient(patientId) {
         const data = await dbGateway.query('appointments', {
-          where: `patient_id = '${patientId}'`,
-          orderBy: 'scheduled_at DESC'
+          match: { patient_id: patientId },
+          orderBy: { column: 'scheduled_at', ascending: false }
         });
         return data.map((row: any) => mapAppointment(row));
       },
       async listAppointmentsForDoctor(doctorId) {
         const data = await dbGateway.query('appointments', {
-          where: `doctor_id = '${doctorId}'`,
-          orderBy: 'scheduled_at DESC'
+          match: { doctor_id: doctorId },
+          orderBy: { column: 'scheduled_at', ascending: false }
         });
         return data.map((row: any) => mapAppointment(row));
       },
@@ -361,7 +361,7 @@ export function getRepositories(principal: RepositoryPrincipal): Repositories {
       async escalatePatientAppointments(patientId, urgency) {
         // MCP update - need to get appointments first and update each one
         const appointments = await dbGateway.query('appointments', {
-          where: `patient_id = '${patientId}' AND status = 'scheduled'`
+          match: { patient_id: patientId, status: 'scheduled' }
         });
 
         for (const appointment of appointments) {
@@ -372,7 +372,7 @@ export function getRepositories(principal: RepositoryPrincipal): Repositories {
     users: {
       async getUserById(id) {
         const data = await dbGateway.query('users', {
-          where: `id = '${id}'`,
+          match: { id },
           limit: 1
         });
         if (data.length === 0) return null;
@@ -408,22 +408,22 @@ export function getRepositories(principal: RepositoryPrincipal): Repositories {
     timeline: {
       async listTimelineForPatient(patientId) {
         const data = await dbGateway.query('medical_timeline', {
-          where: `patient_id = '${patientId}'`,
-          orderBy: 'created_at DESC'
+          match: { patient_id: patientId },
+          orderBy: { column: 'created_at', ascending: false }
         });
         return data.map((row: any) => mapTimelineEvent(row));
       },
       async listTimelineForDoctor(doctorId) {
         // First get patients for this doctor
         const patients = await dbGateway.query('patients', {
-          where: `primary_doctor_id = '${doctorId}'`
+          match: { primary_doctor_id: doctorId }
         });
         const patientIds = patients.map((p: any) => p.id);
         if (patientIds.length === 0) return [];
 
         const data = await dbGateway.query('medical_timeline', {
-          where: `patient_id IN (${patientIds.map(id => `'${id}'`).join(',')})`,
-          orderBy: 'created_at DESC'
+          in: { patient_id: patientIds },
+          orderBy: { column: 'created_at', ascending: false }
         });
         return data.map((row: any) => mapTimelineEvent(row));
       },
@@ -444,8 +444,8 @@ export function getRepositories(principal: RepositoryPrincipal): Repositories {
     messages: {
       async listConversation(userAId, userBId) {
         const data = await dbGateway.query('messages', {
-          where: `(sender_id = '${userAId}' AND receiver_id = '${userBId}') OR (sender_id = '${userBId}' AND receiver_id = '${userAId}')`,
-          orderBy: 'created_at ASC'
+          or: `and(sender_id.eq.${userAId},receiver_id.eq.${userBId}),and(sender_id.eq.${userBId},receiver_id.eq.${userAId})`,
+          orderBy: { column: 'created_at', ascending: true }
         });
         return data.map((row: any) => mapMessage(row));
       },
@@ -464,8 +464,8 @@ export function getRepositories(principal: RepositoryPrincipal): Repositories {
     labs: {
       async listLabsForPatient(patientId) {
         const data = await dbGateway.query('labs', {
-          where: `patient_id = '${patientId}'`,
-          orderBy: 'created_at DESC'
+          match: { patient_id: patientId },
+          orderBy: { column: 'created_at', ascending: false }
         });
         return data.map((row: any) => mapLab(row));
       },

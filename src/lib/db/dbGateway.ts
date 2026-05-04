@@ -12,10 +12,13 @@ interface TenantContext {
 }
 
 interface QueryFilters {
-  where?: string;
+  match?: Record<string, any>;
+  neq?: Record<string, any>;
+  in?: Record<string, any[]>;
+  or?: string;
   limit?: number;
   offset?: number;
-  orderBy?: string;
+  orderBy?: { column: string; ascending: boolean };
 }
 
 interface InsertData {
@@ -47,13 +50,12 @@ export class DBGateway {
    * Inject tenant isolation into query
    */
   private injectTenantIsolation(filters: QueryFilters): QueryFilters {
-    const tenantFilter = `tenant_id = '${this.tenantContext.tenantId}'`;
-    const existingWhere = filters.where || '';
-
-    return {
-      ...filters,
-      where: existingWhere ? `(${existingWhere}) AND ${tenantFilter}` : tenantFilter
+    const isolatedFilters = { ...filters };
+    isolatedFilters.match = {
+      ...(isolatedFilters.match || {}),
+      tenant_id: this.tenantContext.tenantId
     };
+    return isolatedFilters;
   }
 
   /**

@@ -85,13 +85,13 @@ export async function POST(request: Request) {
         // And "All DB queries go through dbGateway".
         // The repositories use normal supabase queries, so we need to either change repositories or use DBGateway here directly.
         // Let's use DBGateway directly for the patient data as per the plan: "All DB queries go through dbGateway"
-        const patients = await dbGateway.query('patients', { where: `id = '${body.input.patientId}'`, limit: 1 });
+        const patients = await dbGateway.query('patients', { match: { id: body.input.patientId }, limit: 1 });
         const patient = patients[0];
         
         if (!patient) {
           return NextResponse.json({ ok: false, tool: body.tool, error: 'Patient not found' }, { status: 404 });
         }
-        const appointments = await dbGateway.query('appointments', { where: `patient_id = '${patient.id}'` });
+        const appointments = await dbGateway.query('appointments', { match: { patient_id: patient.id } });
         return NextResponse.json({ ok: true, tool: body.tool, result: { patient, appointments } });
       }
       case 'save_doctor_notes': {
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
         console.log('Using DB tool: save_doctor_notes');
         const dbGateway = createDBGateway({ tenantId: user.tenantId, userId: user.id, role: user.role });
         
-        const doctors = await dbGateway.query('doctors', { where: `id = '${user.id}'`, limit: 1 });
+        const doctors = await dbGateway.query('doctors', { match: { id: user.id }, limit: 1 });
         const doctor = doctors[0];
         if (!doctor) {
           return NextResponse.json({ ok: false, tool: body.tool, error: 'Doctor record not found' }, { status: 403 });
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: false, tool: body.tool, error: 'Doctor mismatch' }, { status: 403 });
         }
 
-        const patients = await dbGateway.query('patients', { where: `id = '${body.input.patientId}'`, limit: 1 });
+        const patients = await dbGateway.query('patients', { match: { id: body.input.patientId }, limit: 1 });
         const patient = patients[0];
         if (!patient) {
           return NextResponse.json({ ok: false, tool: body.tool, error: 'Patient not found' }, { status: 404 });

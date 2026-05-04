@@ -115,7 +115,8 @@ function LoginPageContent() {
         auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true },
       });
       const nextQ = nextPath && nextPath.startsWith("/") ? `?next=${encodeURIComponent(nextPath)}` : "";
-      const redirectTo = `${window.location.origin}/auth/callback${nextQ}`;
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      const redirectTo = `${siteUrl}/auth/callback${nextQ}`;
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo },

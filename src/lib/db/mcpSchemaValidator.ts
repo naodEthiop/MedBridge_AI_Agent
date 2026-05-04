@@ -109,7 +109,7 @@ export class MCPSchemaValidator {
     try {
       // Query to check table exists
       await supabaseMCP.query('information_schema.tables', {
-        where: `table_name = '${table}' AND table_schema = 'public'`,
+        match: { table_name: table, table_schema: 'public' },
         limit: 1
       });
     } catch (error) {
@@ -199,7 +199,7 @@ export class MCPSchemaValidator {
       if (fkValue) {
         try {
           const exists = await supabaseMCP.query(relTable, {
-            where: `id = '${fkValue}'`,
+            match: { id: fkValue },
             limit: 1
           });
           if (exists.length === 0) {

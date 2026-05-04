@@ -53,7 +53,7 @@ export class MCPConsistencyGuard {
     if (check.operation === 'insert') {
       // Check for duplicate email
       const existingByEmail = await this.gateway.query('patients', {
-        where: `email = '${check.data.email}'`,
+        match: { email: check.data.email },
         limit: 1
       });
 
@@ -64,7 +64,7 @@ export class MCPConsistencyGuard {
       // Check for duplicate phone
       if (check.data.phone) {
         const existingByPhone = await this.gateway.query('patients', {
-          where: `phone = '${check.data.phone}'`,
+          match: { phone: check.data.phone },
           limit: 1
         });
 
@@ -89,7 +89,7 @@ export class MCPConsistencyGuard {
   private async checkAppointmentConsistency(check: ConsistencyCheck): Promise<ConsistencyCheck> {
     // Verify patient exists
     const patientExists = await this.gateway.query('patients', {
-      where: `id = '${check.data.patient_id}'`,
+      match: { id: check.data.patient_id },
       limit: 1
     });
 
@@ -99,7 +99,7 @@ export class MCPConsistencyGuard {
 
     // Verify doctor exists
     const doctorExists = await this.gateway.query('doctors', {
-      where: `id = '${check.data.doctor_id}'`,
+      match: { id: check.data.doctor_id },
       limit: 1
     });
 
@@ -109,7 +109,7 @@ export class MCPConsistencyGuard {
 
     // Verify health center exists
     const healthCenterExists = await this.gateway.query('health_centers', {
-      where: `id = '${check.data.health_center_id}'`,
+      match: { id: check.data.health_center_id },
       limit: 1
     });
 
@@ -120,7 +120,8 @@ export class MCPConsistencyGuard {
     // Check for scheduling conflicts
     if (check.operation === 'insert' || check.operation === 'update') {
       const conflicts = await this.gateway.query('appointments', {
-        where: `doctor_id = '${check.data.doctor_id}' AND scheduled_at = '${check.data.scheduled_at}' AND status = 'scheduled' AND id != '${check.data.id || ''}'`,
+        match: { doctor_id: check.data.doctor_id, scheduled_at: check.data.scheduled_at, status: 'scheduled' },
+        neq: { id: check.data.id || '' },
         limit: 1
       });
 
@@ -138,7 +139,7 @@ export class MCPConsistencyGuard {
   private async checkMedicalReportConsistency(check: ConsistencyCheck): Promise<ConsistencyCheck> {
     // Verify patient exists
     const patientExists = await this.gateway.query('patients', {
-      where: `id = '${check.data.patient_id}'`,
+      match: { id: check.data.patient_id },
       limit: 1
     });
 
@@ -148,7 +149,7 @@ export class MCPConsistencyGuard {
 
     // Verify doctor exists
     const doctorExists = await this.gateway.query('doctors', {
-      where: `id = '${check.data.doctor_id}'`,
+      match: { id: check.data.doctor_id },
       limit: 1
     });
 
@@ -165,7 +166,7 @@ export class MCPConsistencyGuard {
   private async checkLabConsistency(check: ConsistencyCheck): Promise<ConsistencyCheck> {
     // Verify patient exists
     const patientExists = await this.gateway.query('patients', {
-      where: `id = '${check.data.patient_id}'`,
+      match: { id: check.data.patient_id },
       limit: 1
     });
 
@@ -288,7 +289,7 @@ export class MCPConsistencyGuard {
       else continue;
 
       const exists = await this.gateway.query(refTable, {
-        where: `id = '${fkValue}'`,
+        match: { id: fkValue },
         limit: 1
       });
 

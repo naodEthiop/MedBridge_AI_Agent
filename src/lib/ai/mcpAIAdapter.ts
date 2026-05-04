@@ -92,11 +92,11 @@ export class MCPAIAdapter {
       appointmentsData,
       reportsData
     ] = await Promise.all([
-      this.gateway.query('patients', { where: `id = '${patientId}'`, limit: 1 }),
-      this.gateway.query('medical_timeline', { where: `patient_id = '${patientId}'`, orderBy: 'created_at DESC', limit: 50 }),
-      this.gateway.query('labs', { where: `patient_id = '${patientId}'`, orderBy: 'created_at DESC', limit: 20 }),
-      this.gateway.query('appointments', { where: `patient_id = '${patientId}' AND status = 'scheduled'`, orderBy: 'scheduled_at ASC', limit: 10 }),
-      this.gateway.query('medical_reports', { where: `patient_id = '${patientId}'`, orderBy: 'created_at DESC', limit: 5 })
+      this.gateway.query('patients', { match: { id: patientId }, limit: 1 }),
+      this.gateway.query('medical_timeline', { match: { patient_id: patientId }, orderBy: { column: 'created_at', ascending: false }, limit: 50 }),
+      this.gateway.query('labs', { match: { patient_id: patientId }, orderBy: { column: 'created_at', ascending: false }, limit: 20 }),
+      this.gateway.query('appointments', { match: { patient_id: patientId, status: 'scheduled' }, orderBy: { column: 'scheduled_at', ascending: true }, limit: 10 }),
+      this.gateway.query('medical_reports', { match: { patient_id: patientId }, orderBy: { column: 'created_at', ascending: false }, limit: 5 })
     ]);
 
     if (!patientData.length) {
@@ -156,7 +156,7 @@ export class MCPAIAdapter {
     let primaryDoctor: string | undefined;
     if (patient.primary_doctor_id) {
       const doctorData = await this.gateway.query('doctors', {
-        where: `id = '${patient.primary_doctor_id}'`,
+        match: { id: patient.primary_doctor_id },
         limit: 1
       });
       if (doctorData.length) {
