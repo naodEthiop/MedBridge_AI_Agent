@@ -62,7 +62,7 @@ export type AiServiceResponse =
   | HealthAgentOutput
   | RiskPrediction
   | DoctorCopilotReport
-  | { diagnosis: string; riskLevel: "low" | "medium" | "high" | "unknown"; confidence: number; recommendations: string[] }
+  | { message: string; followUpQuestions: string[]; riskLevel: string; recommendations: string[] }
   | { error: string };
 
 
@@ -99,52 +99,107 @@ const triageFallback = {
   recommendations: ["Retry"],
 };
 
-const TRIAGE_SYSTEM_PROMPT = [
-  "You are MedBridge AI triage assistant.",
-  "Return concise clinical guidance without diagnosis certainty claims.",
-  "Prioritize red-flag escalation, safety, and plain language.",
-].join(" ");
+const TRIAGE_SYSTEM_PROMPT = `
+You are MedBridge AI, a friendly and intelligent medical assistant.
+
+Your personality:
+- Warm, conversational, and human-like
+- Speak like ChatGPT, not like a robot
+- Always helpful and engaging
+
+Your behavior:
+- NEVER refuse basic symptom questions
+- DO NOT say "I cannot provide medical advice"
+- Instead, provide general guidance and suggestions
+
+Rules:
+- You are NOT a doctor, but you help users understand symptoms
+- DO NOT give final diagnosis
+- DO NOT scare the user
+- DO NOT be overly strict or defensive
+
+Response style:
+- Start with empathy ("I understand how you're feeling")
+- Ask follow-up questions
+- Suggest possible causes (non-definitive)
+- Give clear next steps
+
+Example tone:
+"That sounds uncomfortable. Based on your symptoms, it could be something mild like a cold or fatigue. Can you tell me if you also have a fever?"
+
+Output format MUST be JSON:
+
+{
+  "message": "chat-style response",
+  "followUpQuestions": ["question1", "question2"],
+  "riskLevel": "low | medium | high",
+  "recommendations": ["step1", "step2"]
+}
+`;
 
 export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
-}): Promise<{ diagnosis: string; riskLevel: "low" | "medium" | "high" | "unknown"; confidence: number; recommendations: string[] } | { error: string }> {
+}) {
+  const fallbackResponse = {
+    message: "I'm here to help. Can you tell me more about your symptoms?",
+    followUpQuestions: ["When did it start?", "Any pain level?"],
+    riskLevel: "low",
+    recommendations: ["Monitor symptoms", "Stay hydrated"],
+  };
+
   if (!env.GEMINI_API_KEY?.trim()) {
-    return triageFallback;
+    return fallbackResponse;
   }
 
-  const prompt = `You are a medical AI. Analyze symptoms and return JSON:
-{
-  "diagnosis": "string",
-  "riskLevel": "low" | "medium" | "high",
-  "confidence": number,
-  "recommendations": ["string"]
-}
+  const prompt = `${TRIAGE_SYSTEM_PROMPT}
 
 Patient Message: "${input.message.trim()}"
 ${input.bodyPart ? `Body Part: ${input.bodyPart}` : ""}`;
 
   try {
     const responseText = await generateGeminiResponse(prompt);
-    const cleaned = String(responseText).replace(/```json/i, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(cleaned) as Record<string, unknown>;
+    console.log("Gemini RAW:", responseText);
 
-    const diagnosis = typeof parsed.diagnosis === "string" && parsed.diagnosis.trim() ? parsed.diagnosis : "Unable to analyze symptoms";
+    const cleaned = String(responseText).replace(/```json/i, "").replace(/```/g, "").trim();
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(cleaned);
+      console.log("Gemini PARSED:", parsed);
+    } catch (parseError) {
+      console.error("Gemini Parse Error:", parseError, "Raw text:", cleaned);
+      return fallbackResponse;
+    }
+
+    const messageRaw = typeof parsed.message === "string" ? parsed.message : "";
+    
+    // Force human-like response cleaning
+    const cleanResponse = messageRaw
+      .replace(/I am not a doctor/gi, "")
+      .replace(/cannot provide medical advice/gi, "")
+      .trim();
+
+    if (!parsed || !cleanResponse || cleanResponse.length < 10) {
+      return fallbackResponse;
+    }
+
     const riskLevel = parsed.riskLevel === "high" || parsed.riskLevel === "medium" ? parsed.riskLevel : "low";
-    const confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0;
+    const followUpQuestions = Array.isArray(parsed.followUpQuestions)
+      ? parsed.followUpQuestions.filter((item): item is string => typeof item === "string")
+      : [];
     const recommendations = Array.isArray(parsed.recommendations)
       ? parsed.recommendations.filter((item): item is string => typeof item === "string")
       : [];
 
     return {
-      diagnosis,
+      message: cleanResponse,
+      followUpQuestions,
       riskLevel,
-      confidence,
-      recommendations: recommendations.length ? recommendations : ["Please consult a healthcare professional"],
+      recommendations,
     };
   } catch (error) {
     console.error("Symptom triage error:", error);
-    return triageFallback;
+    return fallbackResponse;
   }
 }
 

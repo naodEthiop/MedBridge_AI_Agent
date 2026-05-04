@@ -23,7 +23,12 @@ export function SymptomCheckerClient(props: {
   initialMessage?: string;
 }) {
   const [message, setMessage] = useState(props.initialMessage ?? "");
-  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [chatHistory, setChatHistory] = useState<{ role: "user" | "ai"; text: string; data?: any }[]>([
+    {
+      role: "ai",
+      text: "Hello. I am your MedBridge assistant. Tell me where the symptom is and how severe it feels. It also helps to know when it started and whether anything makes it better or worse.",
+    }
+  ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toolFeedback, setToolFeedback] = useState<string | null>(null);
@@ -32,13 +37,18 @@ export function SymptomCheckerClient(props: {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const userMessage = message.trim();
+    if (!userMessage) return;
+
+    setChatHistory((prev) => [...prev, { role: "user", text: userMessage }]);
+    setMessage(""); // Add user message immediately and clear input
     setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/symptoms/triage", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ message, bodyPart: props.bodyPart ?? null }),
+        body: JSON.stringify({ message: userMessage, bodyPart: props.bodyPart ?? null }),
       });
       const dataText = await res.text();
       if (!res.ok) {
@@ -58,8 +68,12 @@ export function SymptomCheckerClient(props: {
         (parsed.triage as Record<string, unknown>) ??
         (parsed.result as Record<string, unknown>) ??
         (parsed.tool === "symptom_checker" ? (parsed.result as Record<string, unknown>) : parsed);
-      setResult(resultObj ?? null);
+      
+      const aiText = typeof resultObj?.message === "string" ? resultObj.message : "I understand. Let me help you with that.";
+      setChatHistory((prev) => [...prev, { role: "ai", text: aiText, data: resultObj }]);
       props.onResultChange?.(resultObj ?? null);
+    } catch {
+      setError("Failed to process your symptoms. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -106,97 +120,47 @@ export function SymptomCheckerClient(props: {
     rec.start();
   }
 
-  type Message = { role: "user" | "assistant"; content: string };
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Hello. I&apos;m your MedBridge assistant. Tell me where the symptom is and how severe it feels. It also helps to know when it started and whether anything makes it better or worse.",
-    },
-  ]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!message.trim() || loading) return;
-
-    const userMsg: Message = { role: "user", content: message };
-    setMessages((prev) => [...prev, userMsg]);
-    setMessage("");
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/api/symptoms/triage", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ message, bodyPart: props.bodyPart ?? null }),
-      });
-
-      const dataText = await res.text();
-      if (!res.ok) {
-        setError(cleanErrorMessage(dataText || "Unable to analyze symptoms"));
-        return;
-      }
-
-      let parsed: Record<string, unknown>;
-      try {
-        parsed = JSON.parse(dataText) as Record<string, unknown>;
-      } catch {
-        setError("We couldn't process your response. Please try again.");
-        return;
-      }
-
-      const resultObj =
-        (parsed.triage as Record<string, unknown>) ??
-        (parsed.result as Record<string, unknown>) ??
-        (parsed.tool === "symptom_checker" ? (parsed.result as Record<string, unknown>) : parsed);
-
-      setResult(resultObj ?? null);
-      props.onResultChange?.(resultObj ?? null);
-
-      const diagnosis = String(resultObj?.diagnosis ?? "");
-      const riskLevel = String(resultObj?.riskLevel ?? "unknown").toUpperCase();
-      const recommendations = Array.isArray(resultObj?.recommendations)
-        ? (resultObj.recommendations as string[]).join(", ")
-        : "";
-
-      const aiResponse = `Risk Level: ${riskLevel}\n\n${diagnosis}${recommendations ? `\n\nRecommendations: ${recommendations}` : ""}`;
-      const aiMsg: Message = { role: "assistant", content: aiResponse };
-      setMessages((prev) => [...prev, aiMsg]);
-    } catch (err) {
-      setError(cleanErrorMessage(err ?? "Unable to analyze symptoms. Please try again."));
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <div className="flex flex-col gap-4 h-full max-w-4xl mx-auto">
       <div className="flex-1 overflow-y-auto space-y-4 px-4 py-4">
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            {msg.role === "assistant" && (
+        {chatHistory.map((msg, idx) => (
+          <div key={idx} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            {msg.role === "ai" && (
               <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sahara-primary/20 text-sahara-primary">
                 <Bot className="size-5" />
               </div>
             )}
-            <div
-              className={`max-w-xl rounded-2xl px-4 py-3 ${
-                msg.role === "user"
-                  ? "bg-sahara-primary text-white rounded-br-none"
-                  : "bg-white/90 backdrop-blur border border-sahara-border/40 rounded-bl-none text-sahara-fg"
-              }`}
-            >
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+            <div className={`max-w-xl rounded-2xl px-4 py-3 ${msg.role === "user" ? "bg-sahara-primary text-white rounded-br-none shadow-sm" : "bg-white/90 backdrop-blur border border-sahara-border/40 rounded-bl-none text-sahara-fg"}`}>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
+              {msg.role === "ai" && msg.data && (
+                <div className="mt-4 space-y-3 border-t border-stone-100 pt-3">
+                  {msg.data.riskLevel && (
+                    <p className="text-xs font-semibold">Risk Level: <span className="uppercase text-sahara-primary">{msg.data.riskLevel}</span></p>
+                  )}
+                  {Array.isArray(msg.data.followUpQuestions) && msg.data.followUpQuestions.length > 0 && (
+                    <div className="text-xs">
+                      <span className="font-semibold text-stone-600">Follow-up:</span>
+                      <ul className="mt-1.5 list-inside list-disc space-y-1 text-stone-500">
+                        {msg.data.followUpQuestions.map((q: string, i: number) => <li key={i}>{q}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(msg.data.recommendations) && msg.data.recommendations.length > 0 && (
+                    <div className="text-xs">
+                      <span className="font-semibold text-stone-600">Recommendations:</span>
+                      <ul className="mt-1.5 list-inside list-disc space-y-1 text-stone-500">
+                        {msg.data.recommendations.map((r: string, i: number) => <li key={i}>{r}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
-
+        
         {loading && (
-          <div className="flex gap-3 justify-start">
+          <div className="flex gap-3 justify-start items-end">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sahara-primary/20 text-sahara-primary">
               <Bot className="size-5" />
             </div>
@@ -218,7 +182,7 @@ export function SymptomCheckerClient(props: {
       </div>
 
       <div className="sticky bottom-0 bg-gradient-to-t from-sahara-bg via-sahara-bg/95 to-transparent px-4 py-4 border-t border-sahara-border/40">
-        <form onSubmit={handleSubmit} className="flex gap-2">
+        <form onSubmit={onSubmit} className="flex gap-2">
           <input
             ref={fileInputRef}
             type="file"
