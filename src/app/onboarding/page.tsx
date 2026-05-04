@@ -41,7 +41,7 @@ export default function OnboardingPage() {
                 <input type="date" className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" />
               </label>
               <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Sex at birth</span>
+                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Sex</span>
                 <select className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3">
                   <option>Female</option>
                   <option>Male</option>

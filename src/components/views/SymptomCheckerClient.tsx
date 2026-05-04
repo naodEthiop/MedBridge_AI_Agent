@@ -105,144 +105,166 @@ export function SymptomCheckerClient(props: {
     rec.start();
   }
 
+  type Message = { role: "user" | "assistant"; content: string };
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content:
+        "Hello. I&apos;m your MedBridge assistant. Tell me where the symptom is and how severe it feels. It also helps to know when it started and whether anything makes it better or worse.",
+    },
+  ]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!message.trim() || loading) return;
+
+    const userMsg: Message = { role: "user", content: message };
+    setMessages((prev) => [...prev, userMsg]);
+    setMessage("");
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/symptoms/triage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ message, bodyPart: props.bodyPart ?? null }),
+      });
+
+      const dataText = await res.text();
+      if (!res.ok) {
+        setError(dataText || "Triage request failed.");
+        return;
+      }
+
+      let parsed: Record<string, unknown>;
+      try {
+        parsed = JSON.parse(dataText) as Record<string, unknown>;
+      } catch {
+        setError("Unexpected response from triage service.");
+        return;
+      }
+
+      const resultObj =
+        (parsed.triage as Record<string, unknown>) ??
+        (parsed.result as Record<string, unknown>) ??
+        (parsed.tool === "symptom_checker" ? (parsed.result as Record<string, unknown>) : parsed);
+
+      setResult(resultObj ?? null);
+      props.onResultChange?.(resultObj ?? null);
+
+      const diagnosis = String(resultObj?.diagnosis ?? "");
+      const riskLevel = String(resultObj?.riskLevel ?? "unknown").toUpperCase();
+      const recommendations = Array.isArray(resultObj?.recommendations)
+        ? (resultObj.recommendations as string[]).join(", ")
+        : "";
+
+      const aiResponse = `Risk Level: ${riskLevel}\n\n${diagnosis}${recommendations ? `\n\nRecommendations: ${recommendations}` : ""}`;
+      const aiMsg: Message = { role: "assistant", content: aiResponse };
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch {
+      setError("Failed to process your symptoms. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="flex h-full flex-col gap-8">
-      <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6">
-        <div className="flex items-start gap-4">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sahara-primary/20 text-sahara-primary">
-            <Bot className="size-5" />
-          </div>
-          <div className="max-w-[80%] rounded-2xl rounded-tl-none border border-stone-100 bg-white p-6 shadow-ambient">
-            <p className="leading-relaxed text-sahara-fg">
-              Hello. I am your MedBridge assistant. Tell me where the symptom is and how severe it feels.
-            </p>
-            <p className="mt-4 leading-relaxed text-sahara-fg">
-              It also helps to know when it started and whether anything makes it better or worse.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex justify-center py-4">
-          <div className="w-full max-w-md rounded-3xl border border-stone-200 bg-gradient-to-b from-white to-sahara-surface-low p-8 text-center shadow-sm">
-            <h3 className="mb-2 font-serif text-lg italic text-stone-500">Symptom localization</h3>
-            <div className="mx-auto mb-4 flex max-w-[200px] justify-center rounded-2xl border border-sahara-border/50 bg-white p-4">
-              <svg viewBox="0 0 100 120" className="h-48 w-full text-sahara-muted" aria-hidden>
-                <path
-                  d="M50 4c-8 0-14 6-14 14v8c0 6 4 11 9 13-6 2-10 8-10 15v42c0 8 6 14 14 14h2c8 0 14-6 14-14V54c0-7-4-13-10-15 5-2 9-7 9-13v-8c0-8-6-14-14-14z"
-                  fill="rgb(236 230 220)"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  className="text-sahara-border"
-                />
-                <ellipse cx="50" cy="22" rx="10" ry="11" fill="rgb(252 224 224 / 0.35)" stroke="rgb(194 101 42)" strokeWidth="1.5" />
-                <rect x="36" y="36" width="28" height="22" rx="3" fill="rgb(194 101 42 / 0.12)" stroke="rgb(194 101 42)" strokeWidth="1" />
-                <rect x="38" y="60" width="24" height="18" rx="3" fill="rgb(194 101 42 / 0.08)" stroke="rgb(194 101 42)" strokeWidth="1" />
-                <rect x="22" y="40" width="10" height="28" rx="2" fill="rgb(194 101 42 / 0.08)" stroke="rgb(194 101 42)" strokeWidth="1" />
-                <rect x="68" y="40" width="10" height="28" rx="2" fill="rgb(194 101 42 / 0.08)" stroke="rgb(194 101 42)" strokeWidth="1" />
-                <rect x="40" y="82" width="8" height="28" rx="2" fill="rgb(194 101 42 / 0.08)" stroke="rgb(194 101 42)" strokeWidth="1" />
-                <rect x="52" y="82" width="8" height="28" rx="2" fill="rgb(194 101 42 / 0.08)" stroke="rgb(194 101 42)" strokeWidth="1" />
-              </svg>
+    <div className="flex flex-col gap-4 h-full max-w-4xl mx-auto">
+      <div className="flex-1 overflow-y-auto space-y-4 px-4 py-4">
+        {messages.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+          >
+            {msg.role === "assistant" && (
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sahara-primary/20 text-sahara-primary">
+                <Bot className="size-5" />
+              </div>
+            )}
+            <div
+              className={`max-w-xl rounded-2xl px-4 py-3 ${
+                msg.role === "user"
+                  ? "bg-sahara-primary text-white rounded-br-none"
+                  : "bg-white/90 backdrop-blur border border-sahara-border/40 rounded-bl-none text-sahara-fg"
+              }`}
+            >
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
             </div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-sahara-primary">
-              Focus area: <span className="capitalize">{props.bodyPart ?? "select on the map above"}</span>
-            </p>
-            <p className="mt-2 text-xs text-sahara-muted">The interactive body selector above drives triage context.</p>
-            <p className="mt-3 rounded-xl bg-white/80 px-3 py-2 text-[11px] leading-relaxed text-stone-500 ring-1 ring-stone-100">
-              <span className="font-semibold text-stone-600">Visualization:</span> illustrative 2D figure highlights your
-              region. Full interactive 3D anatomy is planned as an upgrade—this preview keeps localization visible today.
-            </p>
           </div>
-        </div>
+        ))}
+
+        {loading && (
+          <div className="flex gap-3 justify-start">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sahara-primary/20 text-sahara-primary">
+              <Bot className="size-5" />
+            </div>
+            <div className="bg-white/90 backdrop-blur border border-sahara-border/40 rounded-2xl rounded-bl-none px-4 py-3 flex gap-1">
+              <span className="inline-block w-2 h-2 bg-sahara-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="inline-block w-2 h-2 bg-sahara-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="inline-block w-2 h-2 bg-sahara-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex gap-3 justify-start">
+            <div className="w-full rounded-2xl border border-red-300/50 bg-red-50/80 px-4 py-3 text-sm text-red-900">
+              {error}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="sticky bottom-0 bg-sahara-bg/90 pb-2 pt-4 backdrop-blur-md">
-        <form onSubmit={onSubmit} className="mx-auto w-full max-w-4xl">
-          <div className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white p-2 shadow-sm">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) setToolFeedback(`${file.name} attached — describe symptoms in text, then send.`);
-              }}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2 text-stone-400 transition-colors hover:text-sahara-primary"
-              aria-label="Attach file"
-            >
-              <PlusCircle className="size-5" />
-            </button>
-            <input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="flex-1 border-none bg-transparent px-2 py-3 text-sm outline-none"
-              placeholder="Type your symptoms here..."
-              type="text"
-            />
-            <button
-              type="button"
-              onClick={startVoice}
-              className="p-2 text-stone-400 transition-colors hover:text-sahara-primary"
-              aria-label="Start voice capture"
-            >
-              <Mic className="size-5" />
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !message.trim()}
-              className="rounded-xl bg-sahara-primary px-4 py-2 text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-              aria-label="Send symptoms"
-            >
-              <Send className="size-5" />
-            </button>
-          </div>
-          <p className="mt-2 text-center text-[10px] italic text-stone-400">
-            MedBridge AI provides guidance and does not replace professional medical advice.
-          </p>
-          {toolFeedback ? <p className="mt-2 text-center text-xs text-sahara-muted">{toolFeedback}</p> : null}
-          <p className="mt-2 text-center text-[10px] text-stone-400">
-            <Link href="/patient" className="font-semibold text-sahara-primary hover:underline">
-              Back to dashboard
-            </Link>
-            {" · "}
-            After voice input, review the text field and tap send.
-          </p>
+      <div className="sticky bottom-0 bg-gradient-to-t from-sahara-bg via-sahara-bg/95 to-transparent px-4 py-4 border-t border-sahara-border/40">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) setToolFeedback(`${file.name} attached — describe symptoms in text, then send.`);
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center justify-center shrink-0 size-10 rounded-full text-stone-400 hover:text-sahara-primary transition-colors hover:bg-white/50"
+            aria-label="Attach file"
+          >
+            <PlusCircle className="size-5" />
+          </button>
+          <input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="flex-1 rounded-full bg-white/70 backdrop-blur border border-stone-200/80 px-5 py-3 text-sm outline-none focus:ring-2 focus:ring-sahara-primary/30 focus:border-sahara-primary"
+            placeholder="Describe your symptoms..."
+            type="text"
+          />
+          <button
+            type="button"
+            onClick={startVoice}
+            className="flex items-center justify-center shrink-0 size-10 rounded-full text-stone-400 hover:text-sahara-primary transition-colors hover:bg-white/50"
+            aria-label="Start voice capture"
+          >
+            <Mic className="size-5" />
+          </button>
+          <button
+            type="submit"
+            disabled={loading || !message.trim()}
+            className="flex items-center justify-center shrink-0 size-10 rounded-full bg-sahara-primary text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+            aria-label="Send symptoms"
+          >
+            <Send className="size-5" />
+          </button>
         </form>
+        {toolFeedback ? <p className="mt-2 text-center text-xs text-sahara-muted">{toolFeedback}</p> : null}
+        <p className="mt-3 text-center text-[10px] italic text-stone-400">
+          MedBridge AI provides guidance and does not replace professional medical advice.
+        </p>
       </div>
-
-      {loading ? (
-        <div className="mx-auto w-full max-w-4xl rounded-xl border border-sahara-border/50 bg-white p-3 text-center text-sm text-sahara-muted">
-          Analyzing your symptoms…
-        </div>
-      ) : null}
-
-      {error ? (
-        <div className="mx-auto w-full max-w-4xl rounded-xl border border-red-300/40 bg-red-100/30 p-3 text-sm text-red-900">
-          {error}
-        </div>
-      ) : null}
-
-      {result ? (
-        <div className="mx-auto w-full max-w-4xl space-y-2 rounded-2xl border border-sahara-border/60 bg-sahara-surface-low p-5">
-          <p className="font-semibold">Risk Level: {String(result.riskLevel ?? "unknown")}</p>
-          <p className="text-sm text-sahara-muted">{String(result.diagnosis ?? "")}</p>
-          {Array.isArray(result.recommendations) && result.recommendations.length ? (
-            <p className="text-sm">
-              <span className="font-semibold">Recommendations:</span>{" "}
-              {(result.recommendations as string[]).join(", ")}
-            </p>
-          ) : null}
-          {typeof result.confidence === 'number' && (
-            <p className="text-sm text-stone-500">Confidence: {Math.round(result.confidence * 100)}%</p>
-          )}
-        </div>
-      ) : !loading && !error ? (
-        <p className="mx-auto max-w-4xl text-center text-xs text-sahara-muted">Results appear here after you send a symptom message.</p>
-      ) : null}
     </div>
   );
 }

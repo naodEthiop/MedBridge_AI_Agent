@@ -79,6 +79,7 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
   const homeHref = session.role === "doctor" ? "/doctor/dashboard" : "/patient";
   const settingsHref = session.role === "doctor" ? "/doctor/settings" : "/patient/settings";
   const helpHref = session.role === "doctor" ? "/doctor/assistant" : "/patient/symptom-checker";
+  const isOnboarding = pathname.includes("onboarding");
 
   const showBack =
     (pathname.startsWith("/patient") && pathname !== "/patient") ||
@@ -119,6 +120,7 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
 
   return (
     <div className="flex min-h-[calc(100vh-0px)] w-full flex-col lg:flex-row">
+      {!isOnboarding && (
       <aside className="hidden h-screen w-[288px] flex-col border-r border-sahara-border/60 bg-sahara-bg py-8 lg:sticky lg:top-0 lg:flex">
         {session.loading ? (
           <div className="mb-10 px-8">
@@ -191,6 +193,7 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
           </div>
         </div>
       </aside>
+      )}
 
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-10 border-b border-sahara-border/60 bg-sahara-bg/95 shadow-ambient backdrop-blur-sm">
