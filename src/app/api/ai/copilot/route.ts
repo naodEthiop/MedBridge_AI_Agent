@@ -53,7 +53,16 @@ export async function POST(request: Request) {
     });
 
     if ('error' in report) {
-      return NextResponse.json({ ok: false, error: report.error }, { status: 503 });
+      return NextResponse.json({
+        ok: true,
+        data: {
+          report: {
+            message: "AI unavailable",
+            confidence: 0,
+            riskLevel: "unknown",
+          },
+        },
+      });
     }
 
     await repos.timeline.createTimelineEvent({

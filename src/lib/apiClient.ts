@@ -10,14 +10,19 @@ function url(path: string) {
 }
 
 async function getJson<T>(path: string): Promise<ApiResult<T>> {
-  const res = await fetch(url(path), {
-    headers: { Accept: "application/json" },
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    return { ok: false, error: await res.text(), status: res.status };
+  try {
+    const res = await fetch(url(path), {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      return { ok: false, error: await res.text(), status: res.status };
+    }
+    return { ok: true, data: (await res.json()) as T };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Network error";
+    return { ok: false, error: message, status: 500 };
   }
-  return { ok: true, data: (await res.json()) as T };
 }
 
 export async function health() {
