@@ -29,7 +29,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
 });
 
-export const env = envSchema.parse({
+const parsedEnv = envSchema.parse({
   AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET,
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   NEXT_PUBLIC_BACKEND_API_BASE_URL: process.env.NEXT_PUBLIC_BACKEND_API_BASE_URL,
@@ -56,6 +56,13 @@ export const env = envSchema.parse({
   OPENAI_TRANSCRIPTION_MODEL: process.env.OPENAI_TRANSCRIPTION_MODEL,
   NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
 });
+
+export const env = {
+  ...parsedEnv,
+  NEXT_PUBLIC_API_URL:
+    parsedEnv.NEXT_PUBLIC_API_URL?.trim() ||
+    (process.env.NODE_ENV === "development" ? "http://localhost:3000" : undefined),
+};
 
 export const hasSupabasePublicEnv =
   !!env.NEXT_PUBLIC_SUPABASE_URL && !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
