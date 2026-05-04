@@ -71,7 +71,16 @@ export function SymptomCheckerClient(props: {
         (parsed.result as Record<string, unknown>) ??
         (parsed.tool === "symptom_checker" ? (parsed.result as Record<string, unknown>) : parsed);
       
+      const isError = (resultObj as any)?.isError === true;
       const aiText = typeof resultObj?.message === "string" ? resultObj.message : "I'm here to listen. Could you provide a few more details about your symptoms?";
+      
+      // STEP 5: PREVENT CHAT LOOP
+      const lastAiMsg = [...chatHistory].reverse().find(m => m.role === "ai");
+      if (isError && lastAiMsg?.text === aiText) {
+        setLoading(false);
+        return;
+      }
+
       setChatHistory((prev) => [...prev, { role: "ai", text: aiText, data: resultObj }]);
       props.onResultChange?.(resultObj ?? null);
     } catch {
@@ -131,13 +140,19 @@ export function SymptomCheckerClient(props: {
         {chatHistory.map((msg, idx) => (
           <div key={idx} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "ai" && (
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sahara-primary/20 text-sahara-primary">
+              <div className={`flex size-9 shrink-0 items-center justify-center rounded-full ${msg.data?.isError ? "bg-red-100 text-red-600" : "bg-sahara-primary/20 text-sahara-primary"}`}>
                 <Bot className="size-5" />
               </div>
             )}
-            <div className={`max-w-xl rounded-2xl px-4 py-3 ${msg.role === "user" ? "bg-sahara-primary text-white rounded-br-none shadow-sm" : "bg-white/90 backdrop-blur border border-sahara-border/40 rounded-bl-none text-sahara-fg"}`}>
+            <div className={`max-w-xl rounded-2xl px-4 py-3 ${
+              msg.role === "user" 
+                ? "bg-sahara-primary text-white rounded-br-none shadow-sm" 
+                : msg.data?.isError
+                  ? "bg-red-50 border border-red-200 text-red-900 rounded-bl-none shadow-sm"
+                  : "bg-white/90 backdrop-blur border border-sahara-border/40 rounded-bl-none text-sahara-fg"
+            }`}>
               <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>
-              {msg.role === "ai" && msg.data && (
+              {msg.role === "ai" && msg.data && !msg.data.isError && (
                 <div className="mt-4 space-y-3 border-t border-stone-100 pt-3">
                   {msg.data.riskLevel && (
                     <p className="text-xs font-semibold">Risk Level: <span className="uppercase text-sahara-primary">{msg.data.riskLevel}</span></p>

@@ -129,6 +129,16 @@ OUTPUT JSON:
 }
 `;
 
+const AI_UNAVAILABLE_MESSAGE = {
+  message: "⚠️ MedBridge AI is currently unavailable. Please try again later.",
+  followUpQuestions: [],
+  riskLevel: "unknown",
+  recommendations: ["Try again in a few minutes"],
+  isError: true,
+};
+
+let aiFailureCount = 0;
+
 export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
@@ -152,7 +162,7 @@ export async function runSymptomTriage(input: {
   };
 
   if (!env.GEMINI_API_KEY?.trim()) {
-    return fallbackResponse;
+    return AI_UNAVAILABLE_MESSAGE;
   }
 
   const prompt = `${TRIAGE_SYSTEM_PROMPT}
@@ -169,7 +179,9 @@ CONTEXT:
     const responseText = await generateGeminiResponse(prompt);
     console.log("Gemini RAW:", responseText);
 
-    if (!responseText || responseText.length === 0) {
+    if (!responseText || responseText.length === 0 || responseText === "undefined") {
+      aiFailureCount++;
+      if (aiFailureCount > 2) return AI_UNAVAILABLE_MESSAGE;
       return fallbackResponse;
     }
 
@@ -183,8 +195,13 @@ CONTEXT:
     }
 
     if (!parsed || !parsed.message) {
+      aiFailureCount++;
+      if (aiFailureCount > 2) return AI_UNAVAILABLE_MESSAGE;
       return fallbackResponse;
     }
+
+    // Success! Reset failure count
+    aiFailureCount = 0;
 
     // Force human-like response cleaning
     let cleanResponse = String(parsed.message)
@@ -208,9 +225,12 @@ CONTEXT:
       followUpQuestions,
       riskLevel,
       recommendations,
+      isError: false,
     };
   } catch (error) {
     console.error("Symptom triage error:", error);
+    aiFailureCount++;
+    if (aiFailureCount > 2) return AI_UNAVAILABLE_MESSAGE;
     return fallbackResponse;
   }
 }
