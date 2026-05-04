@@ -98,7 +98,7 @@ export async function runSymptomTriage(input: {
   bodyPart?: string | null;
 }): Promise<MedicalResponseShape | { error: string }> {
   if (!env.GEMINI_API_KEY?.trim()) {
-    throw new Error("GEMINI_API_KEY is not configured; symptom triage is unavailable.");
+    return { error: "GEMINI_API_KEY is not configured; symptom triage is unavailable." };
   }
 
   return generateMedicalResponse({

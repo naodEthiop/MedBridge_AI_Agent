@@ -112,10 +112,8 @@ function LoginPageContent() {
     }
     setGoogleLoading(true);
     try {
-      const { createClient } = await import("@supabase/supabase-js");
-      const supabase = createClient(url, anon, {
-        auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true },
-      });
+      const { getSupabaseBrowserClient } = await import("@/lib/db/supabaseClient");
+      const supabase = getSupabaseBrowserClient();
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
