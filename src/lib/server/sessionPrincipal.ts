@@ -1,5 +1,5 @@
 import { readSessionFromCookieValue, SESSION_COOKIE } from "@/lib/auth/session-core";
-import { createServerAnonSupabaseClient } from "@/lib/db/supabaseClient";
+import { getSupabaseServerClient } from "@/lib/db/supabaseServer";
 import { hasSupabasePublicEnv } from "@/lib/env";
 import { UnauthorizedError } from "@/lib/server/authErrors";
 
@@ -43,7 +43,7 @@ export async function resolveSessionPrincipal(request: Request): Promise<Session
       return {
         userId: sessionUser.email,
         email: sessionUser.email,
-        role: sessionUser.role,
+        role: sessionUser.role as "patient" | "doctor",
         tenantId,
         source: "sealed_session",
       };
@@ -54,18 +54,9 @@ export async function resolveSessionPrincipal(request: Request): Promise<Session
     return null;
   }
 
-  const authHeader = request.headers.get("authorization");
-  const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
-  const accessFromCookie =
-    getCookieValue(request, "medbridge-access-token") ?? getCookieValue(request, "sb-access-token");
-  const accessToken = bearer || accessFromCookie;
-  if (!accessToken) {
-    return null;
-  }
-
-  const supabase = createServerAnonSupabaseClient(accessToken);
-
+  const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase.auth.getUser();
+
   if (error || !data.user) {
     return null;
   }

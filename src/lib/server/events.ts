@@ -64,7 +64,7 @@ function cleanupFingerprints(now = Date.now()) {
 
 async function broadcastRealtime(name: SystemEventName, payload: Record<string, unknown>) {
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = await getSupabaseAdmin();
     await supabase.channel('realtime:global').send({
       type: 'broadcast',
       event: name,

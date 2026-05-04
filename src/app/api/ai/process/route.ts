@@ -60,8 +60,11 @@ export async function POST(req: Request) {
     // API route (this compatibility parser) -> /api/ai/health-assistant -> aiService ->
     // repositories.timeline -> emitEvent(ai:analysis_completed) -> response.
     // This route must not run a second AI pass.
-    if (!env.GEMINI_API_KEY?.trim()) {
-      return NextResponse.json({ ok: false, error: "Medix AI requires GEMINI_API_KEY." }, { status: 503 });
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json({
+        result: "AI unavailable",
+        fallback: true,
+      });
     }
 
     const contentType = req.headers.get("content-type") ?? "";

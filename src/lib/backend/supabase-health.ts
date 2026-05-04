@@ -1,6 +1,7 @@
-import { supabase as sb } from "@/lib/db/supabaseClient";
+import { getSupabaseServerClient } from "@/lib/db/supabaseServer";
 
 export async function fetchPatientClinicalProfile(patientId: string) {
+  const sb = await getSupabaseServerClient();
   if (!sb) return null;
 
   // Fallback-safe multi-query profile. Missing tables are tolerated.
@@ -29,6 +30,7 @@ export async function saveClinicalObservation(
   observation: string,
   meta: Record<string, unknown>,
 ) {
+  const sb = await getSupabaseServerClient();
   if (!sb) return `obs_${Date.now()}`;
 
   const { data, error } = await sb

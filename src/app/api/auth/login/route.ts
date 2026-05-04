@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { createServerAnonSupabaseClient } from '@/lib/db/supabaseClient';
+import { getSupabaseServerClient } from '@/lib/db/supabaseServer';
 import { hasSupabasePublicEnv } from '@/lib/env';
 
 const ACCESS_COOKIE_NAME = 'medbridge-access-token';
@@ -12,8 +12,8 @@ const bodySchema = z.object({
   password: z.string().min(6),
 });
 
-function buildSupabaseClient() {
-  return createServerAnonSupabaseClient();
+async function buildSupabaseClient() {
+  return await getSupabaseServerClient();
 }
 
 function sanitizeEmail(email: string) {
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
   const { email: rawEmail, password } = parsed.data;
   const email = sanitizeEmail(rawEmail);
-  const supabase = buildSupabaseClient();
+  const supabase = await buildSupabaseClient();
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data.session) {

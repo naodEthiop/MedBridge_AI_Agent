@@ -1,9 +1,7 @@
 "use client";
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseBrowserClient as getClient } from "@/lib/db/supabaseClient";
 
-import { getBrowserAnonSupabaseClient } from "@/lib/db/supabaseClient";
-
-export function getSupabaseBrowserClient(): SupabaseClient {
-  return getBrowserAnonSupabaseClient();
+export function getSupabaseBrowserClient() {
+  return getClient();
 }

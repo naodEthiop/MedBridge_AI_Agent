@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 import { createSessionCookie, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/session-core";
 import type { SessionUser } from "@/lib/auth/types";
-import { createServerAnonSupabaseClient } from "@/lib/db/supabaseClient";
+import { getSupabaseServerClient } from "@/lib/db/supabaseServer";
 import { hasSupabasePublicEnv } from "@/lib/env";
 
 /**
@@ -17,13 +17,12 @@ export async function POST(request: Request) {
 
   const authHeader = request.headers.get("authorization");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) {
-    return NextResponse.json({ error: "Missing access token." }, { status: 401 });
-  }
+  
+  const supabase = await getSupabaseServerClient();
 
-  const supabase = createServerAnonSupabaseClient(token);
-
-  const { data, error } = await supabase.auth.getUser();
+  const { data, error } = token 
+    ? await supabase.auth.getUser(token)
+    : await supabase.auth.getUser();
   if (error || !data.user?.email) {
     return NextResponse.json({ error: "Invalid or expired session." }, { status: 401 });
   }

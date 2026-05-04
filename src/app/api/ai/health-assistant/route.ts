@@ -15,11 +15,11 @@ export async function POST(req: Request) {
     // -> emitEvent("ai:analysis_completed") -> response.
     // Timeline write must happen before event emission.
     const user = await getAuthenticatedUser(req);
-    if (!env.GEMINI_API_KEY?.trim()) {
-      return NextResponse.json(
-        { ok: false, error: "Medix AI text engine is not configured (GEMINI_API_KEY)." },
-        { status: 503 },
-      );
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json({
+        result: "AI unavailable",
+        fallback: true,
+      });
     }
 
     const body = (await req.json()) as HealthAgentInput & { patientId?: string; transcript?: string };

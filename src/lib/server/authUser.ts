@@ -1,5 +1,5 @@
 import { env, hasSupabasePublicEnv } from "@/lib/env";
-import { supabase } from "@/lib/db/supabaseClient";
+import { getSupabaseServerClient } from "@/lib/db/supabaseServer";
 
 export type AuthUser = {
   id: string;
@@ -37,18 +37,16 @@ export function getAccessTokenFromRequest(req: Request) {
   return null;
 }
 
-export function getSupabaseServerClient() {
-  if (!hasSupabasePublicEnv) return null;
-  return supabase;
-}
-
 export async function getAuthUserFromRequest(req: Request): Promise<AuthUser | null> {
   if (!hasSupabasePublicEnv) return null;
 
+  const supabase = await getSupabaseServerClient();
   const token = getAccessTokenFromRequest(req);
-  if (!token) return null;
 
-  const { data, error } = await supabase.auth.getUser(token);
+  const { data, error } = token 
+    ? await supabase.auth.getUser(token)
+    : await supabase.auth.getUser();
+
   if (error || !data.user) return null;
 
   return {

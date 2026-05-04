@@ -18,6 +18,7 @@ export function subscribeRealtimeGlobal(onEvent: GlobalBroadcastHandler): () => 
     channel = supabase.channel("realtime:global", {
       config: { broadcast: { self: true, ack: false } },
     });
+    if (!channel) throw new Error("Failed to create channel");
 
     channel.on("broadcast", { event: "*" }, (msg: { event?: string; payload?: unknown }) => {
       const event = typeof msg.event === "string" ? msg.event : "";

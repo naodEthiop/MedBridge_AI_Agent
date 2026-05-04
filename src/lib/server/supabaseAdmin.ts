@@ -1,6 +1,6 @@
-import { supabase } from "@/lib/db/supabaseClient";
+import { getSupabaseServerClient } from "@/lib/db/supabaseServer";
 
-export function getSupabaseAdmin() {
-  return supabase;
+export async function getSupabaseAdmin() {
+  return await getSupabaseServerClient();
 }
 

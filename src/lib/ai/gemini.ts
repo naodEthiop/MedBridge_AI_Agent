@@ -16,23 +16,31 @@ export type MedicalResponseShape = {
 export async function generateMedicalResponse(input: {
   message: string;
   bodyPart?: string | null;
-}): Promise<MedicalResponseShape | { error: string }> {
-  if (!env.GEMINI_API_KEY?.trim()) {
-    return { error: "AI unavailable" };
+}): Promise<MedicalResponseShape | any> {
+  if (!process.env.GEMINI_API_KEY) {
+    return {
+      result: "AI unavailable",
+      fallback: true,
+    };
   }
-  const msg = input.message?.trim();
-  if (!msg) {
-    return { error: "AI unavailable" };
+
+  try {
+    const msg = input.message?.trim();
+    if (!msg) {
+      return { error: "AI unavailable" };
+    }
+    const t = await geminiSymptomTriage({
+      message: msg,
+      bodyPart: input.bodyPart ?? null,
+    });
+    return {
+      possibleConditions: t.possibleConditions,
+      urgency: t.urgency,
+      nextSteps: t.nextSteps,
+      redFlags: t.redFlags,
+      message: t.message,
+    };
+  } catch (e) {
+    return { error: "Service unavailable", fallback: true };
   }
-  const t = await geminiSymptomTriage({
-    message: msg,
-    bodyPart: input.bodyPart ?? null,
-  });
-  return {
-    possibleConditions: t.possibleConditions,
-    urgency: t.urgency,
-    nextSteps: t.nextSteps,
-    redFlags: t.redFlags,
-    message: t.message,
-  };
 }

@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
-import { supabase } from "@/lib/db/supabaseClient";
+import { getSupabaseBrowserClient } from "@/lib/db/supabaseClient";
+
+const supabase = getSupabaseBrowserClient();
 
 type RealtimeHandlers = Record<string, (payload: Record<string, unknown>) => void>;
 
@@ -20,7 +22,7 @@ export function useRealtime(channelName: string, handlers: RealtimeHandlers, onR
   useEffect(() => {
     const channel = supabase.channel(channelName, { config: { broadcast: { self: false, ack: false } } });
 
-    channel.on("broadcast", { event: "*" }, ({ event, payload }) => {
+    channel.on("broadcast", { event: "*" }, ({ event, payload }: { event: string; payload: any }) => {
       const payloadTs =
         payload && typeof payload === "object" && typeof (payload as { timestamp?: unknown }).timestamp === "string"
           ? new Date((payload as { timestamp: string }).timestamp).getTime()
@@ -34,7 +36,7 @@ export function useRealtime(channelName: string, handlers: RealtimeHandlers, onR
       }
     });
 
-    channel.subscribe((status) => {
+    channel.subscribe((status: string) => {
       if (status === "SUBSCRIBED") {
         reconnectRef.current?.();
       }

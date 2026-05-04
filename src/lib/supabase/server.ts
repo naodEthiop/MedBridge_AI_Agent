@@ -1,12 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { hasSupabasePublicEnv } from "@/lib/env";
-import { createServerAnonSupabaseClient, createServiceSupabaseClient } from "@/lib/db/supabaseClient";
+import { getSupabaseServerClient, createServiceSupabaseClient } from "@/lib/db/supabaseServer";
 
 const tableExistenceCache = new Map<string, boolean>();
 
-export function createSupabaseServerClient(accessToken?: string): SupabaseClient {
-  return createServerAnonSupabaseClient(accessToken);
+export async function createSupabaseServerClient(accessToken?: string): Promise<SupabaseClient> {
+  return await getSupabaseServerClient();
 }
 
 export async function doesSupabaseTableExist(tableName: string): Promise<boolean> {
@@ -16,7 +16,7 @@ export async function doesSupabaseTableExist(tableName: string): Promise<boolean
   }
 
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { error } = await supabase.from(tableName).select("id").limit(1).maybeSingle();
     const exists = !error;
     tableExistenceCache.set(tableName, exists);

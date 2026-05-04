@@ -1,6 +1,4 @@
-// src/lib/db/supabaseMCP.ts
-// Core Supabase MCP Server connection layer
-// ALL database operations MUST route through this layer
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 // MCP tool imports - these will be replaced with actual MCP calls
 // For now, using mock implementations for development
@@ -21,6 +19,7 @@ interface QueryFilters {
   neq?: Record<string, any>;
   in?: Record<string, any[]>;
   or?: string;
+  where?: string;
   limit?: number;
   offset?: number;
   orderBy?: { column: string; ascending: boolean };
@@ -45,14 +44,6 @@ function extractIdOrUserPair(where: string): { id: string } | null {
   const m = inner.match(/^\(?id\s*=\s*'([^']+)'\s+OR\s+user_id\s*=\s*'\1'\)?$/i);
   if (m) return { id: m[1] };
   return null;
-}
-
-function parseOrder(orderBy: string): { column: string; ascending: boolean } | null {
-  const parts = orderBy.trim().split(/\s+/);
-  if (parts.length < 1) return null;
-  const column = parts[0];
-  const dir = (parts[1] || "ASC").toUpperCase();
-  return { column, ascending: dir !== "DESC" };
 }
 
 async function queryViaSupabaseAdmin(table: string, filters: QueryFilters): Promise<Record<string, unknown>[]> {
@@ -104,10 +95,7 @@ async function queryViaSupabaseAdmin(table: string, filters: QueryFilters): Prom
   }
 
   if (filters.orderBy) {
-    const po = parseOrder(filters.orderBy);
-    if (po) {
-      q = q.order(po.column, { ascending: po.ascending });
-    }
+    q = q.order(filters.orderBy.column, { ascending: filters.orderBy.ascending });
   }
 
   q = q.range(offset, offset + limit - 1);
@@ -134,11 +122,11 @@ export class SupabaseMCP {
    * Execute a SELECT query through MCP server
    */
   async query(table: string, filters: QueryFilters = {}): Promise<any[]> {
-    const { where = '', limit = 100, offset = 0, orderBy = '' } = filters;
+    const { where = '', limit = 100, offset = 0, orderBy } = filters;
 
     let query = `SELECT * FROM ${table}`;
     if (where) query += ` WHERE ${where}`;
-    if (orderBy) query += ` ORDER BY ${orderBy}`;
+    if (orderBy) query += ` ORDER BY ${orderBy.column} ${orderBy.ascending ? 'ASC' : 'DESC'}`;
     query += ` LIMIT ${limit} OFFSET ${offset}`;
 
     try {

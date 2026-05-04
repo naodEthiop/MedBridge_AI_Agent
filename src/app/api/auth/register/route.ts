@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { createServerAnonSupabaseClient } from '@/lib/db/supabaseClient';
+import { getSupabaseServerClient } from '@/lib/db/supabaseServer';
 import { hasSupabasePublicEnv } from '@/lib/env';
 import { createSupabaseAdminClient } from '@/lib/supabase/server';
 
@@ -42,8 +42,8 @@ const bodySchema = z.discriminatedUnion('role', [
   }),
 ]);
 
-function buildSupabaseClient() {
-  return createServerAnonSupabaseClient();
+async function buildSupabaseClient() {
+  return await getSupabaseServerClient();
 }
 
 function sanitizeEmail(email: string) {
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   const email = sanitizeEmail(data.email);
   const role = data.role;
 
-  const supabase = buildSupabaseClient();
+  const supabase = await buildSupabaseClient();
   const admin = createSupabaseAdminClient();
 
   let userId: string | null = null;

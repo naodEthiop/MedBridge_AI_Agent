@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getSupabaseServerClient } from "@/lib/server/authUser";
+import { getSupabaseServerClient } from "@/lib/db/supabaseServer";
 
 const REFRESH_COOKIE_NAME = "medbridge-refresh-token";
 const ACCESS_COOKIE_NAME = "medbridge-access-token";
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     if (!supabase) {
       return NextResponse.json(
         { success: false, error: "Supabase is not configured." },

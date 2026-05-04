@@ -59,23 +59,28 @@ Rules: You are assisting Medix AI. Describe only what can be reasonably observed
     const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
     const reqStarted = Date.now();
     console.info("[Cloudflare AI] vision request", { accountId, model, mimeType, bytes: base64.length });
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: "system",
-            content: "You support clinical education and triage. Output JSON only.",
-          },
-          { role: "user", content: jsonInstruction },
-        ],
-        image: dataUrl,
-      }),
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: "system",
+              content: "You support clinical education and triage. Output JSON only.",
+            },
+            { role: "user", content: jsonInstruction },
+          ],
+          image: dataUrl,
+        }),
+      });
+    } catch (e) {
+      return { success: false, error: "Service unavailable", fallback: true } as any;
+    }
 
     console.info("[Cloudflare AI] vision response", {
       model,
