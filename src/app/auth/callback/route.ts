@@ -12,12 +12,12 @@ export async function GET(request: Request) {
     if (error) {
       console.error('Error exchanging code for session:', error)
       // Redirect to login with error
-      const siteUrl = env.NEXT_PUBLIC_SITE_URL || requestUrl.origin;
-      return NextResponse.redirect(new URL('/login?error=auth_callback_failed', siteUrl))
+      const SITE_URL = env.NEXT_PUBLIC_SITE_URL || "https://med-bridge-ai-agent.vercel.app";
+      return NextResponse.redirect(new URL('/login?error=auth_callback_failed', SITE_URL))
     }
   }
 
   // Redirect to the dashboard or proper page after auth
-  const siteUrl = env.NEXT_PUBLIC_SITE_URL || requestUrl.origin;
-  return NextResponse.redirect(new URL('/dashboard', siteUrl))
+  const SITE_URL = env.NEXT_PUBLIC_SITE_URL || "https://med-bridge-ai-agent.vercel.app";
+  return NextResponse.redirect(new URL('/dashboard', SITE_URL))
 }

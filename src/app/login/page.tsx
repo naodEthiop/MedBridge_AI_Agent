@@ -114,10 +114,10 @@ function LoginPageContent() {
     try {
       const { getSupabaseBrowserClient } = await import("@/lib/db/supabaseClient");
       const supabase = getSupabaseBrowserClient();
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://med-bridge-ai-agent.vercel.app";
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${siteUrl}/auth/callback` },
+        options: { redirectTo: `${SITE_URL}/auth/callback` },
       });
       if (oauthError) {
         setError(oauthError.message);
