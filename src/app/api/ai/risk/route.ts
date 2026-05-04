@@ -72,7 +72,20 @@ export async function POST(request: Request) {
     });
 
     if ('error' in prediction) {
-      return NextResponse.json({ ok: false, error: prediction.error }, { status: 503 });
+      return NextResponse.json({
+        ok: true,
+        data: {
+          prediction: {
+            message: "AI unavailable",
+            confidence: 0,
+            riskLevel: "unknown",
+          },
+          emergencyResult: null,
+          timeline,
+          labs,
+          appointments,
+        },
+      });
     }
 
     await repos.timeline.createTimelineEvent({

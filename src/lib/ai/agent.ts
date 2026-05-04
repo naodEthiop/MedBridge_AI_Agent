@@ -78,7 +78,13 @@ export async function generateHealthResponse(input: HealthAgentInput): Promise<H
   }
 
   if (!env.GEMINI_API_KEY?.trim()) {
-    throw new Error("GEMINI_API_KEY is not configured; Medix cannot call Gemini.");
+    return {
+      message: "AI unavailable",
+      urgency: "low",
+      possibleConditions: [],
+      nextSteps: ["Please consult a clinician if your symptoms persist or worsen."],
+      redFlags: [],
+    };
   }
 
   return geminiMedixHealthResponse(chunks.join("\n\n"));

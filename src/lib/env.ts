@@ -86,6 +86,14 @@ export function requirePublicApiBaseUrl(): string {
   throw new Error("NEXT_PUBLIC_API_URL is not configured.");
 }
 
+export const API_URL = requirePublicApiBaseUrl();
+
+export const publicEnv = {
+  NEXT_PUBLIC_API_URL: API_URL,
+  NEXT_PUBLIC_SUPABASE_URL: env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+};
+
 /**
  * Safe fetch wrapper that prevents uncaught promise errors
  */

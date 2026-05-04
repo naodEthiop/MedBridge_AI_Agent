@@ -15,10 +15,18 @@ export async function POST(req: Request) {
     // -> emitEvent("ai:analysis_completed") -> response.
     // Timeline write must happen before event emission.
     const user = await getAuthenticatedUser(req);
-    if (!env.GEMINI_API_KEY) {
+    if (!env.GEMINI_API_KEY?.trim()) {
       return NextResponse.json({
-        result: "AI unavailable",
-        fallback: true,
+        ok: true,
+        data: {
+          medix: {
+            message: "AI unavailable",
+            confidence: 0,
+            riskLevel: "unknown",
+          },
+          recommendedActions: ["Please consult a clinician for medical guidance."],
+          case: null,
+        },
       });
     }
 

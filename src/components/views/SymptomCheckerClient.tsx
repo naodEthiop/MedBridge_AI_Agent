@@ -57,8 +57,18 @@ export function SymptomCheckerClient(props: {
         (parsed.triage as Record<string, unknown>) ??
         (parsed.result as Record<string, unknown>) ??
         (parsed.tool === "symptom_checker" ? (parsed.result as Record<string, unknown>) : parsed);
-      setResult(resultObj ?? null);
-      props.onResultChange?.(resultObj ?? null);
+      const normalized =
+        typeof resultObj.riskLevel === "string" || typeof resultObj.diagnosis === "string"
+          ? {
+              urgency: resultObj.riskLevel === "high" ? "urgent" : resultObj.riskLevel ?? "medium",
+              message: resultObj.diagnosis ?? "Triage response received",
+              possibleConditions: [],
+              redFlags: [],
+              nextSteps: Array.isArray(resultObj.recommendations) ? resultObj.recommendations : [],
+            }
+          : resultObj;
+      setResult(normalized ?? null);
+      props.onResultChange?.(normalized ?? null);
     } finally {
       setLoading(false);
     }
