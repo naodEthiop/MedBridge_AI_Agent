@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { Bot, Mic, PlusCircle, Send } from "lucide-react";
+import { cleanErrorMessage } from "@/lib/userErrors";
 
 /** Narrow Web Speech API surface for browsers without TS DOM typings */
 type SpeechRecognitionCtor = new () => {
@@ -41,7 +42,7 @@ export function SymptomCheckerClient(props: {
       });
       const dataText = await res.text();
       if (!res.ok) {
-        setError(dataText || "Triage request failed.");
+        setError(cleanErrorMessage(dataText || "Unable to analyze symptoms"));
         props.onResultChange?.(null);
         return;
       }
@@ -49,7 +50,7 @@ export function SymptomCheckerClient(props: {
       try {
         parsed = JSON.parse(dataText) as Record<string, unknown>;
       } catch {
-        setError("Unexpected response from triage service.");
+        setError("We couldn't process your response. Please try again.");
         props.onResultChange?.(null);
         return;
       }
@@ -133,7 +134,7 @@ export function SymptomCheckerClient(props: {
 
       const dataText = await res.text();
       if (!res.ok) {
-        setError(dataText || "Triage request failed.");
+        setError(cleanErrorMessage(dataText || "Unable to analyze symptoms"));
         return;
       }
 
@@ -141,7 +142,7 @@ export function SymptomCheckerClient(props: {
       try {
         parsed = JSON.parse(dataText) as Record<string, unknown>;
       } catch {
-        setError("Unexpected response from triage service.");
+        setError("We couldn't process your response. Please try again.");
         return;
       }
 
@@ -162,8 +163,8 @@ export function SymptomCheckerClient(props: {
       const aiResponse = `Risk Level: ${riskLevel}\n\n${diagnosis}${recommendations ? `\n\nRecommendations: ${recommendations}` : ""}`;
       const aiMsg: Message = { role: "assistant", content: aiResponse };
       setMessages((prev) => [...prev, aiMsg]);
-    } catch {
-      setError("Failed to process your symptoms. Please try again.");
+    } catch (err) {
+      setError(cleanErrorMessage(err ?? "Unable to analyze symptoms. Please try again."));
     } finally {
       setLoading(false);
     }

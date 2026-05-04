@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, RefreshCw, Share2, ShieldAlert } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { differenceInYears, format } from "date-fns";
 
 import { AppShell } from "@/components/layout/AppShell";
@@ -15,7 +15,8 @@ import { buildHealthCardHtml, computeTrustScore } from "@/lib/health-card-downlo
 export default function HealthCardPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [qrNonce, setQrNonce] = useState(0);
+  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
 
   const sessionQ = useAuthSession();
   const summary = useDashboardSummary();
@@ -61,21 +62,26 @@ export default function HealthCardPage() {
     return line.length > 120 ? `${line.slice(0, 117)}…` : line;
   }, [conditions, allergies]);
 
-  const qrPayload = useMemo(
-    () =>
-      JSON.stringify({
-        v: 1,
-        app: "medbridge",
-        patientId: displayId,
-        email: sessionQ.data?.email ?? null,
-        nonce: qrNonce,
-        issued: new Date().toISOString(),
-        note: "Replace with signed token from your backend",
-      }),
-    [displayId, qrNonce, sessionQ.data?.email],
-  );
-
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrPayload)}`;
+  useEffect(() => {
+    async function generateQR() {
+      setQrLoading(true);
+      try {
+        const res = await fetch("/api/health-card/qr", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const data = (await res.json()) as { ok: boolean; qrImageUrl?: string };
+        if (data.ok && data.qrImageUrl) {
+          setQrImageUrl(data.qrImageUrl);
+        }
+      } catch (error) {
+        console.error("Failed to generate QR code:", error);
+      } finally {
+        setQrLoading(false);
+      }
+    }
+    generateQR();
+  }, [patientId]);
 
   async function runAction(action: string) {
     setActionLoading(true);
@@ -144,8 +150,22 @@ export default function HealthCardPage() {
   }
 
   async function handleRefreshQr() {
-    setQrNonce((n) => n + 1);
-    await runAction("health_card_refresh_qr");
+    setQrLoading(true);
+    try {
+      const res = await fetch("/api/health-card/qr", {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      const data = (await res.json()) as { ok: boolean; qrImageUrl?: string };
+      if (data.ok && data.qrImageUrl) {
+        setQrImageUrl(data.qrImageUrl);
+        setFeedback("QR code refreshed successfully.");
+      }
+    } catch (error) {
+      setFeedback("Failed to refresh QR code. Please try again.");
+    } finally {
+      setQrLoading(false);
+    }
   }
 
   if (sessionQ.isLoading || summary.loading) {
@@ -165,17 +185,12 @@ export default function HealthCardPage() {
   }
 
   return (
-    <AppShell title="Digital Health Card" subtitle="Live data from your account + care record">
+    <AppShell title="Digital Health Card" subtitle="Portable health summary with secure QR code">
       <section className="mx-auto w-full max-w-6xl space-y-4 py-2">
-        <p className="max-w-2xl text-xs text-sahara-muted">
-          Vitals and demographics come from <strong>sign-up (session)</strong>; conditions and allergies from{" "}
-          <strong>GET /api/patients/:id</strong>. Point both at your backend when you integrate.
-        </p>
-
         <div className="mb-6 text-center lg:text-left">
           <h2 className="mb-3 font-serif text-4xl font-bold leading-tight lg:text-5xl">Your Digital Health Card</h2>
           <p className="max-w-xl text-sahara-muted">
-            Updates when your session and patient record change. QR encodes a demo payload—swap for a signed token from your API.
+            A portable summary of your health information that stays up-to-date and can be shared securely with healthcare providers.
           </p>
         </div>
 
