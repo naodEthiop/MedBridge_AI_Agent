@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { apiFetchJson } from "@/lib/api/client";
-import { supabase } from "@/lib/db/supabaseClient";
 import { normalizeAppRole, postLoginPathForRole } from "@/lib/supabase/persistUserRole";
 
 export default function DashboardRedirectPage() {
@@ -13,13 +12,7 @@ export default function DashboardRedirectPage() {
 
   useEffect(() => {
     void (async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) {
-        router.replace("/login?next=/dashboard");
-        return;
-      }
-      const me = await apiFetchJson<{ ok?: boolean; user?: { role?: string } }>("/api/user/me", { bearerToken: token });
+      const me = await apiFetchJson<{ ok?: boolean; user?: { role?: string } }>("/api/user/me", { cache: "no-store" });
       if (!me.success || !me.data.user) {
         router.replace("/login?next=/dashboard");
         return;

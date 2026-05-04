@@ -1,4 +1,4 @@
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, type RepositoryPrincipal } from '@/lib/server/repositories';
 
 export type MemoryEventType = 'symptom' | 'diagnosis' | 'lab' | 'ai_analysis' | 'appointment';
 
@@ -22,8 +22,8 @@ function severityToScore(value: string | undefined) {
   return 1;
 }
 
-export async function buildPatientMemory(patientId: string): Promise<PatientMemory> {
-  const repos = getRepositories();
+export async function buildPatientMemory(patientId: string, principal: RepositoryPrincipal): Promise<PatientMemory> {
+  const repos = getRepositories(principal);
   const [timeline, labs, appointments] = await Promise.all([
     repos.timeline.listTimelineForPatient(patientId),
     repos.labs.listLabsForPatient(patientId),

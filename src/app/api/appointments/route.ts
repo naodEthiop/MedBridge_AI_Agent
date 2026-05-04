@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 
 const createAppointmentBodySchema = z.object({
   patientId: z.string().optional(),
@@ -19,7 +19,7 @@ const createAppointmentBodySchema = z.object({
 export async function GET(request: Request) {
   try {
     const user = await getAuthenticatedUser(request);
-    const repos = getRepositories();
+    const repos = getRepositories(repositoryPrincipalFromAuthenticatedUser(user));
 
     if (user.role === 'patient') {
       const patient = await repos.patients.getPatient(user.id);
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ ok: false, error: 'Patient record not found' }, { status: 404 });
       }
       const appointments = await repos.appointments.listAppointmentsForPatient(patient.id);
-      return NextResponse.json({ ok: true, data: { appointments, source: 'supabase' } });
+      return NextResponse.json({ ok: true, data: { appointments } });
     }
 
     if (user.role === 'doctor') {
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ ok: false, error: 'Doctor record not found' }, { status: 404 });
       }
       const appointments = await repos.appointments.listAppointmentsForDoctor(doctor.id);
-      return NextResponse.json({ ok: true, data: { appointments, source: 'supabase' } });
+      return NextResponse.json({ ok: true, data: { appointments } });
     }
 
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 403 });
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'Invalid appointment payload', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const repos = getRepositories();
+    const repos = getRepositories(repositoryPrincipalFromAuthenticatedUser(user));
     const patient = await repos.patients.getPatient(user.id);
     if (!patient) {
       return NextResponse.json({ ok: false, error: 'Patient profile not found' }, { status: 404 });

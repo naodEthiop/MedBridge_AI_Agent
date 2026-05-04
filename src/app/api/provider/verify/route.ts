@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 
 export async function POST(request: Request) {
   try {
-    await getAuthenticatedUser(request);
+    const user = await getAuthenticatedUser(request);
 
     const body = (await request.json()) as {
       providerName?: string;
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'providerName is required' }, { status: 400 });
     }
 
-    const repos = getRepositories();
+    const repos = getRepositories(repositoryPrincipalFromAuthenticatedUser(user));
     const doctors = await repos.doctors.listDoctors();
     const matched = doctors.find((d) => d.fullName.toLowerCase().includes(providerName.toLowerCase()));
 

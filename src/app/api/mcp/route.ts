@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { geoapifyNearbyPlaces } from '@/lib/backend/geoapify';
 import { runImageAnalysis, runSymptomTriage } from '@/lib/ai/aiService';
 import type { McpToolRequest, NearbyPlace } from '@/lib/backend/types';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 import { getSupabaseAdmin } from '@/lib/server/supabaseAdmin';
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
 import { createDBGateway } from '@/lib/db/dbGateway';
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
   try {
     const user = await getAuthenticatedUser(request);
-    const repos = getRepositories();
+    const repos = getRepositories(repositoryPrincipalFromAuthenticatedUser(user));
 
     switch (body.tool) {
       case 'symptom_checker': {

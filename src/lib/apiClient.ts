@@ -1,11 +1,12 @@
 import type { Appointment, Doctor, Patient } from "@/lib/types";
-import { getBackendBaseUrl } from "@/lib/env";
+import { requirePublicApiBaseUrl } from "@/lib/env";
 
 type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string; status: number };
 
 function url(path: string) {
-  const base = getBackendBaseUrl();
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  const base = requirePublicApiBaseUrl();
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${p}`;
 }
 
 async function getJson<T>(path: string): Promise<ApiResult<T>> {
@@ -20,7 +21,7 @@ async function getJson<T>(path: string): Promise<ApiResult<T>> {
 }
 
 export async function health() {
-  return getJson<{ ok: true; source: "mock" | "supabase" }>("/api/health");
+  return getJson<{ ok: true }>("/api/health");
 }
 
 export async function listPatients() {

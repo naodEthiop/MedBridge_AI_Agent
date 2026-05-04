@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 
 export async function GET(request: Request) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: false, error: 'otherUserId is required' }, { status: 400 });
     }
 
-    const repos = getRepositories();
+    const repos = getRepositories(repositoryPrincipalFromAuthenticatedUser(user));
     const conversation = await repos.messages.listConversation(user.id, otherUserId);
     return NextResponse.json({ ok: true, data: { conversation } });
   } catch (error) {
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'receiverId and message are required' }, { status: 400 });
     }
 
-    const repos = getRepositories();
+    const repos = getRepositories(repositoryPrincipalFromAuthenticatedUser(user));
     const created = await repos.messages.createMessage({
       senderId: user.id,
       receiverId: body.receiverId,

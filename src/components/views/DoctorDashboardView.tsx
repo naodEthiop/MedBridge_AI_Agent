@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ArrowRight, CalendarDays, FlaskConical } from "lucide-react";
@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
 import { triggerUiAction } from "@/lib/apiClient";
 import type { Appointment } from "@/lib/server/repositories";
+import { useUiStore } from "@/lib/ui/uiStore";
 
 function getAge(dateOfBirth?: string) {
   if (!dateOfBirth) return null;
@@ -20,6 +21,11 @@ function getAge(dateOfBirth?: string) {
 export function DoctorDashboardView() {
   const router = useRouter();
   const summary = useDashboardSummary();
+  const connection = useUiStore(useCallback((s) => s.connection, []));
+  const allAlerts = useUiStore(useCallback((s) => s.doctorDashboard.alerts, []));
+  const liveAlerts = useMemo(() => allAlerts.slice(0, 6), [allAlerts]);
+  const riskTrajectory = useUiStore(useCallback((s) => s.doctorDashboard.riskTrajectory, []));
+  const labPending = useUiStore(useCallback((s) => s.labs.pendingCount, []));
   const [actionLoading, setActionLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -122,7 +128,9 @@ export function DoctorDashboardView() {
                 <h3 className="font-serif text-2xl">Active Patient List</h3>
                 <p className="mt-1 text-sm text-sahara-muted">Loaded dynamically from the API.</p>
               </div>
-              <Badge tone={summary.loading ? "neutral" : "primary"}>{summary.loading ? "Loading" : "Live"}</Badge>
+              <Badge tone={summary.loading ? "neutral" : connection === "live" ? "primary" : "neutral"}>
+                {summary.loading ? "Loading" : connection === "live" ? "Live" : connection === "connecting" ? "Connecting" : "Sync"}
+              </Badge>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -188,12 +196,36 @@ export function DoctorDashboardView() {
                 <h3 className="font-serif text-2xl">Clinical Alerts</h3>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="rounded-2xl border border-[#c0392b]/20 bg-[#fce4e0] p-4">
-                  <p className="text-sm font-bold text-[#7a1a10]">Critical monitor</p>
-                  <p className="mt-1 text-xs text-[#7a1a10]">
-                    {summary.currentPatient?.fullName ?? "No patient selected"} is the current focus patient.
-                  </p>
-                </div>
+                {liveAlerts.length ? (
+                  <div className="space-y-2">
+                    {liveAlerts.map((a) => (
+                      <div
+                        key={a.id}
+                        className={
+                          a.severity === "critical"
+                            ? "rounded-2xl border border-[#c0392b]/30 bg-[#fce4e0] p-3"
+                            : "rounded-2xl border border-amber-200/60 bg-amber-50/80 p-3"
+                        }
+                      >
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-sahara-muted">Realtime</p>
+                        <p className={`mt-1 text-xs ${a.severity === "critical" ? "text-[#7a1a10]" : "text-amber-950"}`}>{a.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-[#c0392b]/20 bg-[#fce4e0] p-4">
+                    <p className="text-sm font-bold text-[#7a1a10]">Critical monitor</p>
+                    <p className="mt-1 text-xs text-[#7a1a10]">
+                      {summary.currentPatient?.fullName ?? "No patient selected"} is the current focus patient.
+                    </p>
+                  </div>
+                )}
+                {riskTrajectory ? (
+                  <div className="rounded-2xl border border-sahara-border/50 bg-sahara-surface-low p-4">
+                    <p className="text-sm font-bold text-sahara-fg">Risk trajectory</p>
+                    <p className="mt-1 text-xs text-sahara-muted">{riskTrajectory}</p>
+                  </div>
+                ) : null}
                 <div className="rounded-2xl border border-yellow-300/50 bg-yellow-50 p-4">
                   <p className="text-sm font-bold text-yellow-900">Next appointment</p>
                   <p className="mt-1 text-xs text-yellow-800">
@@ -246,7 +278,7 @@ export function DoctorDashboardView() {
                 <FlaskConical className="h-7 w-7" />
               </div>
               <h4 className="font-serif text-xl">Lab Results Pending</h4>
-              <p className="my-2 font-serif text-4xl text-sahara-primary">14</p>
+              <p className="my-2 font-serif text-4xl text-sahara-primary">{labPending ?? 14}</p>
               <p className="text-xs uppercase tracking-widest text-sahara-muted">Awaiting verification</p>
             </CardContent>
           </Card>

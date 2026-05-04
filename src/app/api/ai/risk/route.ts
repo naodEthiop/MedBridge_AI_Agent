@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 import { emitEvent } from '@/lib/server/events';
 import { runRiskPrediction } from '@/lib/ai/aiService';
 import { triggerEmergencyForPatient } from '@/lib/server/emergency';
@@ -25,7 +25,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'patientId is required' }, { status: 400 });
     }
 
-    const repos = getRepositories();
+    const principal = repositoryPrincipalFromAuthenticatedUser(user);
+    const repos = getRepositories(principal);
     const patient = await repos.patients.getPatient(body.patientId);
     if (!patient) {
       return NextResponse.json({ ok: false, error: 'Patient not found' }, { status: 404 });
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
       symptomsHistory: symptomsHistory || 'No recent symptom history available.',
       timelineSummary: timelineSummary || 'No timeline history available.',
       labsSummary: labsSummary || 'No lab history available.',
+      repoPrincipal: principal,
     });
 
     if ('error' in prediction) {
@@ -104,6 +106,7 @@ export async function POST(request: Request) {
         location: body.location,
         initiatedByUserId: user.id,
         senderRole: user.role,
+        repoPrincipal: principal,
       });
     }
 

@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
+import {
+  appendChatOptimistic,
+  confirmAssistantMessage,
+  getUiStoreSnapshot,
+  setAiStreaming,
+  type UiChatMessage,
+  useUiStore,
+} from "@/lib/ui/uiStore";
 
-type ChatMessage = {
-  role: "assistant" | "doctor";
-  content: string;
-};
+const WELCOME =
+  "Hello, I'm your clinical assistant. How can I support today's patient?";
 
 function unwrapPayload(data: Record<string, unknown>): Record<string, unknown> {
   const inner = data.result ?? data.payload ?? data.data;
@@ -36,29 +42,67 @@ function formatAgentPayload(data: Record<string, unknown>): string {
   return joined || JSON.stringify(d, null, 2);
 }
 
-export function DoctorAssistant() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: "Hello, I'm your clinical assistant. How can I support today's patient?",
-    },
-  ]);
+const EMPTY_THREAD: UiChatMessage[] = [];
+
+export function DoctorAssistant(props: { threadId?: string }) {
+  const threadId = props.threadId ?? "doctor-assistant";
+  const messages = useUiStore(useCallback((s) => s.chatByThread[threadId] ?? EMPTY_THREAD, [threadId]));
+  const streaming = useUiStore(useCallback((s) => s.ai.streaming, []));
+
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  useLayoutEffect(() => {
+    const cur = getUiStoreSnapshot().chatByThread[threadId];
+    if (!cur?.length) {
+      appendChatOptimistic(threadId, {
+        id: "welcome-assistant",
+        role: "assistant",
+        content: WELCOME,
+        ts: Date.now() - 1,
+        status: "confirmed",
+      });
+    }
+  }, [threadId]);
+
+  const sorted = useMemo(() => [...messages].sort((a, b) => a.ts - b.ts), [messages]);
 
   const handleSend = async () => {
     const trimmed = input.trim();
     if (!trimmed) return;
 
-    setMessages((current) => [...current, { role: "doctor", content: trimmed }]);
+    const doctorId = crypto.randomUUID();
+    const assistantId = crypto.randomUUID();
+    const now = Date.now();
+
+    appendChatOptimistic(threadId, {
+      id: doctorId,
+      role: "doctor",
+      content: trimmed,
+      ts: now,
+      status: "confirmed",
+    });
+    appendChatOptimistic(threadId, {
+      id: assistantId,
+      role: "assistant",
+      content: "…",
+      ts: now + 1,
+      status: "pending",
+    });
     setInput("");
-    setLoading(true);
+    setSending(true);
+    setAiStreaming(true);
 
     try {
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ symptom: trimmed, followUpAnswer: "Doctor requested clinical support." }),
+        body: JSON.stringify({
+          symptom: trimmed,
+          followUpAnswer: "Doctor requested clinical support.",
+          clientMessageId: assistantId,
+          threadId,
+        }),
       });
       const text = await res.text();
       let data: Record<string, unknown> | null = null;
@@ -72,14 +116,16 @@ export function DoctorAssistant() {
         res.ok && data
           ? formatAgentPayload(data)
           : "I could not reach the assistant endpoint. Please try again.";
-      setMessages((current) => [...current, { role: "assistant", content }]);
+      confirmAssistantMessage(threadId, assistantId, content);
     } catch {
-      setMessages((current) => [
-        ...current,
-        { role: "assistant", content: "Something went wrong while contacting the assistant. Please retry." },
-      ]);
+      confirmAssistantMessage(
+        threadId,
+        assistantId,
+        "Something went wrong while contacting the assistant. Please retry.",
+      );
     } finally {
-      setLoading(false);
+      setSending(false);
+      setAiStreaming(false);
     }
   };
 
@@ -88,12 +134,13 @@ export function DoctorAssistant() {
       <Card>
         <CardHeader>
           <h3 className="font-serif text-2xl">Doctor AI Assistant</h3>
+          <p className="text-xs text-sahara-muted">Event-synced thread · realtime:global</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="max-h-[420px] space-y-3 overflow-y-auto rounded-3xl border border-sahara-border/60 bg-sahara-surface-low p-4">
-            {messages.map((message, index) => (
+            {sorted.map((message: UiChatMessage) => (
               <div
-                key={`${message.role}-${index}`}
+                key={message.id}
                 className={
                   message.role === "doctor"
                     ? "rounded-2xl bg-sahara-primary/10 p-4 text-sahara-fg"
@@ -102,13 +149,14 @@ export function DoctorAssistant() {
               >
                 <p className="text-xs uppercase tracking-widest text-sahara-muted">
                   {message.role === "doctor" ? "Doctor" : "Assistant"}
+                  {message.status === "pending" ? " · syncing" : ""}
                 </p>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-6">{message.content}</p>
               </div>
             ))}
-            {loading ? (
+            {sending || streaming ? (
               <p className="text-center text-xs text-sahara-muted" aria-live="polite">
-                Assistant is thinking…
+                Assistant pipeline active…
               </p>
             ) : null}
           </div>
@@ -122,11 +170,11 @@ export function DoctorAssistant() {
             />
             <button
               type="button"
-              onClick={handleSend}
-              disabled={loading || !input.trim()}
+              onClick={() => void handleSend()}
+              disabled={sending || !input.trim()}
               className="rounded-2xl bg-sahara-primary px-5 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
             >
-              {loading ? "Sending..." : "Send Message"}
+              {sending ? "Sending..." : "Send Message"}
             </button>
           </div>
         </CardContent>

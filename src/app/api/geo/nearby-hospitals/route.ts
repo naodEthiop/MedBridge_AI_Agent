@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { fetchNearbyHospitalsGeoapify } from '@/lib/geo/geoapify-nearby';
 import { env } from '@/lib/env';
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 import { rateLimitOrThrow } from '@/lib/server/rateLimit';
 
 /**
@@ -12,7 +12,7 @@ import { rateLimitOrThrow } from '@/lib/server/rateLimit';
  */
 export async function GET(request: Request) {
   try {
-    await getAuthenticatedUser(request);
+    const authUser = await getAuthenticatedUser(request);
 
     if (!env.GEOAPIFY_API_KEY) {
       return NextResponse.json({ ok: false, error: 'Geoapify is not configured. Set GEOAPIFY_API_KEY.' }, { status: 500 });
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
       .sort((a, b) => b.priority_score - a.priority_score || a.distanceMeters - b.distanceMeters);
 
     try {
-      const repos = getRepositories();
+      const repos = getRepositories(repositoryPrincipalFromAuthenticatedUser(authUser));
       await Promise.all(
         hospitals.map((hospital) =>
           repos.healthCenters.saveHealthCenter({
@@ -93,8 +93,8 @@ export async function GET(request: Request) {
           }),
         ),
       );
-    } catch {
-      // ignore persistence failures, still return the Geoapify result
+    } catch (err) {
+      console.error('[geo/nearby-hospitals] health center persistence failed', err);
     }
 
     return NextResponse.json({ ok: true, data: { emergency_mode: emergencyMode, hospitals } });

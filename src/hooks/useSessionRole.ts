@@ -3,22 +3,35 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
-import type { SessionUser } from "@/lib/auth/types";
+import type { SessionUser, UserRole } from "@/lib/auth/types";
 
-export type PortalRole = "patient" | "doctor" | null;
+export type PortalRole = UserRole | null;
 
 type SessionState = {
   role: PortalRole;
   email: string | null;
+  tenantId: string | null;
   loading: boolean;
 };
 
-type SessionResponse =
-  | { authenticated: false }
-  | { authenticated: true; mode?: string; user: SessionUser };
+type FlatSessionOk = {
+  ok?: boolean;
+  authenticated?: boolean;
+  userId?: string;
+  tenantId?: string;
+  role?: UserRole;
+};
+
+function mapSessionUser(data: FlatSessionOk): SessionUser | null {
+  if (!data.authenticated || !data.userId || !data.role) return null;
+  return {
+    email: data.userId,
+    role: data.role,
+  };
+}
 
 export function useSessionRole(): SessionState {
-  const [state, setState] = useState<SessionState>({ role: null, email: null, loading: true });
+  const [state, setState] = useState<SessionState>({ role: null, email: null, tenantId: null, loading: true });
 
   useEffect(() => {
     let cancelled = false;
@@ -26,23 +39,24 @@ export function useSessionRole(): SessionState {
       try {
         const res = await fetch("/api/auth/session", { credentials: "same-origin" });
         if (!res.ok) {
-          if (!cancelled) setState({ role: null, email: null, loading: false });
+          if (!cancelled) setState({ role: null, email: null, tenantId: null, loading: false });
           return;
         }
-        const data = (await res.json()) as SessionResponse;
+        const data = (await res.json()) as FlatSessionOk;
         if (!cancelled) {
-          if (!data.authenticated || !("user" in data)) {
-            setState({ role: null, email: null, loading: false });
+          if (!data.authenticated || !data.role || !data.userId) {
+            setState({ role: null, email: null, tenantId: null, loading: false });
             return;
           }
           setState({
-            role: data.user.role,
-            email: data.user.email ?? null,
+            role: data.role,
+            email: data.userId,
+            tenantId: data.tenantId ?? null,
             loading: false,
           });
         }
       } catch {
-        if (!cancelled) setState({ role: null, email: null, loading: false });
+        if (!cancelled) setState({ role: null, email: null, tenantId: null, loading: false });
       }
     })();
     return () => {
@@ -53,17 +67,19 @@ export function useSessionRole(): SessionState {
   return state;
 }
 
-/** Full session user including patientProfile / doctorProfile (for health card & settings). */
+/** Full session user (sealed session uses email as principal id). */
 export function useAuthSession() {
   return useQuery({
     queryKey: ["auth-session-user"],
     queryFn: async () => {
       const res = await fetch("/api/auth/session", { credentials: "same-origin" });
-      const data = (await res.json()) as SessionResponse;
-      if (!res.ok || !data.authenticated || !("user" in data)) {
+      const data = (await res.json()) as FlatSessionOk;
+      if (!res.ok || !data.authenticated) {
         throw new Error("Not authenticated");
       }
-      return data.user;
+      const user = mapSessionUser(data);
+      if (!user) throw new Error("Not authenticated");
+      return user;
     },
     retry: false,
     staleTime: 30_000,

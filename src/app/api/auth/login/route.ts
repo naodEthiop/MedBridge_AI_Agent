@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { env, hasSupabasePublicEnv } from '@/lib/env';
-import { supabase } from '@/lib/db/supabaseClient';
+import { createServerAnonSupabaseClient } from '@/lib/db/supabaseClient';
+import { hasSupabasePublicEnv } from '@/lib/env';
 
 const ACCESS_COOKIE_NAME = 'medbridge-access-token';
 const REFRESH_COOKIE_NAME = 'medbridge-refresh-token';
@@ -12,13 +12,17 @@ const bodySchema = z.object({
   password: z.string().min(6),
 });
 
+function buildSupabaseClient() {
+  return createServerAnonSupabaseClient();
+}
+
 function sanitizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
 export async function POST(request: Request) {
   if (!hasSupabasePublicEnv) {
-    return NextResponse.json({ error: 'Supabase is not configured.' }, { status: 503 });
+    return NextResponse.json({ error: 'Sign-in service is not configured.' }, { status: 503 });
   }
 
   const json = await request.json();
@@ -29,6 +33,7 @@ export async function POST(request: Request) {
 
   const { email: rawEmail, password } = parsed.data;
   const email = sanitizeEmail(rawEmail);
+  const supabase = buildSupabaseClient();
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data.session) {

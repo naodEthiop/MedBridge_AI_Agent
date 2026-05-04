@@ -3,6 +3,8 @@ import { z } from "zod";
 const envSchema = z.object({
   AUTH_SESSION_SECRET: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  /** Required for client/server absolute API URLs (throws via `requirePublicApiBaseUrl` when used). */
+  NEXT_PUBLIC_API_URL: z.string().url().optional(),
   NEXT_PUBLIC_BACKEND_API_BASE_URL: z.string().optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
@@ -30,6 +32,7 @@ const envSchema = z.object({
 export const env = envSchema.parse({
   AUTH_SESSION_SECRET: process.env.AUTH_SESSION_SECRET,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   NEXT_PUBLIC_BACKEND_API_BASE_URL: process.env.NEXT_PUBLIC_BACKEND_API_BASE_URL,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -59,5 +62,16 @@ export const hasSupabasePublicEnv =
 
 export function getBackendBaseUrl() {
   return env.NEXT_PUBLIC_BACKEND_API_BASE_URL?.trim() || "";
+}
+
+/**
+ * Public origin for API calls. Required in production paths that build absolute fetch URLs.
+ */
+export function requirePublicApiBaseUrl(): string {
+  const raw = env.NEXT_PUBLIC_API_URL?.trim();
+  if (!raw) {
+    throw new Error("NEXT_PUBLIC_API_URL is not configured.");
+  }
+  return raw.replace(/\/$/, "");
 }
 

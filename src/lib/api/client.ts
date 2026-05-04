@@ -2,6 +2,17 @@
  * Same-origin API helper: cookies, optional Bearer, `{ ok, error }` handling.
  */
 
+import { requirePublicApiBaseUrl } from "@/lib/env";
+
+function resolveFetchUrl(path: string): string {
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  const base = requirePublicApiBaseUrl();
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${normalized}`;
+}
+
 export function withBearer(token: string): HeadersInit {
   return { Authorization: `Bearer ${token}` };
 }
@@ -27,7 +38,7 @@ export async function apiFetchJson<T>(path: string, init: RequestInit & { bearer
     headers.set("Accept", "application/json");
   }
 
-  const res = await fetch(path, {
+  const res = await fetch(resolveFetchUrl(path), {
     ...rest,
     credentials: "include",
     headers,

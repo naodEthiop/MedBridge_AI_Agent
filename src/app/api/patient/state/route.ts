@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 import { computePatientState } from '@/lib/ai/aiService';
 
 export async function GET(request: Request) {
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const requestedPatientId = searchParams.get('patientId');
 
-    const repos = getRepositories();
+    const repos = getRepositories(repositoryPrincipalFromAuthenticatedUser(user));
     const patientId = user.role === 'patient' ? user.id : requestedPatientId;
     if (!patientId) {
       return NextResponse.json({ ok: false, error: 'patientId is required for doctors' }, { status: 400 });

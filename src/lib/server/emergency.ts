@@ -1,7 +1,7 @@
 import { env } from '@/lib/env';
 import { fetchNearbyHospitalsGeoapify } from '@/lib/geo/geoapify-nearby';
 import { emitEvent } from '@/lib/server/events';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, type RepositoryPrincipal } from '@/lib/server/repositories';
 import type { MessageRecord } from '@/lib/types';
 
 export type EmergencyTriggerPayload = {
@@ -12,6 +12,7 @@ export type EmergencyTriggerPayload = {
   location?: { lat: number; lng: number; address?: string };
   initiatedByUserId?: string;
   senderRole?: MessageRecord['role'];
+  repoPrincipal: RepositoryPrincipal;
 };
 
 export type EmergencyTriggerResult = {
@@ -35,7 +36,7 @@ export async function triggerEmergencyForPatient(payload: EmergencyTriggerPayloa
   // EMERGENCY FLOW:
   // API route -> emergency.ts trigger -> repositories writes/routing + optional geo lookup -> emitEvent("emergency:triggered").
   // This module intentionally contains no AI inference logic.
-  const repos = getRepositories();
+  const repos = getRepositories(payload.repoPrincipal);
   const patient = await repos.patients.getPatient(payload.patientId);
   if (!patient) {
     throw new Error('Patient not found');

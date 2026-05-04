@@ -5,7 +5,7 @@ import type { HealthAgentInput } from "@/lib/ai/agent";
 import { createCase } from "@/lib/backend/case-service";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { emitEvent } from "@/lib/server/events";
-import { getRepositories } from "@/lib/server/repositories";
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from "@/lib/server/repositories";
 import { env } from "@/lib/env";
 
 export async function POST(req: Request) {
@@ -23,6 +23,7 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json()) as HealthAgentInput & { patientId?: string; transcript?: string };
+    const principal = repositoryPrincipalFromAuthenticatedUser(user);
     const medix = await runHealthAssistant({
       message: typeof body.message === "string" ? body.message : undefined,
       symptoms: Array.isArray(body.symptoms) ? body.symptoms.filter((s): s is string => typeof s === "string") : undefined,
@@ -32,9 +33,10 @@ export async function POST(req: Request) {
       bodyPart: typeof body.bodyPart === "string" ? body.bodyPart : body.bodyPart === null ? null : undefined,
       transcript: typeof body.transcript === "string" ? body.transcript : undefined,
       patientId: body.patientId ?? user.id,
+      repoPrincipal: principal,
     });
 
-    const repos = getRepositories();
+    const repos = getRepositories(principal);
     const patientId = user.role === 'patient' ? user.id : body.patientId ?? user.id;
     if (patientId) {
       try {

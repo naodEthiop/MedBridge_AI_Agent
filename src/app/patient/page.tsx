@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { differenceInYears, format } from "date-fns";
-import { AlertTriangle, CalendarDays, Camera, HeartPulse, Pill, Settings, Sparkles } from "lucide-react";
-import { useRef, useState } from "react";
+import { AlertTriangle, CalendarDays, Camera, Pill, Settings, Sparkles } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { UpcomingAppointments } from "@/components/views/UpcomingAppointments";
 import { useDashboardSummary } from "@/hooks/useDashboardSummary";
+import { useUiStore } from "@/lib/ui/uiStore";
 
 export default function PatientDashboardPage() {
   const summary = useDashboardSummary();
+  const connection = useUiStore(useCallback((s) => s.connection, []));
+  const lastEvent = useUiStore(useCallback((s) => s.recentEvents[0]?.name ?? null, []));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [visualFeedback, setVisualFeedback] = useState<string | null>(null);
   const currentPatient = summary.currentPatient;
@@ -26,7 +29,8 @@ export default function PatientDashboardPage() {
         <div>
           <h2 className="font-serif text-4xl italic leading-tight">Hi {firstName}, how are you feeling today?</h2>
           <p className="mt-2 text-lg text-sahara-muted">
-            Your health summary is updated from the current MCP-backed patient record.
+            Your health summary streams from the API and realtime events
+            {lastEvent ? ` · last: ${lastEvent}` : ""}.
           </p>
         </div>
 
@@ -68,7 +72,9 @@ export default function PatientDashboardPage() {
           <div className="col-span-12">
             <div className="mb-3 flex items-center justify-between gap-4">
               <h3 className="font-serif text-2xl">Synced Summary</h3>
-              <Badge tone={summary.loading ? "neutral" : "primary"}>{summary.loading ? "Loading" : "Live"}</Badge>
+              <Badge tone={summary.loading ? "neutral" : connection === "live" ? "primary" : "neutral"}>
+                {summary.loading ? "Loading" : connection === "live" ? "Live" : connection === "connecting" ? "Connecting" : "Sync"}
+              </Badge>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               <div className="rounded-3xl border border-sahara-border/60 bg-white p-6">

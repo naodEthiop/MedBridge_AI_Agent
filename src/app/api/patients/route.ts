@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 
 export async function GET(request: Request) {
   try {
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: false, error: 'Only doctors may view patient lists' }, { status: 403 });
     }
 
-    const repos = getRepositories();
+    const repos = getRepositories(repositoryPrincipalFromAuthenticatedUser(user));
     const patients = await repos.patients.listPatients();
     return NextResponse.json({ ok: true, data: { patients } });
   } catch (error) {

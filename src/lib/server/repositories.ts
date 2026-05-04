@@ -4,15 +4,27 @@
 
 import { createDBGateway } from "@/lib/db/dbGateway";
 
-// Default tenant context for server-side operations
-const DEFAULT_TENANT_CONTEXT = {
-  tenantId: process.env.DEFAULT_TENANT_ID || 'medbridge-tenant-001',
-  userId: 'system-user',
-  role: 'admin' as const
+/** Every DB/MCP call must run under an explicit tenant + acting user (no silent default tenant). */
+export type RepositoryPrincipal = {
+  tenantId: string;
+  userId: string;
+  role: "patient" | "doctor" | "admin";
 };
 
-function getDBGateway() {
-  return createDBGateway(DEFAULT_TENANT_CONTEXT);
+export function repositoryPrincipalFromAuthenticatedUser(user: {
+  id: string;
+  tenantId: string;
+  role: "patient" | "doctor";
+}): RepositoryPrincipal {
+  return { tenantId: user.tenantId, userId: user.id, role: user.role };
+}
+
+function getDBGateway(ctx: RepositoryPrincipal) {
+  return createDBGateway({
+    tenantId: ctx.tenantId,
+    userId: ctx.userId,
+    role: ctx.role,
+  });
 }
 
 // Type definitions
@@ -253,8 +265,8 @@ export type Repositories = {
   };
 };
 
-export function getRepositories(): Repositories {
-  const dbGateway = getDBGateway();
+export function getRepositories(principal: RepositoryPrincipal): Repositories {
+  const dbGateway = getDBGateway(principal);
 
   return {
     patients: {

@@ -2,6 +2,8 @@ const WINDOW_MS = 5_000;
 
 export function getEventFingerprint(eventName: string, payload: Record<string, unknown>) {
   const entityId =
+    (typeof payload.threadId === 'string' && payload.threadId) ||
+    (typeof payload.clientMessageId === 'string' && payload.clientMessageId) ||
     (typeof payload.patientId === 'string' && payload.patientId) ||
     (typeof payload.userId === 'string' && payload.userId) ||
     (typeof payload.doctorId === 'string' && payload.doctorId) ||

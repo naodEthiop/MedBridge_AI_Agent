@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 
 export async function GET(request: Request, { params }: { params: Promise<{ patientId: string }> }) {
   try {
     const user = await getAuthenticatedUser(request);
     const { patientId } = await params;
-    const repos = getRepositories();
+    const repos = getRepositories(repositoryPrincipalFromAuthenticatedUser(user));
     const patient = await repos.patients.getPatient(patientId);
     if (!patient) {
       return NextResponse.json({ ok: false, error: 'Patient not found' }, { status: 404 });

@@ -1,16 +1,8 @@
 import { getRepositories } from '@/lib/server/repositories';
 import { requireTenantId } from '@/lib/tenant/tenantContext';
 
+/** Server-side tenant-scoped repos (e.g. admin jobs). Uses explicit tenantId with system audit user. */
 export function getTenantRepositories(tenantId: string) {
   requireTenantId(tenantId);
-  const repos = getRepositories();
-  return {
-    ...repos,
-    patients: {
-      ...repos.patients,
-      async listPatients() {
-        return (await repos.patients.listPatients()).filter((p) => (p as unknown as { tenantId?: string }).tenantId === tenantId);
-      },
-    },
-  };
+  return getRepositories({ tenantId, userId: 'tenant-repository', role: 'admin' });
 }

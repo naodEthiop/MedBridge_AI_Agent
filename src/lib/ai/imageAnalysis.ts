@@ -57,6 +57,8 @@ Rules: You are assisting Medix AI. Describe only what can be reasonably observed
   let lastError = "";
   for (const model of models) {
     const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`;
+    const reqStarted = Date.now();
+    console.info("[Cloudflare AI] vision request", { accountId, model, mimeType, bytes: base64.length });
     const res = await fetch(url, {
       method: "POST",
       headers: {
@@ -73,6 +75,12 @@ Rules: You are assisting Medix AI. Describe only what can be reasonably observed
         ],
         image: dataUrl,
       }),
+    });
+
+    console.info("[Cloudflare AI] vision response", {
+      model,
+      status: res.status,
+      latencyMs: Date.now() - reqStarted,
     });
 
     const payload = (await res.json()) as {

@@ -1,21 +1,10 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
-
-import { invalidateQueryGroup } from "@/hooks/invalidateQueryGroup";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useDoctors } from "@/hooks/useDoctors";
 import { usePatients } from "@/hooks/usePatients";
-import { useRealtime } from "@/hooks/useRealtime";
 
 export function useDashboardSummary() {
-  const queryClient = useQueryClient();
-  useRealtime("realtime:global", {
-    "appointment:created": () => invalidateQueryGroup(queryClient, "appointment:created"),
-    "doctor:note_added": () => invalidateQueryGroup(queryClient, "doctor:note_added"),
-    "ai:analysis_completed": () => invalidateQueryGroup(queryClient, "ai:analysis_completed"),
-  });
-
   const patients = usePatients();
   const doctors = useDoctors();
   const appointments = useAppointments();

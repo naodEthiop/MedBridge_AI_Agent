@@ -19,6 +19,7 @@ import {
 import { analyzeClinicalState, calculateRiskTrajectory } from "@/lib/ai/clinicalReasoner";
 import { getEarlyWarning } from "@/lib/ai/earlyWarning";
 import { buildPatientMemory, summarizePatientMemory } from "@/lib/ai/patientMemory";
+import type { RepositoryPrincipal } from "@/lib/server/repositories";
 import { eventBus } from "@/lib/server/events";
 import { getDigitalTwin, upsertDigitalTwin } from "@/lib/ai/digitalTwin";
 import { canApplyTwinUpdate } from "@/lib/ai/digitalTwinGuard";
@@ -66,10 +67,10 @@ export type AiServiceResponse =
   | { error: string };
 
 
-async function refreshDigitalTwin(patientId: string) {
+async function refreshDigitalTwin(patientId: string, principal: RepositoryPrincipal) {
   const ts = Date.now();
   if (!canApplyTwinUpdate(patientId, ts)) return getDigitalTwin(patientId);
-  const memory = await buildPatientMemory(patientId);
+  const memory = await buildPatientMemory(patientId, principal);
   const stateVector = buildPatientStateVector(memory);
   const forecastModel = buildForecast(stateVector);
   const simulationState = simulateTrajectories(forecastModel);
@@ -96,6 +97,9 @@ export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
 }): Promise<MedicalResponseShape | { error: string }> {
+  if (!env.GEMINI_API_KEY?.trim()) {
+    throw new Error("GEMINI_API_KEY is not configured; symptom triage is unavailable.");
+  }
 
   return generateMedicalResponse({
     message: input.message,
@@ -107,8 +111,12 @@ export async function runImageAnalysis(image: File | Blob): Promise<MedicalImage
   return analyzeImageFull(image);
 }
 
-export async function runHealthAssistant(input: HealthAgentInput & { patientId?: string }): Promise<HealthAgentOutput> {
-  const memoryContext = input.patientId ? summarizePatientMemory(await buildPatientMemory(input.patientId)) : null;
+export async function runHealthAssistant(
+  input: HealthAgentInput & { patientId?: string; repoPrincipal: RepositoryPrincipal },
+): Promise<HealthAgentOutput> {
+  const memoryContext = input.patientId
+    ? summarizePatientMemory(await buildPatientMemory(input.patientId, input.repoPrincipal))
+    : null;
   const result = await trackAiRequest({
     patientId: input.patientId,
     endpoint: "runHealthAssistant",
@@ -120,7 +128,7 @@ export async function runHealthAssistant(input: HealthAgentInput & { patientId?:
   });
   if (input.patientId) {
     eventBus.emit("ai:memory_updated", { patientId: input.patientId, timestamp: new Date().toISOString() });
-    await refreshDigitalTwin(input.patientId);
+    await refreshDigitalTwin(input.patientId, input.repoPrincipal);
   }
   enforceSafety({ patientId: input.patientId, text: result.message, riskLevel: result.urgency });
   const modelVersion = getModelRegistry().gemini.version;
@@ -134,16 +142,20 @@ export async function runRiskPrediction(input: {
   symptomsHistory: string;
   timelineSummary: string;
   labsSummary: string;
+  repoPrincipal: RepositoryPrincipal;
 }): Promise<RiskPrediction | { error: string }> {
+  if (!env.GEMINI_API_KEY?.trim()) {
+    return { error: "AI unavailable" };
+  }
 
   try {
     if (input.patientId) {
-      const memory = await buildPatientMemory(input.patientId);
+      const memory = await buildPatientMemory(input.patientId, input.repoPrincipal);
       const trajectory = calculateRiskTrajectory(memory);
       eventBus.emit("ai:risk_trajectory_updated", { patientId: input.patientId, trajectory, timestamp: new Date().toISOString() });
       const warning = getEarlyWarning(memory);
       if (warning) eventBus.emit("ai:early_warning", warning);
-      await refreshDigitalTwin(input.patientId);
+      await refreshDigitalTwin(input.patientId, input.repoPrincipal);
     }
     const prediction = await withFailureRecovery(
       () => trackAiRequest({ patientId: input.patientId, endpoint: "runRiskPrediction", model: "gemini", run: () => geminiRiskPrediction(input) }),
@@ -163,18 +175,22 @@ export async function generateDoctorCopilotReport(input: {
   timelineSummary: string;
   labsSummary: string;
   appointmentsSummary: string;
+  repoPrincipal: RepositoryPrincipal;
 }): Promise<DoctorCopilotReport | { error: string }> {
+  if (!env.GEMINI_API_KEY?.trim()) {
+    return { error: "AI unavailable" };
+  }
 
   try {
     if (input.patientId) {
-      const state = analyzeClinicalState(await buildPatientMemory(input.patientId));
+      const state = analyzeClinicalState(await buildPatientMemory(input.patientId, input.repoPrincipal));
       eventBus.emit("ai:clinical_analysis_completed", {
         patientId: input.patientId,
         riskLevel: state.riskLevel,
         confidence: state.confidence,
         timestamp: new Date().toISOString(),
       });
-      await refreshDigitalTwin(input.patientId);
+      await refreshDigitalTwin(input.patientId, input.repoPrincipal);
     }
     const report = await withFailureRecovery(
       () => trackAiRequest({ patientId: input.patientId, endpoint: "generateDoctorCopilotReport", model: "gemini", run: () => geminiDoctorCopilotReport(input) }),
@@ -233,18 +249,21 @@ export async function computePatientState(input: {
   };
 }
 
-export async function runAI(request: AiServiceRequest): Promise<AiServiceResponse> {
+export async function runAI(
+  request: AiServiceRequest,
+  repoPrincipal: RepositoryPrincipal,
+): Promise<AiServiceResponse> {
   switch (request.mode) {
     case "symptom_triage":
       return runSymptomTriage({ message: request.message, bodyPart: request.bodyPart });
     case "image_analysis":
       return runImageAnalysis(request.file);
     case "health_assistant":
-      return runHealthAssistant(request.input);
+      return runHealthAssistant({ ...request.input, repoPrincipal });
     case "risk_prediction":
-      return runRiskPrediction(request.input);
+      return runRiskPrediction({ ...request.input, repoPrincipal });
     case "doctor_copilot":
-      return generateDoctorCopilotReport(request.input);
+      return generateDoctorCopilotReport({ ...request.input, repoPrincipal });
     default:
       return { error: "Unsupported AI request type." };
   }

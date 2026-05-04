@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 import { triggerEmergencyForPatient } from '@/lib/server/emergency';
 
 export async function POST(request: Request) {
@@ -19,7 +19,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'Invalid emergency payload' }, { status: 400 });
     }
 
-    const repos = getRepositories();
+    const principal = repositoryPrincipalFromAuthenticatedUser(user);
+    const repos = getRepositories(principal);
     const patient = await repos.patients.getPatient(body.patientId);
     if (!patient) {
       return NextResponse.json({ ok: false, error: 'Patient not found' }, { status: 404 });
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
       location: body.location,
       initiatedByUserId: user.id,
       senderRole: user.role,
+      repoPrincipal: principal,
     });
 
     return NextResponse.json({ ok: true, data: result });

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { apiFetchJson } from "@/lib/api/client";
-import { supabase } from "@/lib/db/supabaseClient";
 
 type ProfilePayload = {
   id: string;
@@ -22,11 +21,8 @@ export default function ProfilePage() {
   useEffect(() => {
     async function load() {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData.session?.access_token;
         const result = await apiFetchJson<{ ok?: boolean; profile?: ProfilePayload }>("/api/user/profile", {
           cache: "no-store",
-          bearerToken: token,
         });
         if (!result.success) {
           if (result.status === 401) {

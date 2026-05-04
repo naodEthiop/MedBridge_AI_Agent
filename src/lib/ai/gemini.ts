@@ -17,16 +17,17 @@ export async function generateMedicalResponse(input: {
   message: string;
   bodyPart?: string | null;
 }): Promise<MedicalResponseShape | { error: string }> {
+  if (!env.GEMINI_API_KEY?.trim()) {
+    return { error: "AI unavailable" };
+  }
   const msg = input.message?.trim();
   if (!msg) {
-    throw new Error("Message is required for medical response");
+    return { error: "AI unavailable" };
   }
-
   const t = await geminiSymptomTriage({
     message: msg,
     bodyPart: input.bodyPart ?? null,
   });
-  
   return {
     possibleConditions: t.possibleConditions,
     urgency: t.urgency,

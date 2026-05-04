@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 
 import { getAuthenticatedUser, UnauthorizedError } from '@/lib/server/auth';
-import { getRepositories } from '@/lib/server/repositories';
+import { getRepositories, repositoryPrincipalFromAuthenticatedUser } from '@/lib/server/repositories';
 
 export async function GET(request: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
     const user = await getAuthenticatedUser(request);
     const { id } = await ctx.params;
-    const repos = getRepositories();
+    const repos = getRepositories(repositoryPrincipalFromAuthenticatedUser(user));
 
     if (user.role === 'doctor') {
       const patient = await repos.patients.getPatient(id);
