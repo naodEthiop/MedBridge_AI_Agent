@@ -93,11 +93,28 @@ export function requirePublicApiBaseUrl(): string {
   if (raw) {
     return raw.replace(/\/$/, "");
   }
-  // Fallback for development only
+  
+  const siteUrl = env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (siteUrl) {
+    return siteUrl.replace(/\/$/, "");
+  }
+
+  // Fallback for development
   if (process.env.NODE_ENV === 'development') {
     return 'http://localhost:3000';
   }
-  throw new Error("NEXT_PUBLIC_API_URL is not configured.");
+  
+  // Fallbacks for Vercel environments
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  // Avoid crashing the build at module evaluation time
+  console.warn("WARN: NEXT_PUBLIC_API_URL and NEXT_PUBLIC_SITE_URL are not configured.");
+  return "";
 }
 
 export const API_URL = requirePublicApiBaseUrl();
