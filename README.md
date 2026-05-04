@@ -89,3 +89,29 @@ MedBridge is built as a modular intelligence system:
 ---
 
 ## 📦 Project Structure
+
+
+---
+
+## 🌐 Core Routes
+
+| Route | Description |
+|------|------------|
+| `/` | Landing page |
+| `/onboarding` | Patient onboarding |
+| `/patient` | Patient dashboard |
+| `/patient/symptom-checker` | Symptom input and analysis |
+| `/patient/scanners` | Scanning tools |
+| `/patient/care-finder` | Care and emergency finder |
+| `/patient/health-card` | Digital health profile |
+| `/doctor` | Clinical dashboard |
+| `/doctor/patients/[id]` | Patient detail view |
+| `/provider/verification` | Provider verification |
+
+---
+
+## ⚙️ Setup & Development
+
+### Install dependencies
+```bash
+npm install
