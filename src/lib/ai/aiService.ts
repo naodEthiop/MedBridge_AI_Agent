@@ -101,6 +101,12 @@ const triageFallback = {
   recommendations: ["Please consult a healthcare professional for proper evaluation"],
 };
 
+const TRIAGE_SYSTEM_PROMPT = [
+  "You are MedBridge AI triage assistant.",
+  "Return concise clinical guidance without diagnosis certainty claims.",
+  "Prioritize red-flag escalation, safety, and plain language.",
+].join(" ");
+
 export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
@@ -111,7 +117,7 @@ export async function runSymptomTriage(input: {
 
   try {
     const response = await generateMedicalResponse({
-      message: input.message,
+      message: `${TRIAGE_SYSTEM_PROMPT}\nPatient input: ${input.message}`,
       bodyPart: input.bodyPart,
     });
 

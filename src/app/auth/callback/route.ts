@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/db/supabaseServer";
+import { env } from "@/lib/env";
 
-const PROD_SITE_URL = "https://med-bridge-ai-agent.vercel.app";
+const PROD_SITE_URL = env.NEXT_PUBLIC_SITE_URL ?? "https://med-bridge-ai-agent.vercel.app";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
