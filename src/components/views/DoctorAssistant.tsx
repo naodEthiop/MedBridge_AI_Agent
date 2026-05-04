@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 
 const WELCOME_MESSAGE = "Hello! I'm your AI clinical assistant. I can help analyze symptoms, provide medical guidance, and support clinical decision-making. How can I assist you today?";
 
@@ -47,6 +47,11 @@ const EMPTY_MESSAGES: Message[] = [{
 
 export function DoctorAssistant({ threadId = "clinical-chat" }: { threadId?: string }) {
   const [messages, setMessages] = useState<Message[]>(EMPTY_MESSAGES);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState<string>("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message]);
