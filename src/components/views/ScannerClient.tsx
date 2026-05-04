@@ -73,7 +73,7 @@ export function ScannerClient() {
         </button>
       </form>
       <div className="min-h-[220px] rounded-2xl border-2 border-dashed border-sahara-primary/35 bg-white p-5 shadow-inner">
-        <p className="text-xs font-bold uppercase tracking-widest text-sahara-primary">Gemini API response</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-sahara-primary">MedBridge AI API response</p>
         <p className="mt-1 text-xs text-sahara-muted">
           Structured output from <code className="rounded bg-sahara-surface-low px-1">/api/prescription</code> appears here.
           Swap this client for your backend URL when integrating.
@@ -120,7 +120,7 @@ export function ScannerClient() {
           ) : (
             <p className="text-sm text-sahara-muted">
               {file
-                ? "Tap “Analyze scan” to send the image to Gemini and show the response here."
+                ? "Tap “Analyze scan” to send the image to MedBridge AI and show the response here."
                 : "Choose an image first. Your prescription analysis will display in this panel."}
             </p>
           )}

@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { FormEvent, Suspense, startTransition, useEffect, useState } from "react";
+import { env } from "@/lib/env";
 
 type Role = "patient" | "doctor";
 type AuthTab = "login" | "signup";
@@ -88,7 +89,7 @@ function LoginPageContent() {
       }
       if (searchParams.get("google") === "unavailable") {
         setError(
-          "Google sign-in needs Supabase: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then enable the Google provider in Supabase Auth. You can still use email and password.",
+          "Google sign-in is temporarily unavailable. Please use email and password sign-in.",
         );
       } else if (searchParams.get("error") === "oauth") {
         setError("Google sign-in was cancelled or could not complete. Please try again.");
@@ -102,8 +103,8 @@ function LoginPageContent() {
 
   async function handleGoogleLogin() {
     setError(null);
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const url = env.NEXT_PUBLIC_SUPABASE_URL;
+    const anon = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !anon) {
       setError(
         "Google sign-in requires Supabase. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, enable Google in Supabase Auth, then try again.",
@@ -114,7 +115,7 @@ function LoginPageContent() {
     try {
       const { getSupabaseBrowserClient } = await import("@/lib/db/supabaseClient");
       const supabase = getSupabaseBrowserClient();
-      const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://med-bridge-ai-agent.vercel.app";
+      const SITE_URL = env.NEXT_PUBLIC_SITE_URL ?? "https://med-bridge-ai-agent.vercel.app";
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: `${SITE_URL}/auth/callback` },
@@ -126,6 +127,9 @@ function LoginPageContent() {
       if (data.url) {
         window.location.assign(data.url);
       }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Google sign-in failed unexpectedly.";
+      setError(message);
     } finally {
       setGoogleLoading(false);
     }

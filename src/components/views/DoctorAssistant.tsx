@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const WELCOME_MESSAGE = "Hello! I'm your AI clinical assistant. I can help analyze symptoms, provide medical guidance, and support clinical decision-making. How can I assist you today?";
 
@@ -49,9 +49,19 @@ export function DoctorAssistant({ threadId = "clinical-chat" }: { threadId?: str
   const [messages, setMessages] = useState<Message[]>(EMPTY_MESSAGES);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [streamingMessage, setStreamingMessage] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const streamTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages]);
+
+  useEffect(() => () => {
+    if (streamTimerRef.current) {
+      clearInterval(streamTimerRef.current);
+    }
+  }, []);
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => [...prev, message]);
@@ -90,7 +100,6 @@ export function DoctorAssistant({ threadId = "clinical-chat" }: { threadId?: str
 
     setInput("");
     setIsLoading(true);
-    setStreamingMessage("");
 
     try {
       const response = await fetch("/api/agent", {
@@ -116,19 +125,21 @@ export function DoctorAssistant({ threadId = "clinical-chat" }: { threadId?: str
       const words = content.split(" ");
       let wordIndex = 0;
 
-      const streamInterval = setInterval(() => {
+      if (streamTimerRef.current) clearInterval(streamTimerRef.current);
+      streamTimerRef.current = setInterval(() => {
         if (wordIndex < words.length) {
           currentContent += (wordIndex > 0 ? " " : "") + words[wordIndex];
-          setStreamingMessage(currentContent);
           updateMessage(assistantMessageId, { content: currentContent });
           wordIndex++;
         } else {
-          clearInterval(streamInterval);
+          if (streamTimerRef.current) {
+            clearInterval(streamTimerRef.current);
+            streamTimerRef.current = null;
+          }
           updateMessage(assistantMessageId, {
             content: currentContent,
             status: "complete"
           });
-          setStreamingMessage("");
         }
       }, 50); // Adjust speed as needed
 
@@ -192,11 +203,11 @@ export function DoctorAssistant({ threadId = "clinical-chat" }: { threadId?: str
               )}
               <div className="text-sm leading-relaxed whitespace-pre-wrap">
                 {message.content}
-                {message.status === "streaming" && streamingMessage && (
+                {message.status === "streaming" && (
                   <span className="animate-pulse">▊</span>
                 )}
               </div>
-              {message.status === "streaming" && !streamingMessage && (
+              {message.status === "streaming" && !message.content && (
                 <div className="flex space-x-1 mt-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
@@ -217,19 +228,12 @@ export function DoctorAssistant({ threadId = "clinical-chat" }: { threadId?: str
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder="Describe symptoms or ask for clinical guidance..."
               className="w-full resize-none rounded-2xl border border-white/30 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] max-h-32"
               rows={1}
               disabled={isLoading}
             />
-            {isLoading && (
-              <div className="absolute right-3 top-3 flex space-x-1">
-                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
-                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: "0.4s" }}></div>
-              </div>
-            )}
           </div>
           <button
             onClick={handleSend}
