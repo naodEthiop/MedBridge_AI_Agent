@@ -88,7 +88,7 @@ function LoginPageContent() {
       }
       if (searchParams.get("google") === "unavailable") {
         setError(
-          "Google sign-in needs Supabase: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, then enable the Google provider in Supabase Auth. You can still use email and password.",
+          "Google sign-in is temporarily unavailable. Please use email and password sign-in.",
         );
       } else if (searchParams.get("error") === "oauth") {
         setError("Google sign-in was cancelled or could not complete. Please try again.");
@@ -102,8 +102,8 @@ function LoginPageContent() {
 
   async function handleGoogleLogin() {
     setError(null);
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const url = window.__NEXT_DATA__ ? process.env.NEXT_PUBLIC_SUPABASE_URL : undefined;
+    const anon = window.__NEXT_DATA__ ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY : undefined;
     if (!url || !anon) {
       setError(
         "Google sign-in requires Supabase. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, enable Google in Supabase Auth, then try again.",
@@ -114,7 +114,7 @@ function LoginPageContent() {
     try {
       const { getSupabaseBrowserClient } = await import("@/lib/db/supabaseClient");
       const supabase = getSupabaseBrowserClient();
-      const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://med-bridge-ai-agent.vercel.app";
+      const SITE_URL = "https://med-bridge-ai-agent.vercel.app";
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: `${SITE_URL}/auth/callback` },

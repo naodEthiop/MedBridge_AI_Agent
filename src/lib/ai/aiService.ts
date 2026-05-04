@@ -94,17 +94,19 @@ async function refreshDigitalTwin(patientId: string, principal: RepositoryPrinci
   return twin;
 }
 
+const triageFallback = {
+  diagnosis: "AI unavailable",
+  riskLevel: "low" as const,
+  confidence: 0,
+  recommendations: ["Please consult a healthcare professional for proper evaluation"],
+};
+
 export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
 }): Promise<{ diagnosis: string; riskLevel: "low" | "medium" | "high"; confidence: number; recommendations: string[] } | { error: string }> {
   if (!env.GEMINI_API_KEY?.trim()) {
-    return {
-      diagnosis: "Unable to analyze symptoms",
-      riskLevel: "unknown" as any,
-      confidence: 0,
-      recommendations: ["Please consult a healthcare professional for proper evaluation"]
-    };
+    return triageFallback;
   }
 
   try {
@@ -114,12 +116,7 @@ export async function runSymptomTriage(input: {
     });
 
     if ('error' in response) {
-      return {
-        diagnosis: "Unable to analyze symptoms",
-        riskLevel: "unknown" as any,
-        confidence: 0,
-        recommendations: ["Please consult a healthcare professional for proper evaluation"]
-      };
+      return triageFallback;
     }
 
     // Transform MedicalResponseShape to the required format
@@ -136,12 +133,7 @@ export async function runSymptomTriage(input: {
     };
   } catch (error) {
     console.error('Symptom triage error:', error);
-    return {
-      diagnosis: "Unable to analyze symptoms",
-      riskLevel: "unknown" as any,
-      confidence: 0,
-      recommendations: ["Please consult a healthcare professional for proper evaluation"]
-    };
+    return triageFallback;
   }
 }
 
