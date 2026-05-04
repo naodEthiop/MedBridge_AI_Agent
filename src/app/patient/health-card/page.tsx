@@ -312,7 +312,7 @@ export default function HealthCardPage() {
                 Demo payload includes patient id and email. Production: short-lived signed token from your server.
               </p>
               <div className="relative mb-4 rounded-2xl border border-sahara-border bg-white p-4 shadow-inner">
-                <img alt="Health card QR code" className="h-40 w-40 object-contain" src={qrImageUrl} width={160} height={160} />
+                <img alt="Health card QR code" className="h-40 w-40 object-contain" src={qrImageUrl || undefined} width={160} height={160} />
               </div>
               <p className="px-4 text-sm font-medium text-sahara-muted">Refresh rotates the demo nonce.</p>
               <button

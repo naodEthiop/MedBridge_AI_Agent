@@ -147,49 +147,8 @@ export function ScannerClient() {
           ) : (
             <p className="text-sm text-sahara-muted">
               {file
-                ? "Tap "Analyze scan" to see your medication details and safety information."
+                ? "Tap 'Analyze scan' to see your medication details and safety information."
                 : "Choose an image first. Your prescription analysis will display here."}
-            </p>
-          )}
-        </div>
-      </div>
-          ) : error ? (
-            <div className="rounded-xl border border-red-200 bg-red-50/80 p-3 text-sm text-red-900">
-              <p className="font-semibold">Error</p>
-              <p className="mt-1">{error}</p>
-            </div>
-          ) : analysis ? (
-            <div className="space-y-3">
-              <div className="rounded-xl bg-sahara-surface-low p-4 ring-1 ring-sahara-border/60">
-                <p className="font-semibold">Detected: {String(analysis.detected)}</p>
-                <p className="text-sm text-sahara-muted">Confidence: {String(analysis.confidence ?? "—")}</p>
-                <p className="text-sm text-sahara-muted">Medicine: {String(analysis.medicine ?? "N/A")}</p>
-                <p className="text-sm text-sahara-muted">Dosage: {String(analysis.dosage ?? "N/A")}</p>
-                <p className="text-sm text-sahara-muted">Timing: {String(analysis.timing ?? "N/A")}</p>
-                {analysis.summary ? (
-                  <p className="mt-3 text-sm leading-relaxed text-sahara-fg">
-                    <span className="font-semibold">Summary:</span> {String(analysis.summary)}
-                  </p>
-                ) : null}
-                {Array.isArray(analysis.usage) && analysis.usage.length ? (
-                  <p className="mt-2 text-sm text-sahara-muted">Usage: {analysis.usage.join(" · ")}</p>
-                ) : null}
-                {Array.isArray(analysis.warnings) && analysis.warnings.length ? (
-                  <p className="mt-2 text-sm text-sahara-tertiary">Warnings: {analysis.warnings.join(" · ")}</p>
-                ) : null}
-              </div>
-              <details className="rounded-xl border border-sahara-border/50 bg-stone-50/80 p-3">
-                <summary className="cursor-pointer text-xs font-semibold text-sahara-muted">Raw JSON (debug)</summary>
-                <pre className="mt-2 max-h-48 overflow-auto text-[11px] leading-relaxed text-sahara-fg">
-                  {JSON.stringify(result ?? {}, null, 2)}
-                </pre>
-              </details>
-            </div>
-          ) : (
-            <p className="text-sm text-sahara-muted">
-              {file
-                ? "Tap “Analyze scan” to send the image to MedBridge AI and show the response here."
-                : "Choose an image first. Your prescription analysis will display in this panel."}
             </p>
           )}
         </div>
