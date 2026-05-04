@@ -100,40 +100,32 @@ const triageFallback = {
 };
 
 const TRIAGE_SYSTEM_PROMPT = `
-You are MedBridge AI, a friendly and intelligent medical assistant.
+You are MedBridge AI, a medical symptom assistant.
 
-Your personality:
-- Warm, conversational, and human-like
-- Speak like ChatGPT, not like a robot
-- Always helpful and engaging
+RULES:
+- ALWAYS respond based on user message
+- NEVER repeat generic fallback phrases
+- NEVER say the same sentence twice
+- ALWAYS acknowledge the actual symptom
+- ALWAYS extract meaning from short messages like "hi", "headache", "pain"
 
-Your behavior:
-- NEVER refuse basic symptom questions
-- DO NOT say "I cannot provide medical advice"
-- Instead, provide general guidance and suggestions
+BEHAVIOR:
+- If user says "hi" → greet briefly and ask symptom
+- If user says "headache" → respond specifically about headaches
+- If message is unclear → ask clarifying question
+- DO NOT repeat "I understand. Let me help you with that."
 
-Rules:
-- You are NOT a doctor, but you help users understand symptoms
-- DO NOT give final diagnosis
-- DO NOT scare the user
-- DO NOT be overly strict or defensive
+STYLE:
+- Natural ChatGPT-like conversation
+- Short, helpful responses
+- Always move conversation forward
 
-Response style:
-- Start with empathy ("I understand how you're feeling")
-- Ask follow-up questions
-- Suggest possible causes (non-definitive)
-- Give clear next steps
-
-Example tone:
-"That sounds uncomfortable. Based on your symptoms, it could be something mild like a cold or fatigue. Can you tell me if you also have a fever?"
-
-Output format MUST be JSON:
-
+OUTPUT JSON:
 {
-  "message": "chat-style response",
-  "followUpQuestions": ["question1", "question2"],
+  "message": "natural conversational response",
+  "followUpQuestions": [],
   "riskLevel": "low | medium | high",
-  "recommendations": ["step1", "step2"]
+  "recommendations": []
 }
 `;
 
@@ -141,11 +133,22 @@ export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
 }) {
+  const userMessage = input.message.trim();
+
+  // STEP 4: INTENT UNDERSTANDING
+  let intent = "unknown";
+  const msgLower = userMessage.toLowerCase();
+  if (msgLower.match(/\b(hi|hello|hey|greetings)\b/)) intent = "greeting";
+  else if (msgLower.match(/\b(pain|headache|fever|cough|sore|ache|hurt|blood|dizzy|nausea)\b/)) intent = "symptom";
+  else if (userMessage.split(/\s+/).length < 3) intent = "short_query";
+
   const fallbackResponse = {
-    message: "I'm here to help. Can you tell me more about your symptoms?",
+    message: intent === "greeting" 
+      ? "Hello! I'm here to help. Tell me about your symptoms." 
+      : "I hear you. Can you describe your symptoms more clearly?",
     followUpQuestions: ["When did it start?", "Any pain level?"],
     riskLevel: "low",
-    recommendations: ["Monitor symptoms", "Stay hydrated"],
+    recommendations: ["Stay hydrated", "Monitor symptoms"],
   };
 
   if (!env.GEMINI_API_KEY?.trim()) {
@@ -154,42 +157,51 @@ export async function runSymptomTriage(input: {
 
   const prompt = `${TRIAGE_SYSTEM_PROMPT}
 
-Patient Message: "${input.message.trim()}"
-${input.bodyPart ? `Body Part: ${input.bodyPart}` : ""}`;
+CONTEXT:
+{
+  "userInput": "${userMessage}",
+  "intent": "${intent}",
+  "bodyPart": "${input.bodyPart ?? "none"}"
+}
+`;
 
   try {
     const responseText = await generateGeminiResponse(prompt);
     console.log("Gemini RAW:", responseText);
 
+    if (!responseText || responseText.length === 0) {
+      return fallbackResponse;
+    }
+
     const cleaned = String(responseText).replace(/```json/i, "").replace(/```/g, "").trim();
-    let parsed: Record<string, unknown>;
+    let parsed: any = null;
     try {
       parsed = JSON.parse(cleaned);
       console.log("Gemini PARSED:", parsed);
     } catch (parseError) {
       console.error("Gemini Parse Error:", parseError, "Raw text:", cleaned);
+    }
+
+    if (!parsed || !parsed.message) {
       return fallbackResponse;
     }
 
-    const messageRaw = typeof parsed.message === "string" ? parsed.message : "";
-    
     // Force human-like response cleaning
-    const cleanResponse = messageRaw
+    let cleanResponse = String(parsed.message)
       .replace(/I am not a doctor/gi, "")
       .replace(/cannot provide medical advice/gi, "")
       .trim();
 
-    if (!parsed || !cleanResponse || cleanResponse.length < 10) {
-      return fallbackResponse;
+    // STEP 3: VARIATION / STOP LOOPING
+    if (cleanResponse === "I understand. Let me help you with that.") {
+      cleanResponse = intent === "symptom" 
+        ? `I see you're mentioning ${userMessage}. Can you tell me more about the intensity?`
+        : "I'm listening. Please describe what you're feeling in more detail.";
     }
 
     const riskLevel = parsed.riskLevel === "high" || parsed.riskLevel === "medium" ? parsed.riskLevel : "low";
-    const followUpQuestions = Array.isArray(parsed.followUpQuestions)
-      ? parsed.followUpQuestions.filter((item): item is string => typeof item === "string")
-      : [];
-    const recommendations = Array.isArray(parsed.recommendations)
-      ? parsed.recommendations.filter((item): item is string => typeof item === "string")
-      : [];
+    const followUpQuestions = Array.isArray(parsed.followUpQuestions) ? parsed.followUpQuestions : [];
+    const recommendations = Array.isArray(parsed.recommendations) ? parsed.recommendations : [];
 
     return {
       message: cleanResponse,

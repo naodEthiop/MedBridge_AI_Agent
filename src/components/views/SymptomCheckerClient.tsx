@@ -69,7 +69,7 @@ export function SymptomCheckerClient(props: {
         (parsed.result as Record<string, unknown>) ??
         (parsed.tool === "symptom_checker" ? (parsed.result as Record<string, unknown>) : parsed);
       
-      const aiText = typeof resultObj?.message === "string" ? resultObj.message : "I understand. Let me help you with that.";
+      const aiText = typeof resultObj?.message === "string" ? resultObj.message : "I'm here to listen. Could you provide a few more details about your symptoms?";
       setChatHistory((prev) => [...prev, { role: "ai", text: aiText, data: resultObj }]);
       props.onResultChange?.(resultObj ?? null);
     } catch {
