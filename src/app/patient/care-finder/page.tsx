@@ -1,9 +1,13 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 
+import dynamic from "next/dynamic";
 import { AppShell } from "@/components/layout/AppShell";
-import { GoapifyMap } from "@/components/maps/GoapifyMap";
+
+const GoapifyMap = dynamic(() => import("@/components/maps/GoapifyMap").then(mod => mod.GoapifyMap), {
+  ssr: false,
+});
 import { CareFinderClient } from "@/components/views/CareFinderClient";
 
 export default function CareFinderPage() {

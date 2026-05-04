@@ -4,6 +4,7 @@
 
 import { supabaseMCP } from './supabaseMCP';
 import { mcpSchemaValidator } from './mcpSchemaValidator';
+import { QueryFilters } from "@/lib/db/supabaseMCP";
 
 interface TenantContext {
   tenantId: string;
@@ -11,22 +12,12 @@ interface TenantContext {
   role: string;
 }
 
-interface QueryFilters {
-  match?: Record<string, any>;
-  neq?: Record<string, any>;
-  in?: Record<string, any[]>;
-  or?: string;
-  limit?: number;
-  offset?: number;
-  orderBy?: { column: string; ascending: boolean };
-}
-
 interface InsertData {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface UpdateData {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export class DBGateway {
@@ -85,7 +76,23 @@ export class DBGateway {
     // Log query for observability
     console.log(`[DBGateway] Query: ${table}, Tenant: ${this.tenantContext.tenantId}, Filters:`, tenantFilters);
 
-    return supabaseMCP.query(table, tenantFilters);
+    const safeFilters = {
+      ...tenantFilters,
+      orderBy: tenantFilters.orderBy
+        ? {
+            column:
+              typeof tenantFilters.orderBy === "string"
+                ? tenantFilters.orderBy
+                : tenantFilters.orderBy.column,
+            ascending:
+              typeof tenantFilters.orderBy === "object"
+                ? tenantFilters.orderBy.ascending ?? true
+                : true,
+          }
+        : undefined,
+    };
+
+    return supabaseMCP.query(table, safeFilters);
   }
 
   /**
