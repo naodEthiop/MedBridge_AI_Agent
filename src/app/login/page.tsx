@@ -94,6 +94,8 @@ function LoginPageContent() {
         setError("Google sign-in was cancelled or could not complete. Please try again.");
       } else if (searchParams.get("error") === "sync") {
         setError("Google sign-in worked, but syncing your MedBridge session failed. Try again or use email login.");
+      } else if (searchParams.get("error") === "auth_callback_failed") {
+        setError("Authentication failed during callback. Please try signing in again.");
       }
     });
   }, [searchParams]);
