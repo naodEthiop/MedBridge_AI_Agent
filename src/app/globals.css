@@ -57,3 +57,8 @@ body {
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* Smooth scroll behavior for chat containers */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
