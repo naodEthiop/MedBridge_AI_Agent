@@ -100,20 +100,19 @@ const triageFallback = {
 };
 
 const TRIAGE_SYSTEM_PROMPT = `
-You are MedBridge AI, a medical symptom assistant.
+You are MedBridge AI, a conversational medical assistant.
 
 RULES:
-- ALWAYS respond based on user message
-- NEVER repeat generic fallback phrases
-- NEVER say the same sentence twice
-- ALWAYS acknowledge the actual symptom
-- ALWAYS extract meaning from short messages like "hi", "headache", "pain"
+- Respond differently based on context
+- DO NOT repeat the same sentence twice
+- DO NOT always ask for more details
+- Understand conversation state
+- Switch between greeting, identity, and symptom modes
 
 BEHAVIOR:
-- If user says "hi" → greet briefly and ask symptom
-- If user says "headache" → respond specifically about headaches
-- If message is unclear → ask clarifying question
-- DO NOT repeat "I understand. Let me help you with that."
+- Greeting → friendly welcome
+- Identity → explain who you are
+- Symptom → analyze and ask relevant follow-ups
 
 STYLE:
 - Natural ChatGPT-like conversation
@@ -139,23 +138,52 @@ const AI_UNAVAILABLE_MESSAGE = {
 
 let aiFailureCount = 0;
 
+function detectIntent(input: string) {
+  const text = input.toLowerCase();
+  if (text.includes("who are you") || text.includes("what are you") || text.includes("your name") || text.includes("you are")) {
+    return "identity";
+  }
+  if (text === "hi" || text === "hello" || text === "hey") {
+    return "greeting";
+  }
+  if (text.match(/\b(pain|headache|fever|cough|sore|ache|hurt|blood|dizzy|nausea)\b/)) {
+    return "symptom";
+  }
+  return "general";
+}
+
 export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
 }) {
   const userMessage = input.message.trim();
 
-  // STEP 4: INTENT UNDERSTANDING
-  let intent = "unknown";
-  const msgLower = userMessage.toLowerCase();
-  if (msgLower.match(/\b(hi|hello|hey|greetings)\b/)) intent = "greeting";
-  else if (msgLower.match(/\b(pain|headache|fever|cough|sore|ache|hurt|blood|dizzy|nausea)\b/)) intent = "symptom";
-  else if (userMessage.split(/\s+/).length < 3) intent = "short_query";
+  // STEP 1: ADD INTENT CLASSIFIER
+  const intent = detectIntent(userMessage);
+
+  // STEP 2: HANDLE INTENTS BEFORE GEMINI
+  if (intent === "identity") {
+    return {
+      message: "I am MedBridge AI, your medical assistant. I help you understand symptoms and guide you on possible next steps.",
+      followUpQuestions: ["Would you like to check some symptoms?"],
+      riskLevel: "low",
+      recommendations: [],
+      isError: false,
+    };
+  }
+
+  if (intent === "greeting") {
+    return {
+      message: "Hello 👋 I’m MedBridge AI. Tell me how you’re feeling or what symptoms you have.",
+      followUpQuestions: [],
+      riskLevel: "low",
+      recommendations: [],
+      isError: false,
+    };
+  }
 
   const fallbackResponse = {
-    message: intent === "greeting" 
-      ? "Hello! I'm here to help. Tell me about your symptoms." 
-      : "I hear you. Can you describe your symptoms more clearly?",
+    message: "I hear you. Can you describe your symptoms more clearly?",
     followUpQuestions: ["When did it start?", "Any pain level?"],
     riskLevel: "low",
     recommendations: ["Stay hydrated", "Monitor symptoms"],
