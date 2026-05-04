@@ -69,9 +69,36 @@ export function getBackendBaseUrl() {
  */
 export function requirePublicApiBaseUrl(): string {
   const raw = env.NEXT_PUBLIC_API_URL?.trim();
-  if (!raw) {
-    throw new Error("NEXT_PUBLIC_API_URL is not configured.");
+  if (raw) {
+    return raw.replace(/\/$/, "");
   }
-  return raw.replace(/\/$/, "");
+  // Fallback for development only
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:3000';
+  }
+  throw new Error("NEXT_PUBLIC_API_URL is not configured.");
+}
+
+/**
+ * Safe fetch wrapper that prevents uncaught promise errors
+ */
+export async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    throw error;
+  }
 }
 

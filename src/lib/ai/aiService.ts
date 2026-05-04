@@ -64,6 +64,7 @@ export type AiServiceResponse =
   | HealthAgentOutput
   | RiskPrediction
   | DoctorCopilotReport
+  | { diagnosis: string; riskLevel: "low" | "medium" | "high"; confidence: number; recommendations: string[] }
   | { error: string };
 
 
@@ -96,15 +97,52 @@ async function refreshDigitalTwin(patientId: string, principal: RepositoryPrinci
 export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
-}): Promise<MedicalResponseShape | { error: string }> {
+}): Promise<{ diagnosis: string; riskLevel: "low" | "medium" | "high"; confidence: number; recommendations: string[] } | { error: string }> {
   if (!env.GEMINI_API_KEY?.trim()) {
-    return { error: "GEMINI_API_KEY is not configured; symptom triage is unavailable." };
+    return {
+      diagnosis: "Unable to analyze symptoms",
+      riskLevel: "unknown" as any,
+      confidence: 0,
+      recommendations: ["Please consult a healthcare professional for proper evaluation"]
+    };
   }
 
-  return generateMedicalResponse({
-    message: input.message,
-    bodyPart: input.bodyPart,
-  });
+  try {
+    const response = await generateMedicalResponse({
+      message: input.message,
+      bodyPart: input.bodyPart,
+    });
+
+    if ('error' in response) {
+      return {
+        diagnosis: "Unable to analyze symptoms",
+        riskLevel: "unknown" as any,
+        confidence: 0,
+        recommendations: ["Please consult a healthcare professional for proper evaluation"]
+      };
+    }
+
+    // Transform MedicalResponseShape to the required format
+    const diagnosis = response.possibleConditions?.[0] || "Symptoms require professional evaluation";
+    const riskLevel = response.urgency === "urgent" ? "high" : response.urgency === "medium" ? "medium" : "low";
+    const confidence = response.urgency === "urgent" ? 0.9 : response.urgency === "medium" ? 0.7 : 0.5;
+    const recommendations = response.nextSteps || ["Please consult a healthcare professional"];
+
+    return {
+      diagnosis,
+      riskLevel,
+      confidence,
+      recommendations
+    };
+  } catch (error) {
+    console.error('Symptom triage error:', error);
+    return {
+      diagnosis: "Unable to analyze symptoms",
+      riskLevel: "unknown" as any,
+      confidence: 0,
+      recommendations: ["Please consult a healthcare professional for proper evaluation"]
+    };
+  }
 }
 
 export async function runImageAnalysis(image: File | Blob): Promise<MedicalImageResult> {

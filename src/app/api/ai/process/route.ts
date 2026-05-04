@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     // API route (this compatibility parser) -> /api/ai/health-assistant -> aiService ->
     // repositories.timeline -> emitEvent(ai:analysis_completed) -> response.
     // This route must not run a second AI pass.
-    if (!process.env.GEMINI_API_KEY) {
+    if (!env.GEMINI_API_KEY) {
       return NextResponse.json({
         result: "AI unavailable",
         fallback: true,

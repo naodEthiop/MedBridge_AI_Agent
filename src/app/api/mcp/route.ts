@@ -34,11 +34,11 @@ export async function POST(request: Request) {
           ok: true,
           tool: body.tool,
           result: {
-            possibleConditions: triage.possibleConditions,
-            urgency: triage.urgency,
-            nextSteps: triage.nextSteps,
-            redFlags: triage.redFlags,
-            message: triage.message,
+            possibleConditions: [triage.diagnosis],
+            urgency: triage.riskLevel,
+            nextSteps: triage.recommendations,
+            redFlags: triage.riskLevel === 'high' ? ['High risk condition detected'] : [],
+            message: triage.diagnosis,
           },
         });
       }

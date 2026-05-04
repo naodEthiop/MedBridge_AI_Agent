@@ -17,7 +17,7 @@ export async function generateMedicalResponse(input: {
   message: string;
   bodyPart?: string | null;
 }): Promise<MedicalResponseShape | any> {
-  if (!process.env.GEMINI_API_KEY) {
+  if (!env.GEMINI_API_KEY) {
     return {
       result: "AI unavailable",
       fallback: true,
