@@ -27,9 +27,10 @@ export function SymptomCheckerClient(props: {
   const [chatHistory, setChatHistory] = useState<{ role: "user" | "ai"; text: string; data?: any }[]>([
     {
       role: "ai",
-      text: "Hello 👋 I am your MedBridge Online Doctor Assistant. Please tell me how you are feeling or describe your symptoms, and I will provide professional clinical guidance.",
+      text: "Hello! I am the MedBridge Doctor AI. I'm here to listen to your symptoms and provide clinical guidance. How are you feeling today?",
     }
   ]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toolFeedback, setToolFeedback] = useState<string | null>(null);
@@ -65,14 +66,14 @@ export function SymptomCheckerClient(props: {
       const data = await res.json();
       
       if (!res.ok || data.error) {
-      const errMsg = "The MedBridge Online Doctor Assistant is temporarily unavailable. Please try again later.";
+        const errMsg = "MedBridge AI is not available right now. Please try again later.";
         setError(errMsg);
         setChatHistory(prev => [...prev, { role: "ai", text: errMsg, data: { isError: true } }]);
         return;
       }
 
       const resultObj = data.message;
-      const aiText = resultObj?.message || "The MedBridge Online Doctor Assistant is temporarily unavailable. Please try again later.";
+      const aiText = resultObj?.message || "MedBridge AI is not available right now. Please try again later.";
       
       setChatHistory((prev) => [...prev, { role: "ai", text: aiText, data: resultObj }]);
       props.onResultChange?.(resultObj ?? null);
@@ -116,42 +117,75 @@ export function SymptomCheckerClient(props: {
   }
 
   return (
-    <div className="flex flex-col h-[600px] max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-sahara-border/20">
+    <div className="flex flex-col h-[700px] max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-sahara-border/20">
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto p-6 space-y-6 bg-sahara-bg/5"
+        className="flex-1 overflow-y-auto p-6 space-y-8 bg-sahara-bg/5 scroll-smooth"
       >
         {chatHistory.map((msg, idx) => (
           <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`flex gap-3 max-w-[80%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-              <div className={`flex size-9 shrink-0 items-center justify-center rounded-full shadow-sm ${
+            <div className={`flex gap-4 max-w-[85%] ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+              <div className={`flex size-10 shrink-0 items-center justify-center rounded-2xl shadow-md ${
                 msg.role === "user" ? "bg-sahara-primary text-white" : "bg-white text-sahara-primary border border-sahara-border/40"
               }`}>
-                {msg.role === "ai" ? <Bot className="size-5" /> : <PlusCircle className="size-5" />}
+                {msg.role === "ai" ? <Bot className="size-6" /> : <PlusCircle className="size-6" />}
               </div>
-              <div className={`relative px-4 py-3 rounded-2xl shadow-sm text-sm leading-relaxed ${
-                msg.role === "user" 
-                  ? "bg-sahara-primary text-white rounded-tr-none" 
-                  : msg.data?.isError
-                    ? "bg-red-50 border border-red-200 text-red-900 rounded-tl-none"
-                    : "bg-white border border-sahara-border/20 text-sahara-fg rounded-tl-none"
-              }`}>
-                <p className="whitespace-pre-wrap">{msg.text}</p>
+              
+              <div className="space-y-2">
+                <div className={`relative px-5 py-4 rounded-3xl shadow-sm text-sm leading-relaxed ${
+                  msg.role === "user" 
+                    ? "bg-sahara-primary text-white rounded-tr-none" 
+                    : msg.data?.isError
+                      ? "bg-red-50 border border-red-200 text-red-900 rounded-tl-none"
+                      : "bg-white border border-sahara-border/20 text-sahara-fg rounded-tl-none"
+                }`}>
+                  <p className="whitespace-pre-wrap font-medium">{msg.text}</p>
+                </div>
+
                 {msg.role === "ai" && msg.data && !msg.data.isError && (
-                  <div className="mt-4 pt-3 border-t border-sahara-border/10 space-y-3">
-                    {msg.data.riskLevel && (
+                  <div className="flex flex-col gap-3 ml-1">
+                    {(msg.data.riskLevel === 'medium' || msg.data.riskLevel === 'high') && (
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-sahara-muted">Risk Level:</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                          msg.data.riskLevel === 'high' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                        }`}>{msg.data.riskLevel}</span>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          msg.data.riskLevel === 'high' 
+                            ? 'bg-red-500 text-white shadow-lg shadow-red-200 animate-pulse' 
+                            : 'bg-amber-500 text-white shadow-lg shadow-amber-200'
+                        }`}>
+                          ⚠️ Risk: {msg.data.riskLevel}
+                        </span>
                       </div>
                     )}
-                    {Array.isArray(msg.data.followUpQuestions) && msg.data.followUpQuestions.length > 0 && (
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-sahara-muted">Follow-up Questions:</span>
-                        <ul className="list-disc list-inside text-xs text-sahara-fg/70 space-y-1">
-                          {msg.data.followUpQuestions.map((q: string, i: number) => <li key={i}>{q}</li>)}
+
+                    {Array.isArray(msg.data.advice) && msg.data.advice.length > 0 && (
+                      <div className="rounded-2xl bg-sahara-primary/5 border border-sahara-primary/10 p-4 space-y-2">
+                        <div className="flex items-center gap-2 text-sahara-primary">
+                          <span className="text-lg">💡</span>
+                          <span className="text-[11px] font-bold uppercase tracking-widest">Recommended Advice</span>
+                        </div>
+                        <ul className="space-y-1.5">
+                          {msg.data.advice.map((item: string, i: number) => (
+                            <li key={i} className="flex gap-2 text-xs text-sahara-fg/80">
+                              <span className="text-sahara-primary/60">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {Array.isArray(msg.data.followUp) && msg.data.followUp.length > 0 && (
+                      <div className="rounded-2xl bg-white border border-sahara-border/40 p-4 space-y-2">
+                        <div className="flex items-center gap-2 text-sahara-muted">
+                          <span className="text-lg">❓</span>
+                          <span className="text-[11px] font-bold uppercase tracking-widest">Follow-up Questions</span>
+                        </div>
+                        <ul className="space-y-1.5">
+                          {msg.data.followUp.map((q: string, i: number) => (
+                            <li key={i} className="flex gap-2 text-xs text-sahara-fg/80">
+                              <span className="text-sahara-muted/40">?</span>
+                              <span>{q}</span>
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     )}

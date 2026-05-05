@@ -84,27 +84,63 @@ async function refreshDigitalTwin(patientId: string, principal: RepositoryPrinci
   return twin;
 }
 
-const TRIAGE_SYSTEM_PROMPT = `
-You are the MedBridge Online Doctor Assistant.
-Your goal is to provide professional, empathetic, and clear medical guidance.
+function enrichUserInput(input: string, history: any[]) {
+  const t = input.trim();
+  const lastAiMsg = history.filter(m => m.role === "ai" || m.role === "assistant").pop()?.text || "";
 
-Personality & Tone:
-- Professional Physician: Speak with the authority and empathy of a seasoned online doctor.
-- Human-like & Engaging: Avoid robotic phrases; sound like a real person who cares.
-- Clinical Clarity: Explain medical concepts in terms a patient can understand.
+  // Handle pain scale (9/10 etc)
+  if (/^\d+$/.test(t)) {
+    return `The user rates the severity as ${t}/10. Context: The previous question was "${lastAiMsg}"`;
+  }
 
-Safety & Scope:
-- Guided Support: Provide clear explanations of symptoms and potential next steps.
-- Non-Diagnostic: Do NOT issue formal medical diagnoses. Use phrases like "Your symptoms are consistent with..." or "This could suggest...".
-- Urgent Action: If symptoms indicate an emergency (chest pain, severe bleeding, etc.), prioritize immediate ER/911 instructions.
+  // Handle common short symptoms
+  if (t.toLowerCase() === "tired" || t.toLowerCase() === "fatigue") {
+    return `The user is reporting ${t}. Possible fatigue symptom. Context: ${lastAiMsg}`;
+  }
+  
+  if (t.toLowerCase() === "weird" || t.toLowerCase() === "bad") {
+    return `The user feels "${t}". They are struggling to describe it. Context: ${lastAiMsg}`;
+  }
 
-Respond ONLY with JSON in this format:
-{
-  "message": "Your professional response as an online doctor assistant.",
-  "riskLevel": "low" | "medium" | "high",
-  "followUpQuestions": ["question 1", "question 2"],
-  "recommendations": ["step 1", "step 2"]
+  return t;
 }
+
+const TRIAGE_SYSTEM_PROMPT = `
+You are MedBridge AI, an intelligent and empathetic medical assistant.
+Your behavior must feel like ChatGPT + a real doctor.
+
+CRITICAL RULES:
+1. ALWAYS understand short answers:
+- "9" = pain severity
+- "tired" = fatigue symptom
+- "weird" = unclear feeling -> ask clarification naturally
+
+2. NEVER repeat the same sentence twice.
+3. NEVER say "I didn’t fully understand" repeatedly.
+4. Always adapt based on conversation history.
+5. Respond like a human doctor: Acknowledge, Interpret, Guide, and Ask 1–2 smart follow-up questions.
+6. Keep answers natural, not robotic.
+7. If user gives symptoms -> analyze; severity -> react; emotion -> respond empathetically.
+
+Risk Levels:
+- low -> calm advice
+- medium -> caution
+- high -> urgent tone
+
+You are allowed to provide general medical guidance.
+Do NOT refuse basic symptom analysis. Do NOT over-restrict responses.
+Avoid legal disclaimers unless strictly necessary.
+
+Output STRICT JSON:
+{
+  "message": "Natural conversational doctor response",
+  "riskLevel": "low | medium | high",
+  "followUp": ["question1", "question2"],
+  "advice": ["action1", "action2"]
+}
+
+NEVER output generic filler responses. Every response must be unique to the input.
+If AI fails, return exactly: "MedBridge AI is not available right now. Please try again later."
 `;
 
 const AI_UNAVAILABLE_MESSAGE = {
@@ -159,6 +195,7 @@ export async function runSymptomTriage(input: {
   }
 
   const intent = getIntent(userMessage);
+  const enrichedMessage = enrichUserInput(userMessage, history);
 
   // STEP 2: HANDLE NON-SYMPTOM INPUTS LOCALLY
   if (intent === "greeting") {
@@ -193,9 +230,9 @@ export async function runSymptomTriage(input: {
 
   const fallbackResponse = {
     message: "MedBridge AI is not available right now. Please try again later.",
-    followUpQuestions: [],
     riskLevel: "unknown",
-    recommendations: [],
+    followUp: [],
+    advice: [],
     isError: true,
   };
 
@@ -216,9 +253,12 @@ export async function runSymptomTriage(input: {
       ? `\nRECENT HISTORY:\n${history.slice(-5).map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n")}`
       : "";
 
+    // Temperature guard for repetition
+    const temperature = (history.length > 0 && history[history.length - 1].text === userMessage) ? 0.9 : 0.7;
+
     const responseText = await safeGenerateAI(
-      userMessage, 
-      `${TRIAGE_SYSTEM_PROMPT}${historyPrompt}\n\nUSER INPUT: ${userMessage}\nRESPONSE JSON:`, 
+      enrichedMessage, 
+      `${TRIAGE_SYSTEM_PROMPT}${historyPrompt}\n\nUSER INPUT: ${enrichedMessage}\nRESPONSE JSON:`, 
       true
     );
     
@@ -259,15 +299,15 @@ export async function runSymptomTriage(input: {
 
     lastAiResponse = cleanResponse;
 
-    const riskLevel = parsed.riskLevel === "high" || parsed.riskLevel === "medium" ? parsed.riskLevel : "low";
-    const followUpQuestions = Array.isArray(parsed.followUpQuestions) ? parsed.followUpQuestions : [];
-    const recommendations = Array.isArray(parsed.recommendations) ? parsed.recommendations : [];
+    const riskLevel = ["low", "medium", "high"].includes(parsed.riskLevel) ? parsed.riskLevel : "low";
+    const followUp = Array.isArray(parsed.followUp) ? parsed.followUp : [];
+    const advice = Array.isArray(parsed.advice) ? parsed.advice : [];
 
     return {
       message: cleanResponse,
-      followUpQuestions,
+      followUp,
       riskLevel,
-      recommendations,
+      advice,
       isError: false,
     };
   } catch (error) {
