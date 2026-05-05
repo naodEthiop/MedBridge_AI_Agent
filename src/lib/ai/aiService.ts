@@ -85,32 +85,20 @@ async function refreshDigitalTwin(patientId: string, principal: RepositoryPrinci
 }
 
 const TRIAGE_SYSTEM_PROMPT = `
-You are MedBridge AI, a conversational medical assistant.
+You are MedBridge AI, a friendly medical assistant.
 
 RULES:
-- Respond differently based on context
-- DO NOT repeat the same sentence twice
-- DO NOT always ask for more details
-- Understand conversation state
-- Switch between greeting, identity, and symptom modes
+- Understand conversation context
+- Do NOT repeat the same sentence twice
+- Do NOT always ask for more details
+- Respond differently based on intent
+- Be conversational like ChatGPT
 
-BEHAVIOR:
-- Greeting → friendly welcome
-- Identity → explain who you are
-- Symptom → analyze and ask relevant follow-ups
-
-STYLE:
-- Natural ChatGPT-like conversation
-- Short, helpful responses
-- Always move conversation forward
-
-OUTPUT JSON:
-{
-  "message": "natural conversational response",
-  "followUpQuestions": [],
-  "riskLevel": "low | medium | high",
-  "recommendations": []
-}
+GOAL:
+- Acknowledge symptoms clearly
+- Provide helpful guidance (not diagnosis)
+- Ask specific follow-ups only if needed
+- If enough detail is present, explain possible causes and next steps
 `;
 
 const AI_UNAVAILABLE_MESSAGE = {
@@ -122,18 +110,27 @@ const AI_UNAVAILABLE_MESSAGE = {
 };
 
 let aiFailureCount = 0;
+let lastAiResponse = "";
 
-function detectIntent(input: string) {
-  const text = input.toLowerCase();
-  if (text.includes("who are you") || text.includes("what are you") || text.includes("your name") || text.includes("you are")) {
-    return "identity";
-  }
-  if (text === "hi" || text === "hello" || text === "hey") {
-    return "greeting";
-  }
-  if (text.match(/\b(pain|headache|fever|cough|sore|ache|hurt|blood|dizzy|nausea)\b/)) {
-    return "symptom";
-  }
+function getIntent(text: string) {
+  const t = text.toLowerCase().trim();
+
+  if (["hi", "hello", "hey"].includes(t)) return "greeting";
+
+  if (t.includes("who are you") || t.includes("what are you")) return "identity";
+
+  if (t.length < 3 || (/^[a-z]+$/i.test(t) && !["pain", "fever", "sick", "ache"].includes(t))) return "unknown";
+
+  if (
+    t.includes("headache") ||
+    t.includes("pain") ||
+    t.includes("fever") ||
+    t.includes("sick") ||
+    t.includes("hurt") ||
+    t.includes("cough") ||
+    t.includes("sore")
+  ) return "symptom";
+
   return "general";
 }
 
@@ -142,11 +139,22 @@ export async function runSymptomTriage(input: {
   bodyPart?: string | null;
 }) {
   const userMessage = input.message.trim();
-  const intent = detectIntent(userMessage);
+  const intent = getIntent(userMessage);
+
+  // STEP 2: HANDLE NON-SYMPTOM INPUTS LOCALLY
+  if (intent === "greeting") {
+    return {
+      message: "Hello 👋 I’m MedBridge AI. Tell me your symptoms or how you feel.",
+      followUpQuestions: ["Where is the discomfort?", "How long has it been happening?"],
+      riskLevel: "low",
+      recommendations: [],
+      isError: false,
+    };
+  }
 
   if (intent === "identity") {
     return {
-      message: "I am MedBridge AI, your medical assistant. I help you understand symptoms and guide you on possible next steps.",
+      message: "I am MedBridge AI, your health assistant. I help you understand symptoms and guide you on possible next steps.",
       followUpQuestions: ["Would you like to check some symptoms?"],
       riskLevel: "low",
       recommendations: [],
@@ -154,9 +162,9 @@ export async function runSymptomTriage(input: {
     };
   }
 
-  if (intent === "greeting") {
+  if (intent === "unknown") {
     return {
-      message: "Hello 👋 I’m MedBridge AI. Tell me how you’re feeling or what symptoms you have.",
+      message: "I didn’t fully understand that. Can you describe how you’re feeling physically?",
       followUpQuestions: [],
       riskLevel: "low",
       recommendations: [],
@@ -172,7 +180,17 @@ export async function runSymptomTriage(input: {
   };
 
   try {
-    const responseText = await safeGenerateAI(userMessage, TRIAGE_SYSTEM_PROMPT, true);
+    // STEP 3: SYMPTOM LOOP FIX
+    // If it's a very short symptom (e.g., "headache"), ask for more.
+    // If it's longer, let AI analyze it.
+    const isFirstShortSymptom = userMessage.length < 15 && intent === "symptom";
+
+    const responseText = await safeGenerateAI(
+      userMessage, 
+      `${TRIAGE_SYSTEM_PROMPT} ${isFirstShortSymptom ? "The user just started. Ask one or two focused follow-up questions." : "The user has provided details. Provide an analysis of possible causes and next steps."}`, 
+      true
+    );
+    
     console.log("OpenAI RAW:", responseText);
 
     if (!responseText) {
@@ -184,9 +202,8 @@ export async function runSymptomTriage(input: {
     let parsed: any = null;
     try {
       parsed = JSON.parse(responseText);
-      console.log("OpenAI PARSED:", parsed);
     } catch (parseError) {
-      console.error("OpenAI Parse Error:", parseError, "Raw text:", responseText);
+      console.error("OpenAI Parse Error:", parseError);
     }
 
     if (!parsed || !parsed.message) {
@@ -202,11 +219,16 @@ export async function runSymptomTriage(input: {
       .replace(/cannot provide medical advice/gi, "")
       .trim();
 
-    if (cleanResponse === "I understand. Let me help you with that.") {
-      cleanResponse = intent === "symptom" 
-        ? `I see you're mentioning ${userMessage}. Can you tell me more about the intensity?`
-        : "I'm listening. Please describe what you're feeling in more detail.";
+    // STEP 5: LOOP PROTECTION
+    if (cleanResponse === lastAiResponse || cleanResponse.toLowerCase().includes("provide a few more details")) {
+      if (intent === "symptom") {
+        cleanResponse = `I understand you're experiencing ${userMessage}. Based on common patterns, this could be related to several factors. To give you better guidance, does it feel sharp or dull?`;
+      } else {
+        cleanResponse = "I'm listening closely. Could you tell me more about the intensity or any other symptoms you've noticed?";
+      }
     }
+
+    lastAiResponse = cleanResponse;
 
     const riskLevel = parsed.riskLevel === "high" || parsed.riskLevel === "medium" ? parsed.riskLevel : "low";
     const followUpQuestions = Array.isArray(parsed.followUpQuestions) ? parsed.followUpQuestions : [];
