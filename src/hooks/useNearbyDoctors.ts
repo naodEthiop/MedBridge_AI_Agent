@@ -19,8 +19,9 @@ export function useNearbyDoctors(location: { lat: number; lng: number } | null) 
         address: d.specialization || d.address,
         lat: Number(d.lat),
         lon: Number(d.lng),
-        kind: "doctor",
-        distanceMeters: d.distance ? d.distance * 1000 : null
+        kind: "doctor" as const,
+        distanceMeters: d.distance ? d.distance * 1000 : null,
+        categories: [] as string[]
       }));
     },
   });

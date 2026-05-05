@@ -8,9 +8,9 @@ import type { GeoPlace } from "@/lib/geoapify/types";
 export function GoapifyMap({
   initialCenter,
 }: {
-  initialCenter?: { lat: number; lon: number };
+  initialCenter?: { lat: number; lng: number };
 }) {
-  const defaultCenter = useMemo(() => ({ lat: 8.9806, lon: 38.7578 }), []);
+  const defaultCenter = useMemo(() => ({ lat: 8.9806, lng: 38.7578 }), []);
   const [center, setCenter] = useState(initialCenter ?? defaultCenter);
   const [places, setPlaces] = useState<GeoPlace[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +19,7 @@ export function GoapifyMap({
 
   useEffect(() => {
     const controller = new AbortController();
-    const url = `/api/map/nearby?lat=${encodeURIComponent(center.lat)}&lng=${encodeURIComponent(center.lon)}`;
+    const url = `/api/map/nearby?lat=${encodeURIComponent(center.lat)}&lng=${encodeURIComponent(center.lng)}`;
 
     setLoading(true);
     setError(null);
@@ -36,11 +36,11 @@ export function GoapifyMap({
             id: String(item.id),
             name: String(item.name ?? "Unknown"),
             address: String(item.address ?? "Address unavailable"),
-            kind: item.kind === "pharmacy" ? "pharmacy" : "hospital",
+            kind: (item.kind === "pharmacy" ? "pharmacy" : "hospital") as "pharmacy" | "hospital",
             lat: Number(item.lat),
             lon: Number(item.lng),
             distanceMeters: typeof item.distanceMeters === "number" ? item.distanceMeters : null,
-            categories: [],
+            categories: [] as string[],
           })),
         );
       })
@@ -63,7 +63,7 @@ export function GoapifyMap({
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-sahara-muted">Goapify Nearby Search</p>
             <p className="mt-1 text-sm text-sahara-muted">
-              Showing nearby hospitals and pharmacies around {center.lat.toFixed(4)}, {center.lon.toFixed(4)}.
+              Showing nearby hospitals and pharmacies around {center.lat.toFixed(4)}, {center.lng.toFixed(4)}.
             </p>
           </div>
           <button

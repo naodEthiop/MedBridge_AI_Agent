@@ -24,8 +24,8 @@ function SkeletonCard() {
 }
 
 export function NearbyMedicalMap() {
-  const defaultLocation = useMemo(() => ({ lat: 8.9806, lon: 38.7578 }), []);
-  const [location, setLocation] = useState<{ lat: number; lon: number }>(defaultLocation);
+  const defaultLocation = useMemo(() => ({ lat: 8.9806, lng: 38.7578 }), []);
+  const [location, setLocation] = useState<{ lat: number; lng: number }>(defaultLocation);
   const [locationMode, setLocationMode] = useState<"geo" | "default" | "search" | "denied">("default");
 
   const [view, setView] = useState<"list" | "map">("map");
@@ -46,8 +46,8 @@ export function NearbyMedicalMap() {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        setLocation({ lat, lon });
+        const lng = pos.coords.longitude;
+        setLocation({ lat, lng });
         setLocationMode("geo");
       },
       (err) => {

@@ -17,7 +17,7 @@ L.Icon.Default.mergeOptions({
 });
 
 export function NearbyMedicalLeafletMap(props: {
-  center: { lat: number; lon: number };
+  center: { lat: number; lng: number };
   places: GeoPlace[];
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -25,7 +25,7 @@ export function NearbyMedicalLeafletMap(props: {
 }) {
   return (
     <MapContainer
-      center={[props.center.lat, props.center.lon]}
+      center={[props.center.lat, props.center.lng]}
       zoom={13}
       className="absolute inset-0 h-full w-full"
       scrollWheelZoom={false}
@@ -34,7 +34,7 @@ export function NearbyMedicalLeafletMap(props: {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
       />
-      <Marker position={[props.center.lat, props.center.lon]}>
+      <Marker position={[props.center.lat, props.center.lng]}>
         <Popup>Your location</Popup>
       </Marker>
       {props.places.map((p) => (

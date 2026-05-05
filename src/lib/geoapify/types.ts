@@ -2,7 +2,7 @@ export type GeoPlace = {
   id: string;
   name: string;
   address: string;
-  kind: "hospital" | "pharmacy";
+  kind: "hospital" | "pharmacy" | "doctor";
   lat: number;
   lon: number;
   distanceMeters: number | null;
