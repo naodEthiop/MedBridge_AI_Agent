@@ -54,7 +54,15 @@ export type AiServiceResponse =
   | HealthAgentOutput
   | RiskPrediction
   | DoctorCopilotReport
-  | { message: string; followUpQuestions: string[]; riskLevel: string; recommendations: string[] }
+  | { 
+      message: string; 
+      followUpQuestions: string[]; 
+      recommendations: string[]; 
+      followUp?: string[]; 
+      advice?: string[]; 
+      riskLevel: string; 
+      isError?: boolean;
+    }
   | { error: string };
 
 
@@ -148,6 +156,8 @@ const AI_UNAVAILABLE_MESSAGE = {
   followUpQuestions: [],
   riskLevel: "unknown",
   recommendations: [],
+  followUp: [],
+  advice: [],
   isError: true,
 };
 
@@ -200,10 +210,12 @@ export async function runSymptomTriage(input: {
   // STEP 2: HANDLE NON-SYMPTOM INPUTS LOCALLY
   if (intent === "greeting") {
     return {
-      message: "Hello 👋 I’m MedBridge AI. Tell me your symptoms or how you feel.",
+      message: "Hello 👋 I am the MedBridge Doctor AI. Tell me your symptoms or how you feel.",
       followUpQuestions: ["Where is the discomfort?", "How long has it been happening?"],
+      followUp: ["Where is the discomfort?", "How long has it been happening?"],
       riskLevel: "low",
       recommendations: [],
+      advice: [],
       isError: false,
     };
   }
@@ -212,8 +224,10 @@ export async function runSymptomTriage(input: {
     return {
       message: "I am the MedBridge Online Doctor Assistant. I’m here to provide professional, empathetic guidance to help you understand your symptoms and direct you to the appropriate care. How can I assist you today?",
       followUpQuestions: ["Would you like to start a clinical evaluation of your symptoms?", "Do you have a specific medical concern?"],
+      followUp: ["Would you like to start a clinical evaluation of your symptoms?", "Do you have a specific medical concern?"],
       riskLevel: "low",
       recommendations: [],
+      advice: [],
       isError: false,
     };
   }
@@ -222,8 +236,10 @@ export async function runSymptomTriage(input: {
     return {
       message: "I didn’t fully understand that. Can you describe how you’re feeling physically?",
       followUpQuestions: [],
+      followUp: [],
       riskLevel: "low",
       recommendations: [],
+      advice: [],
       isError: false,
     };
   }
@@ -231,6 +247,8 @@ export async function runSymptomTriage(input: {
   const fallbackResponse = {
     message: "MedBridge AI is not available right now. Please try again later.",
     riskLevel: "unknown",
+    followUpQuestions: [],
+    recommendations: [],
     followUp: [],
     advice: [],
     isError: true,
@@ -243,8 +261,10 @@ export async function runSymptomTriage(input: {
       return {
         message: "I've noted that. Could you tell me if anything else is bothering you, or how intense the pain is on a scale of 1-10?",
         followUpQuestions: [],
+        followUp: [],
         riskLevel: "low",
         recommendations: [],
+        advice: [],
         isError: false,
       };
     }
@@ -305,6 +325,8 @@ export async function runSymptomTriage(input: {
 
     return {
       message: cleanResponse,
+      followUpQuestions: followUp,
+      recommendations: advice,
       followUp,
       riskLevel,
       advice,
