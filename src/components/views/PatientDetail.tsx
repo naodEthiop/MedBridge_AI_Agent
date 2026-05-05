@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { useState } from "react";
+import { safeFetch } from "@/lib/safeFetch";
 
 import { Badge } from "@/components/ui/Badge";
 import { useDoctors } from "@/hooks/useDoctors";
@@ -59,12 +60,13 @@ export function PatientDetail(props: { id: string }) {
     setChatInput("");
     setChatLoading(true);
 
-    const res = await fetch("/api/agent", {
+    const result = await safeFetch<any>("/api/agent", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ symptom: trimmed, followUpAnswer: "Doctor requested support from patient detail." }),
     });
-    const raw = res.ok ? ((await res.json()) as Record<string, unknown>) : null;
+
+    const raw = result.success ? result.data : null;
     const inner = raw?.result ?? raw?.payload ?? raw;
     const d =
       inner && typeof inner === "object" && !Array.isArray(inner) ? (inner as Record<string, unknown>) : raw;
@@ -79,7 +81,7 @@ export function PatientDetail(props: { id: string }) {
       ...current,
       {
         role: "assistant",
-        content: text || (res.ok ? "No summary returned. Try rephrasing your question." : "I could not reach the assistant endpoint. Please try again."),
+        content: text || (result.success ? "No summary returned. Try rephrasing your question." : "I could not reach the assistant endpoint. Please try again."),
       },
     ]);
 

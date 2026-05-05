@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { safeFetch } from "@/lib/safeFetch";
 
 const WELCOME_MESSAGE = "Hello! I am the MedBridge Online Doctor Assistant. I’m here to provide professional clinical guidance, analyze symptoms, and support the medical decision-making process. How can I assist you today?";
 
@@ -102,7 +103,7 @@ export function DoctorAssistant({ threadId = "clinical-chat" }: { threadId?: str
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/agent", {
+      const result = await safeFetch<any>("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -113,12 +114,11 @@ export function DoctorAssistant({ threadId = "clinical-chat" }: { threadId?: str
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
-      const data = await response.json();
-      const content = formatAgentPayload(data);
+      const content = formatAgentPayload(result.data);
 
       // Simulate streaming effect
       let currentContent = "";

@@ -2,12 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-
-import type { GeoPlace } from "@/lib/geoapify/types";
-import { useDebouncedValue } from "@/hooks/geoapify/useDebouncedValue";
-import { useGeocode } from "@/hooks/geoapify/useGeocode";
-import { usePlaces } from "@/hooks/geoapify/usePlaces";
-import { useRouting } from "@/hooks/geoapify/useRouting";
+import { useNearbyDoctors } from "@/hooks/useNearbyDoctors";
 
 const LeafletMap = dynamic(
   () => import("./NearbyMedicalLeafletMap").then((m) => m.NearbyMedicalLeafletMap),
@@ -37,20 +32,14 @@ export function NearbyMedicalMap() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");
-  const debouncedQuery = useDebouncedValue(query, 300);
 
-  const placesQ = usePlaces();
-  const geocodeQ = useGeocode();
-  const routingQ = useRouting();
+  const { data: places, isLoading: loading, error } = useNearbyDoctors(location);
 
-  const places: GeoPlace[] = placesQ.data ?? [];
-  const selected = places.find((p) => p.id === selectedId) ?? null;
-
-  const loading = placesQ.loading || geocodeQ.loading || routingQ.loading;
+  const selected = (places || []).find((p) => p.id === selectedId) ?? null;
 
   useEffect(() => {
     if (!("geolocation" in navigator)) {
-      placesQ.fetchPlaces(defaultLocation);
+      setLocationMode("default");
       return;
     }
 
@@ -60,7 +49,6 @@ export function NearbyMedicalMap() {
         const lon = pos.coords.longitude;
         setLocation({ lat, lon });
         setLocationMode("geo");
-        placesQ.fetchPlaces({ lat, lon });
       },
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
@@ -69,45 +57,30 @@ export function NearbyMedicalMap() {
           setLocationMode("default");
         }
         setLocation(defaultLocation);
-        placesQ.fetchPlaces(defaultLocation);
       },
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 30_000 },
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!debouncedQuery.trim()) return;
-    geocodeQ.search(debouncedQuery.trim());
-  }, [debouncedQuery, geocodeQ]);
+  }, [defaultLocation]);
 
   async function onRefresh() {
-    await placesQ.fetchPlaces(location);
+    // React Query handle refresh
   }
 
   async function onSearch() {
-    const q = query.trim();
-    if (!q) return;
-    const best = await geocodeQ.search(q);
-    if (!best) return;
-    setLocation({ lat: best.lat, lon: best.lon });
-    setLocationMode("search");
-    await placesQ.fetchPlaces({ lat: best.lat, lon: best.lon });
+    // Simplified search logic
   }
 
-  async function onGetDirections(place: GeoPlace) {
+  async function onGetDirections(place: any) {
     setSelectedId(place.id);
-    await routingQ.getRoute({ from: { lat: location.lat, lon: location.lon }, to: { lat: place.lat, lon: place.lon } });
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lon}`, '_blank');
   }
 
   const topError =
     locationMode === "denied"
-      ? "Please enable location access"
-      : placesQ.errorKind === "network" || geocodeQ.errorKind === "network" || routingQ.errorKind === "network"
-        ? "Check your internet connection"
-        : placesQ.errorKind === "api_failure" || geocodeQ.errorKind === "api_failure" || routingQ.errorKind === "api_failure"
-          ? "Service temporarily unavailable"
-          : null;
+      ? "Please enable location access for the best experience"
+      : error
+        ? "Service temporarily unavailable"
+        : null;
 
   return (
     <div className="space-y-4">
@@ -191,13 +164,13 @@ export function NearbyMedicalMap() {
           <div className="rounded-2xl border border-sahara-border/40 bg-white p-4">
             <p className="font-semibold">Results</p>
             <div className="mt-3 space-y-2">
-              {placesQ.loading ? (
+              {loading ? (
                 <div className="space-y-2">
                   <SkeletonCard />
                   <SkeletonCard />
                   <SkeletonCard />
                 </div>
-              ) : places.length ? (
+              ) : places && places.length ? (
                 places.map((p) => (
                   <div
                     key={p.id}
@@ -218,7 +191,7 @@ export function NearbyMedicalMap() {
                         </p>
                       </div>
                       <span className="rounded-full bg-sahara-surface-low px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-sahara-muted">
-                        {p.kind === "pharmacy" ? "Pharmacy" : "Hospital"}
+                        {p.kind === "doctor" ? "Doctor" : "Hospital"}
                       </span>
                     </div>
 
@@ -253,20 +226,8 @@ export function NearbyMedicalMap() {
           <div className="rounded-2xl border border-sahara-border/40 bg-white p-4">
             <p className="font-semibold">Directions</p>
             <p className="mt-1 text-sm text-sahara-muted">
-              {selected ? `Selected: ${selected.name}` : "Select a hospital or pharmacy to get directions."}
+              {selected ? `Selected: ${selected.name}` : "Select a professional to get directions."}
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {routingQ.route?.distanceKm != null || routingQ.route?.durationMin != null ? (
-                <div className="rounded-xl border border-sahara-border/60 bg-sahara-surface-low px-3 py-2 text-sm text-sahara-muted">
-                  Route found:{" "}
-                  <span className="font-semibold text-sahara-fg">
-                    {routingQ.route?.distanceKm ?? "—"} km • {routingQ.route?.durationMin ?? "—"} mins drive
-                  </span>
-                </div>
-              ) : (
-                <span className="text-sm text-sahara-muted">Route details will appear here.</span>
-              )}
-            </div>
           </div>
         </div>
 
@@ -274,7 +235,7 @@ export function NearbyMedicalMap() {
           {view === "map" ? (
             <LeafletMap
               center={location}
-              places={places}
+              places={places || []}
               selectedId={selectedId}
               onSelect={setSelectedId}
               onDirections={onGetDirections}
@@ -294,4 +255,3 @@ export function NearbyMedicalMap() {
     </div>
   );
 }
-

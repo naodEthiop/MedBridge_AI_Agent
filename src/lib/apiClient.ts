@@ -9,20 +9,14 @@ function url(path: string) {
   return `${base}${p}`;
 }
 
+import { safeFetch } from "./safeFetch";
+
 async function getJson<T>(path: string): Promise<ApiResult<T>> {
-  try {
-    const res = await fetch(url(path), {
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      return { ok: false, error: await res.text(), status: res.status };
-    }
-    return { ok: true, data: (await res.json()) as T };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Network error";
-    return { ok: false, error: message, status: 500 };
+  const result = await safeFetch<T>(url(path));
+  if (!result.success) {
+    return { ok: false, error: result.error || "Unknown error", status: 500 };
   }
+  return { ok: true, data: result.data as T };
 }
 
 export async function health() {
@@ -46,7 +40,7 @@ export async function listAppointments() {
 }
 
 export async function triageSymptom(payload: { message: string; userLat?: number; userLng?: number; patientName?: string }) {
-  const res = await fetch(url("/api/mcp"), {
+  const result = await safeFetch<any>(url("/api/mcp"), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({
@@ -54,35 +48,39 @@ export async function triageSymptom(payload: { message: string; userLat?: number
       input: { message: payload.message, bodyPart: null },
     }),
   });
-  if (!res.ok) return { ok: false as const, error: await res.text(), status: res.status };
-  return { ok: true as const, data: (await res.json()) as unknown };
+  if (!result.success) return { ok: false as const, error: result.error || "Triage failed", status: 500 };
+  return { ok: true as const, data: result.data };
 }
 
 export async function scanPrescription(file: File) {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(url("/api/prescription"), { method: "POST", body: form });
-  if (!res.ok) return { ok: false as const, error: await res.text(), status: res.status };
-  return { ok: true as const, data: await res.json() };
+  const result = await safeFetch<any>(url("/api/prescription"), { method: "POST", body: form });
+  if (!result.success) return { ok: false as const, error: result.error || "Scan failed", status: 500 };
+  return { ok: true as const, data: result.data };
 }
 
 export async function getNearbyHospitals(payload: { latitude?: number; longitude?: number }) {
   const lat = payload.latitude ?? 0;
   const lng = payload.longitude ?? 0;
   
-  // Use the dedicated Maps API instead of MCP
-  const res = await fetch(url(`/api/maps/nearby?lat=${lat}&lng=${lng}&type=hospital`));
+  const result = await safeFetch<{ success: boolean; data: any[] }>(url(`/api/nearby?lat=${lat}&lng=${lng}`));
   
-  if (!res.ok) return { ok: false as const, error: await res.text(), status: res.status };
-  const data = await res.json();
+  if (!result.success) return { ok: false as const, error: result.error || "Failed to fetch nearby doctors", status: 500 };
   
-  // Normalize response to match the legacy MCP shape for frontend compatibility
   return { 
     ok: true as const, 
     data: {
       tool: "get_nearby_hospitals",
       result: {
-        places: data.places || [],
+        places: (result.data?.data || []).map(d => ({
+          id: d.id,
+          name: d.full_name || d.name,
+          address: d.specialization || d.address,
+          lat: d.lat,
+          lon: d.lng,
+          distanceMeters: d.distance ? d.distance * 1000 : null
+        })),
         location: { lat, lng }
       }
     }
@@ -95,13 +93,13 @@ export async function analyzeImage(payload: {
   base64Data: string;
   hintText?: string;
 }) {
-  const res = await fetch(url("/api/mcp"), {
+  const result = await safeFetch<any>(url("/api/mcp"), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ tool: "analyze_image", input: payload }),
   });
-  if (!res.ok) return { ok: false as const, error: await res.text(), status: res.status };
-  return { ok: true as const, data: await res.json() };
+  if (!result.success) return { ok: false as const, error: result.error || "Analysis failed", status: 500 };
+  return { ok: true as const, data: result.data };
 }
 
 export async function saveDoctorNotes(payload: {
@@ -113,43 +111,43 @@ export async function saveDoctorNotes(payload: {
   assessment: string;
   status: "draft" | "signed";
 }) {
-  const res = await fetch(url("/api/mcp"), {
+  const result = await safeFetch<any>(url("/api/mcp"), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ tool: "save_doctor_notes", input: payload }),
   });
-  if (!res.ok) return { ok: false as const, error: await res.text(), status: res.status };
-  return { ok: true as const, data: await res.json() };
+  if (!result.success) return { ok: false as const, error: result.error || "Save failed", status: 500 };
+  return { ok: true as const, data: result.data };
 }
 
 export async function findPharmacies(payload: { medicine: string; latitude?: number; longitude?: number }) {
-  const res = await fetch(url("/api/pharmacies"), {
+  const result = await safeFetch<any>(url("/api/pharmacies"), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) return { ok: false as const, error: await res.text(), status: res.status };
-  return { ok: true as const, data: await res.json() };
+  if (!result.success) return { ok: false as const, error: result.error || "Pharmacies lookup failed", status: 500 };
+  return { ok: true as const, data: result.data };
 }
 
 export async function verifyProvider(payload: { providerName: string; licenseNumber?: string; clinic?: string }) {
-  const res = await fetch(url("/api/provider/verify"), {
+  const result = await safeFetch<any>(url("/api/provider/verify"), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) return { ok: false as const, error: await res.text(), status: res.status };
-  return { ok: true as const, data: await res.json() };
+  if (!result.success) return { ok: false as const, error: result.error || "Verification failed", status: 500 };
+  return { ok: true as const, data: result.data };
 }
 
 export async function triggerUiAction(action: string, payload?: Record<string, unknown>) {
-  const res = await fetch(url("/api/actions"), {
+  const result = await safeFetch<any>(url("/api/actions"), {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     credentials: "same-origin",
     body: JSON.stringify({ action, payload: payload ?? {} }),
   });
-  if (!res.ok) return { ok: false as const, error: await res.text(), status: res.status };
-  return { ok: true as const, data: (await res.json()) as { message?: string; action?: string } };
+  if (!result.success) return { ok: false as const, error: result.error || "Action failed", status: 500 };
+  return { ok: true as const, data: result.data as { message?: string; action?: string } };
 }
 

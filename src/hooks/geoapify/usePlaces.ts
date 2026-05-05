@@ -29,18 +29,28 @@ export function usePlaces() {
     setErrorMessage(null);
 
     try {
-      const res = await fetch(`/api/places?lat=${encodeURIComponent(args.lat)}&lon=${encodeURIComponent(args.lon)}`, {
+      const res = await fetch(`/api/nearby?lat=${encodeURIComponent(args.lat)}&lng=${encodeURIComponent(args.lon)}`, {
         cache: "no-store",
         signal: controller.signal,
       });
-      const json = (await res.json()) as PlacesApiResponse;
+      const json = await res.json();
       if (!res.ok || !json.success) {
         setErrorKind("api_failure");
-        setErrorMessage(!json.success ? json.error.message : "Service temporarily unavailable");
+        setErrorMessage(json.error || "Service temporarily unavailable");
         setData([]);
         return;
       }
-      setData(json.data);
+      // Map backend fields to frontend GeoPlace type
+      const mapped = (json.data || []).map((d: any) => ({
+        id: d.id,
+        name: d.full_name || d.name,
+        address: d.specialization || d.address,
+        lat: Number(d.lat),
+        lon: Number(d.lng),
+        kind: "hospital",
+        distanceMeters: d.distance ? d.distance * 1000 : null
+      }));
+      setData(mapped);
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return;
       setErrorKind("network");

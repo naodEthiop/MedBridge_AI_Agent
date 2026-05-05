@@ -30,7 +30,10 @@ export function NearbyMedicalLeafletMap(props: {
       className="absolute inset-0 h-full w-full"
       scrollWheelZoom={false}
     >
-      <TileLayer url="/api/tiles/{z}/{x}/{y}" />
+      <TileLayer 
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
+      />
       <Marker position={[props.center.lat, props.center.lon]}>
         <Popup>Your location</Popup>
       </Marker>
