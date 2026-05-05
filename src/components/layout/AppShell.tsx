@@ -23,6 +23,7 @@ import {
 
 import { cn } from "@/lib/cn";
 import { useSessionRole } from "@/hooks/useSessionRole";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 
@@ -57,6 +58,7 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
   const router = useRouter();
   const session = useSessionRole();
   const [search, setSearch] = useState("");
+  const { user: currentUser } = useCurrentUser();
   const [notice, setNotice] = useState<string | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -122,7 +124,7 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
     router.push(`/patient/symptom-checker?q=${encodeURIComponent(q)}`);
   };
 
-  const displayName = session.email?.split("@")[0] ?? (session.role === "doctor" ? "Clinician" : "Patient");
+  const displayName = currentUser?.fullName || "User";
 
   return (
     <div className="flex min-h-[calc(100vh-0px)] w-full flex-col lg:flex-row">
