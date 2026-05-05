@@ -62,6 +62,12 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!session.loading && !session.role && !pathname.includes("/login") && !pathname.includes("/register")) {
+      router.push("/login");
+    }
+  }, [session.loading, session.role, pathname, router]);
+
+  useEffect(() => {
     if (!notifOpen) return;
     function onPointerDown(e: MouseEvent) {
       const el = notifRef.current;
@@ -120,7 +126,7 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
 
   return (
     <div className="flex min-h-[calc(100vh-0px)] w-full flex-col lg:flex-row">
-      {!isOnboarding && (
+      {!isOnboarding && session.role && (
       <aside className="hidden h-screen w-[288px] flex-col border-r border-sahara-border/60 bg-sahara-bg py-8 lg:sticky lg:top-0 lg:flex">
         {session.loading ? (
           <div className="mb-10 px-8">

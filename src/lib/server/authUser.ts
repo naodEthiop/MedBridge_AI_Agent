@@ -56,3 +56,4 @@ export async function getAuthUserFromRequest(req: Request): Promise<AuthUser | n
     tenantId: String(data.user.user_metadata?.tenantId ?? "default"),
   };
 }
+export const getUserFromRequest = getAuthUserFromRequest;

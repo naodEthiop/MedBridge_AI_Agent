@@ -125,12 +125,12 @@ export function ScannerClient() {
               ) : null}
 
               {Array.isArray(analysis.warnings) && analysis.warnings.length ? (
-                <div className="rounded-lg border border-amber-200/50 bg-amber-50/60 p-4">
-                  <h4 className="text-sm font-semibold text-amber-900">Warnings</h4>
+                <div className="rounded-lg border border-red-200 bg-red-50/60 p-4">
+                  <h4 className="text-sm font-semibold text-red-900">Safety Warnings</h4>
                   <ul className="mt-2 space-y-1">
                     {(analysis.warnings as string[]).map((warning, i) => (
-                      <li key={i} className="flex gap-2 text-sm text-amber-800">
-                        <span className="text-amber-600">⚠</span> {warning}
+                      <li key={i} className="flex gap-2 text-sm text-red-800">
+                        <span className="text-red-600">⚠</span> {warning}
                       </li>
                     ))}
                   </ul>
@@ -139,7 +139,14 @@ export function ScannerClient() {
 
               <button
                 type="button"
-                className="w-full rounded-lg bg-sahara-primary px-4 py-3 font-semibold text-white transition-opacity hover:opacity-90"
+                onClick={() => {
+                  const drug = String(analysis.medicine ?? "Medication");
+                  const reminders = JSON.parse(localStorage.getItem("med_reminders") || "[]");
+                  reminders.push({ drug, time: new Date().toISOString(), active: true });
+                  localStorage.setItem("med_reminders", JSON.stringify(reminders));
+                  alert(`Reminder set for ${drug}. We'll notify you when it's time for your dose.`);
+                }}
+                className="w-full rounded-xl bg-sahara-primary px-4 py-3 font-semibold text-white shadow-lg transition-all hover:scale-[1.02] active:scale-95"
               >
                 Set Reminder
               </button>

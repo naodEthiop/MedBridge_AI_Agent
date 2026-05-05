@@ -85,27 +85,33 @@ async function refreshDigitalTwin(patientId: string, principal: RepositoryPrinci
 }
 
 const TRIAGE_SYSTEM_PROMPT = `
-You are MedBridge AI, a friendly medical assistant.
+You are the MedBridge Online Doctor Assistant.
+Your goal is to provide professional, empathetic, and clear medical guidance.
 
-RULES:
-- Understand conversation context
-- Do NOT repeat the same sentence twice
-- Do NOT always ask for more details
-- Respond differently based on intent
-- Be conversational like ChatGPT
+Personality & Tone:
+- Professional Physician: Speak with the authority and empathy of a seasoned online doctor.
+- Human-like & Engaging: Avoid robotic phrases; sound like a real person who cares.
+- Clinical Clarity: Explain medical concepts in terms a patient can understand.
 
-GOAL:
-- Acknowledge symptoms clearly
-- Provide helpful guidance (not diagnosis)
-- Ask specific follow-ups only if needed
-- If enough detail is present, explain possible causes and next steps
+Safety & Scope:
+- Guided Support: Provide clear explanations of symptoms and potential next steps.
+- Non-Diagnostic: Do NOT issue formal medical diagnoses. Use phrases like "Your symptoms are consistent with..." or "This could suggest...".
+- Urgent Action: If symptoms indicate an emergency (chest pain, severe bleeding, etc.), prioritize immediate ER/911 instructions.
+
+Respond ONLY with JSON in this format:
+{
+  "message": "Your professional response as an online doctor assistant.",
+  "riskLevel": "low" | "medium" | "high",
+  "followUpQuestions": ["question 1", "question 2"],
+  "recommendations": ["step 1", "step 2"]
+}
 `;
 
 const AI_UNAVAILABLE_MESSAGE = {
-  message: "⚠️ MedBridge AI is currently unavailable. Please try again later.",
+  message: "MedBridge AI is not available right now. Please try again later.",
   followUpQuestions: [],
   riskLevel: "unknown",
-  recommendations: ["Try again in a few minutes"],
+  recommendations: [],
   isError: true,
 };
 
@@ -115,11 +121,13 @@ let lastAiResponse = "";
 function getIntent(text: string) {
   const t = text.toLowerCase().trim();
 
-  if (["hi", "hello", "hey"].includes(t)) return "greeting";
+  if (["hi", "hello", "hey", "greeting"].some(w => t.includes(w)) && t.length < 10) return "greeting";
 
-  if (t.includes("who are you") || t.includes("what are you")) return "identity";
+  if (t.includes("who are you") || t.includes("what are you") || t.includes("your purpose")) {
+    return "identity";
+  }
 
-  if (t.length < 3 || (/^[a-z]+$/i.test(t) && !["pain", "fever", "sick", "ache"].includes(t))) return "unknown";
+  if (t.length < 3 || (/^[a-z]+$/i.test(t) && !["pain", "fever", "sick", "ache", "hurt"].includes(t))) return "unknown";
 
   if (
     t.includes("headache") ||
@@ -128,7 +136,10 @@ function getIntent(text: string) {
     t.includes("sick") ||
     t.includes("hurt") ||
     t.includes("cough") ||
-    t.includes("sore")
+    t.includes("sore") ||
+    t.includes("vomit") ||
+    t.includes("nausea") ||
+    t.includes("dizzy")
   ) return "symptom";
 
   return "general";
@@ -137,8 +148,16 @@ function getIntent(text: string) {
 export async function runSymptomTriage(input: {
   message: string;
   bodyPart?: string | null;
+  history?: { role: "user" | "ai"; text: string }[];
 }) {
   const userMessage = input.message.trim();
+  const history = input.history ?? [];
+
+  // Emergency Stabilization: Runtime check for API Key
+  if (!process.env.OPENAI_API_KEY) {
+    return AI_UNAVAILABLE_MESSAGE;
+  }
+
   const intent = getIntent(userMessage);
 
   // STEP 2: HANDLE NON-SYMPTOM INPUTS LOCALLY
@@ -154,8 +173,8 @@ export async function runSymptomTriage(input: {
 
   if (intent === "identity") {
     return {
-      message: "I am MedBridge AI, your health assistant. I help you understand symptoms and guide you on possible next steps.",
-      followUpQuestions: ["Would you like to check some symptoms?"],
+      message: "I am the MedBridge Online Doctor Assistant. I’m here to provide professional, empathetic guidance to help you understand your symptoms and direct you to the appropriate care. How can I assist you today?",
+      followUpQuestions: ["Would you like to start a clinical evaluation of your symptoms?", "Do you have a specific medical concern?"],
       riskLevel: "low",
       recommendations: [],
       isError: false,
@@ -173,26 +192,36 @@ export async function runSymptomTriage(input: {
   }
 
   const fallbackResponse = {
-    message: "I hear you. Can you describe your symptoms more clearly?",
-    followUpQuestions: ["When did it start?", "Any pain level?"],
-    riskLevel: "low",
-    recommendations: ["Stay hydrated", "Monitor symptoms"],
+    message: "MedBridge AI is not available right now. Please try again later.",
+    followUpQuestions: [],
+    riskLevel: "unknown",
+    recommendations: [],
+    isError: true,
   };
 
   try {
-    // STEP 3: SYMPTOM LOOP FIX
-    // If it's a very short symptom (e.g., "headache"), ask for more.
-    // If it's longer, let AI analyze it.
-    const isFirstShortSymptom = userMessage.length < 15 && intent === "symptom";
+    // Prevent infinite loops: if last user message was identical to current one
+    const lastUserMsg = history.reverse().find(m => m.role === "user")?.text;
+    if (lastUserMsg === userMessage) {
+      return {
+        message: "I've noted that. Could you tell me if anything else is bothering you, or how intense the pain is on a scale of 1-10?",
+        followUpQuestions: [],
+        riskLevel: "low",
+        recommendations: [],
+        isError: false,
+      };
+    }
+
+    const historyPrompt = history.length > 0 
+      ? `\nRECENT HISTORY:\n${history.slice(-5).map(m => `${m.role.toUpperCase()}: ${m.text}`).join("\n")}`
+      : "";
 
     const responseText = await safeGenerateAI(
       userMessage, 
-      `${TRIAGE_SYSTEM_PROMPT} ${isFirstShortSymptom ? "The user just started. Ask one or two focused follow-up questions." : "The user has provided details. Provide an analysis of possible causes and next steps."}`, 
+      `${TRIAGE_SYSTEM_PROMPT}${historyPrompt}\n\nUSER INPUT: ${userMessage}\nRESPONSE JSON:`, 
       true
     );
     
-    console.log("OpenAI RAW:", responseText);
-
     if (!responseText) {
       aiFailureCount++;
       if (aiFailureCount > 2) return AI_UNAVAILABLE_MESSAGE;
@@ -219,12 +248,12 @@ export async function runSymptomTriage(input: {
       .replace(/cannot provide medical advice/gi, "")
       .trim();
 
-    // STEP 5: LOOP PROTECTION
+    // LOOP PROTECTION: Avoid repeating the generic "provide details" message
     if (cleanResponse === lastAiResponse || cleanResponse.toLowerCase().includes("provide a few more details")) {
       if (intent === "symptom") {
-        cleanResponse = `I understand you're experiencing ${userMessage}. Based on common patterns, this could be related to several factors. To give you better guidance, does it feel sharp or dull?`;
+        cleanResponse = `I see you're mentioning ${userMessage}. To help me understand better, how long has this been bothering you and does it interfere with your daily activities?`;
       } else {
-        cleanResponse = "I'm listening closely. Could you tell me more about the intensity or any other symptoms you've noticed?";
+        cleanResponse = "I'm here to help. Could you give me a bit more context about your situation?";
       }
     }
 
@@ -242,12 +271,8 @@ export async function runSymptomTriage(input: {
       isError: false,
     };
   } catch (error) {
-    if (error instanceof Error && error.message === "RATE_LIMIT_HIT") {
-       return { ...fallbackResponse, message: "Please wait a moment before sending another message." };
-    }
     console.error("Symptom triage error:", error);
     aiFailureCount++;
-    if (aiFailureCount > 2) return AI_UNAVAILABLE_MESSAGE;
     return fallbackResponse;
   }
 }
@@ -303,7 +328,7 @@ export async function runRiskPrediction(input: {
 
     const prediction = await withFailureRecovery(
       () => trackAiRequest({ patientId: input.patientId, endpoint: "runRiskPrediction", model: "openai", run: async () => {
-          const raw = await safeGenerateAI(prompt, "You are a health risk prediction AI.", true);
+          const raw = await safeGenerateAI(prompt, "You are MedBridge AI, a friendly and intelligent health risk prediction AI.", true);
           return JSON.parse(raw);
       }}),
       { patientId: input.patientId },

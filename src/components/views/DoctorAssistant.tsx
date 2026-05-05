@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const WELCOME_MESSAGE = "Hello! I'm your AI clinical assistant. I can help analyze symptoms, provide medical guidance, and support clinical decision-making. How can I assist you today?";
+const WELCOME_MESSAGE = "Hello! I am the MedBridge Online Doctor Assistant. I’m here to provide professional clinical guidance, analyze symptoms, and support the medical decision-making process. How can I assist you today?";
 
 function formatAgentPayload(data: Record<string, unknown>): string {
   const d = data.result ?? data.payload ?? data.data;
@@ -166,11 +166,11 @@ export function DoctorAssistant({ threadId = "clinical-chat" }: { threadId?: str
       <div className="flex items-center justify-between p-4 bg-white/10 backdrop-blur-md border-b border-white/20">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-sm font-bold">AI</span>
+            <span className="text-white text-sm font-bold">DR</span>
           </div>
           <div>
-            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Clinical Assistant</h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400">AI-powered medical guidance</p>
+            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Online Doctor Assistant</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-400">Professional clinical guidance</p>
           </div>
         </div>
         <div className="flex items-center space-x-2">

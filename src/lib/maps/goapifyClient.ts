@@ -6,7 +6,7 @@ export type GoapifyNearbyPlace = {
   address: string;
   lat: number;
   lng: number;
-  kind: "hospital" | "pharmacy";
+  kind: "hospital" | "pharmacy" | "clinic";
   distanceMeters: number | null;
 };
 
@@ -79,7 +79,7 @@ export async function fetchNearbyPlacesGoapify(args: {
     return { ok: true, hospitals };
   }
 
-  const url = `https://api.geoapify.com/v2/places?categories=healthcare.hospital,healthcare.pharmacy&filter=circle:${encodeURIComponent(
+  const url = `https://api.geoapify.com/v2/places?categories=healthcare.hospital,healthcare.pharmacy,healthcare.clinic&filter=circle:${encodeURIComponent(
     String(args.lng),
   )},${encodeURIComponent(String(args.lat))},${radius}&limit=${limit}&apiKey=${encodeURIComponent(apiKey)}`;
 
@@ -109,7 +109,9 @@ export async function fetchNearbyPlacesGoapify(args: {
         const outLat = typeof p.lat === "number" ? p.lat : args.lat;
         const outLng = typeof p.lon === "number" ? p.lon : args.lng;
         const categories = Array.isArray(p.categories) ? (p.categories as string[]) : [];
-        const kind = categories.some((c) => c.includes("pharmacy")) ? "pharmacy" : "hospital";
+        const isPharmacy = categories.some((c) => c.includes("pharmacy"));
+        const isClinic = categories.some((c) => c.includes("clinic"));
+        const kind = isPharmacy ? "pharmacy" : isClinic ? "clinic" : "hospital";
         const distanceMeters = calculateDistance(args.lat, args.lng, outLat, outLng);
         return {
           id: String(p.place_id ?? `${outLat},${outLng}-${idx}`),

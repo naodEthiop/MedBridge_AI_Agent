@@ -36,8 +36,17 @@ export async function GET(request: Request) {
   });
 
   if (!result.ok) {
+    console.error("Map API Error:", result.error);
     return NextResponse.json(jsonError(result.error), { status: 502 });
   }
 
-  return NextResponse.json({ ok: true, data: { hospitals: result.hospitals } });
+  // Group or return all
+  return NextResponse.json({ 
+    ok: true, 
+    data: { 
+      places: result.hospitals, // This actually contains both hospitals and pharmacies from goapifyClient
+      hospitals: result.hospitals.filter(p => p.kind === 'hospital'),
+      pharmacies: result.hospitals.filter(p => p.kind === 'pharmacy')
+    } 
+  });
 }

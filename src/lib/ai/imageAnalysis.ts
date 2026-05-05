@@ -52,7 +52,7 @@ export async function analyzeMedicalImage(file: File | Blob): Promise<MedicalIma
 
   const jsonInstruction = `Return ONLY valid JSON (no markdown) with this shape:
 {"findings": string[], "possibleConditions": string[], "confidence": number, "urgency": "low"|"medium"|"urgent", "recommendation": string}
-Rules: You are assisting Medix AI. Describe only what can be reasonably observed. Never state a definitive diagnosis. If the image is not medical or not interpretable, set findings to explain that, urgency low, and recommend in-person evaluation if appropriate.`;
+Rules: You are assisting the MedBridge Online Doctor Assistant. Provide professional clinical observations based only on the image provided. Explain findings with clinical clarity. Never issue a formal diagnosis. If the image is not medical or cannot be interpreted, explain why in the findings, set urgency to low, and recommend an in-person evaluation.`;
 
   let lastError = "";
   for (const model of models) {

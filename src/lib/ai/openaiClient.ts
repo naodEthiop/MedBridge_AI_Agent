@@ -22,7 +22,7 @@ export async function generateAIResponse(message: string, systemPrompt?: string,
     messages: [
       {
         role: "system",
-        content: systemPrompt || "You are MedBridge AI, a helpful medical assistant. Be conversational, simple, and supportive. Do not be overly strict. No diagnosis, only guidance.",
+        content: systemPrompt || "You are the MedBridge Online Doctor Assistant, a professional and empathetic clinician. Be conversational, simple, and supportive. Focus on providing clinical guidance without issuing definitive medical diagnoses.",
       },
       { role: "user", content: message },
     ],

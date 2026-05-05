@@ -12,7 +12,11 @@ const BODY_PART_HINTS: Record<string, string[]> = {
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as { message?: string; bodyPart?: string | null };
+    const body = (await req.json()) as { 
+      message?: string; 
+      bodyPart?: string | null;
+      history?: { role: "user" | "ai"; text: string }[];
+    };
     if (!body.message || !body.message.trim()) {
       return NextResponse.json({ error: "Missing message" }, { status: 400 });
     }
@@ -20,6 +24,7 @@ export async function POST(req: Request) {
     const triage = await runSymptomTriage({
       message: body.message,
       bodyPart: body.bodyPart ?? null,
+      history: body.history ?? [],
     });
 
     return NextResponse.json({

@@ -22,7 +22,7 @@ export type HealthAgentInput = {
 export type HealthAgentOutput = MedixHealthResponse;
 
 export function isHealthQuery(input: string) {
-  return /(pain|fever|symptom|health|doctor|medicine|injury|disease|body)/i.test(input);
+  return /(pain|fever|symptom|health|doctor|medicine|injury|disease|body|hello|hi|who are you)/i.test(input);
 }
 
 function buildHealthQueryContext(input: ProcessUserInputArgs): string {
@@ -53,10 +53,10 @@ export async function generateHealthResponse(input: HealthAgentInput): Promise<H
     const message = input.message.trim();
     if (!isHealthQuery(message)) {
       return {
-        message: "I'm Medix, your health assistant. I can only help with medical or health-related concerns.",
+        message: "I am the MedBridge Online Doctor Assistant. I can assist you with clinical questions, symptom evaluations, and health-related guidance. How can I help you today?",
         urgency: "low",
         possibleConditions: [],
-        nextSteps: ["Ask a health-related question when you're ready."],
+        nextSteps: ["Please describe your medical concern or symptoms."],
         redFlags: [],
       };
     }
@@ -72,24 +72,31 @@ export async function generateHealthResponse(input: HealthAgentInput): Promise<H
   if (!chunks.length) {
     return {
       message:
-        "I'm Medix. Share what you're feeling in your own words, or upload a relevant image, and I'll walk through possibilities and next steps.",
+        "Hello! I am the MedBridge Online Doctor Assistant. Please share your symptoms or concerns, and I will provide professional guidance on potential causes and recommended next steps.",
       urgency: "low",
       possibleConditions: [],
-      nextSteps: ["Describe your symptoms or add a photo if it helps illustrate the concern."],
+      nextSteps: ["Provide details on your current condition."],
       redFlags: [],
     };
   }
 
-  const prompt = `You are Medix, a health assistant. Respond to: "${chunks.join("\n\n")}".
+  const prompt = `You are the MedBridge Online Doctor Assistant. Respond to: "${chunks.join("\n\n")}".
+  
+  Persona & Behavior:
+  - Professional Physician: Speak with authority, expertise, and deep empathy.
+  - Guided Care: Focus on explaining symptoms and providing clinical pathways.
+  - Safe & Responsible: Never issue a definitive diagnosis. Use professional, non-diagnostic language.
+  - Human Tone: Avoid robotic language; maintain a warm, physician-like conversational style.
+
   Return JSON only: { "message": string, "urgency": "low"|"medium"|"urgent", "possibleConditions": string[], "nextSteps": string[], "redFlags": string[] }`;
 
   try {
-    const raw = await safeGenerateAI(prompt, "You are a medical health assistant assistant.", true);
+    const raw = await safeGenerateAI(prompt, "You are the MedBridge Online Doctor Assistant, a professional and empathetic clinician.", true);
     return JSON.parse(raw);
   } catch (e) {
     console.error("OpenAI health response failed", e);
     return {
-      message: "I'm having trouble connecting right now. How else can I help you?",
+      message: "MedBridge Online Doctor services are temporarily unavailable. If this is an emergency, please contact local emergency services immediately.",
       urgency: "low",
       possibleConditions: [],
       nextSteps: [],
@@ -112,7 +119,7 @@ export async function processUserInput(input: ProcessUserInputArgs): Promise<Med
 
   if (combinedMessage && !isHealthQuery(combinedMessage) && !input.bodyPart && !input.imageFindings?.length) {
     return {
-      message: "I'm Medix, your health assistant. I can only help with medical or health-related concerns.",
+      message: "I am the MedBridge Online Doctor Assistant. I focus on providing clinical guidance for medical and health-related concerns.",
       urgency: "low",
       possibleConditions: [],
       nextSteps: [],
@@ -122,17 +129,23 @@ export async function processUserInput(input: ProcessUserInputArgs): Promise<Med
 
   if (!input.skipTriage && combinedMessage) {
     try {
-      const triagePrompt = `You are a medical triage AI. Analyze the following symptoms: "${combinedMessage}" ${input.bodyPart ? `for body part: ${input.bodyPart}` : ""}.
+      const triagePrompt = `You are the MedBridge Online Doctor Assistant acting in a triage capacity. Analyze: "${combinedMessage}" ${input.bodyPart ? `region: ${input.bodyPart}` : ""}.
+      
+      Instructions:
+      - Assess urgency professionally.
+      - Highlight clinical considerations.
+      - Maintain a professional, guiding tone.
+
       Return JSON only: { "message": string, "urgency": "low"|"medium"|"urgent", "redFlags": string[], "possibleConditions": string[], "nextSteps": string[] }`;
       
-      const rawTriage = await safeGenerateAI(triagePrompt, "You are a medical triage assistant.", true);
+      const rawTriage = await safeGenerateAI(triagePrompt, "You are the MedBridge Online Doctor Assistant, conducting a professional triage.", true);
       const t = JSON.parse(rawTriage);
       
       mergedFindings.push(
-        `Triage summary: ${t.message}`,
-        `Triage urgency: ${t.urgency}`,
-        `Triage considerations: ${t.possibleConditions.join(", ") || "none noted"}`,
-        ...(t.redFlags.length ? [`Triage red flags: ${t.redFlags.join("; ")}`] : []),
+        `Clinical Evaluation: ${t.message}`,
+        `Urgency Assessment: ${t.urgency}`,
+        `Differential Considerations: ${t.possibleConditions.join(", ") || "none immediately noted"}`,
+        ...(t.redFlags.length ? [`Clinical Warning Signs: ${t.redFlags.join("; ")}`] : []),
       );
     } catch (e) {
       console.error("Triage step failed in agent", e);

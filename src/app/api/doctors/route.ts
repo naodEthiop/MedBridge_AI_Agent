@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-
-import { getAuthUserFromRequest } from '@/lib/server/authUser';
+import { getAuthUserFromRequest as getUserFromRequest } from '@/lib/server/authUser';
 import { getRepositories } from '@/lib/server/repositories';
 
 function demoDoctors() {
@@ -11,25 +10,24 @@ function demoDoctors() {
 
 export async function GET(request: Request) {
   try {
-    const user = await getAuthUserFromRequest(request);
+    const user = await getUserFromRequest(request);
 
     if (!user) {
-      return Response.json({ ok: true, data: { doctors: demoDoctors() }, fallback: true }, { status: 200 });
+      return NextResponse.json({ ok: true, data: { doctors: demoDoctors() }, fallback: true });
     }
 
     const tenantId = user.tenantId || "demo-tenant";
 
     if (user.role !== 'patient') {
-      return Response.json({ ok: true, data: { doctors: demoDoctors() }, fallback: true }, { status: 200 });
+      return NextResponse.json({ ok: true, data: { doctors: demoDoctors() }, fallback: true });
     }
 
     const repos = getRepositories({ tenantId, userId: user.id, role: "patient" });
     const doctors = await repos.doctors.listDoctors();
     
-    return Response.json({ ok: true, data: { doctors } }, { status: 200 });
+    return NextResponse.json({ ok: true, data: { doctors } });
   } catch (error) {
-    console.error("API ERROR:", error);
-    return Response.json({ ok: true, data: { doctors: demoDoctors() }, fallback: true }, { status: 200 });
+    console.error("API ERROR [doctors]:", error);
+    return NextResponse.json({ ok: true, data: { doctors: demoDoctors() }, fallback: true });
   }
 }
-

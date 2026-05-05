@@ -29,7 +29,7 @@ export function PatientDetail(props: { id: string }) {
   const [messages, setMessages] = useState<Array<{ role: "assistant" | "doctor"; content: string }>>([
     {
       role: "assistant",
-      content: "Hello, I'm your MedBridge AI assistant. How can I help with this patient's care?",
+      content: "Hello, I am the MedBridge Online Doctor Assistant. How can I help with this patient's clinical care today?",
     },
   ]);
 
