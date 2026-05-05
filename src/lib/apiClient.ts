@@ -67,20 +67,26 @@ export async function scanPrescription(file: File) {
 }
 
 export async function getNearbyHospitals(payload: { latitude?: number; longitude?: number }) {
-  const res = await fetch(url("/api/mcp"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({
-      tool: "get_nearby_hospitals",
-      input: {
-        lat: payload.latitude ?? 0,
-        lng: payload.longitude ?? 0,
-        categories: ["hospital", "clinic", "pharmacy"],
-      },
-    }),
-  });
+  const lat = payload.latitude ?? 0;
+  const lng = payload.longitude ?? 0;
+  
+  // Use the dedicated Maps API instead of MCP
+  const res = await fetch(url(`/api/maps/nearby?lat=${lat}&lng=${lng}&type=hospital`));
+  
   if (!res.ok) return { ok: false as const, error: await res.text(), status: res.status };
-  return { ok: true as const, data: await res.json() };
+  const data = await res.json();
+  
+  // Normalize response to match the legacy MCP shape for frontend compatibility
+  return { 
+    ok: true as const, 
+    data: {
+      tool: "get_nearby_hospitals",
+      result: {
+        places: data.places || [],
+        location: { lat, lng }
+      }
+    }
+  };
 }
 
 export async function analyzeImage(payload: {
