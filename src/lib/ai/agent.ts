@@ -1,9 +1,12 @@
-import {
-  geminiMedixHealthResponse,
-  geminiSymptomTriage,
-  type MedixHealthResponse,
-} from "@/lib/backend/gemini";
-import { env } from "@/lib/env";
+import { safeGenerateAI } from "@/lib/ai/openaiClient";
+
+export type MedixHealthResponse = {
+  message: string;
+  urgency: "low" | "medium" | "urgent";
+  possibleConditions: string[];
+  nextSteps: string[];
+  redFlags: string[];
+};
 
 export type HealthAgentInput = {
   message?: string;
@@ -41,7 +44,7 @@ function buildHealthQueryContext(input: ProcessUserInputArgs): string {
 
 /**
  * Combines free text, symptom tags, and image-derived findings into one Medix AI response.
- * Uses Gemini via `geminiMedixHealthResponse` (server-side only). Fails loudly on model errors.
+ * Uses OpenAI (server-side only). Fails loudly on model errors.
  */
 export async function generateHealthResponse(input: HealthAgentInput): Promise<HealthAgentOutput> {
   const chunks: string[] = [];
@@ -77,17 +80,22 @@ export async function generateHealthResponse(input: HealthAgentInput): Promise<H
     };
   }
 
-  if (!env.GEMINI_API_KEY?.trim()) {
+  const prompt = `You are Medix, a health assistant. Respond to: "${chunks.join("\n\n")}".
+  Return JSON only: { "message": string, "urgency": "low"|"medium"|"urgent", "possibleConditions": string[], "nextSteps": string[], "redFlags": string[] }`;
+
+  try {
+    const raw = await safeGenerateAI(prompt, "You are a medical health assistant assistant.", true);
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error("OpenAI health response failed", e);
     return {
-      message: "AI unavailable",
+      message: "I'm having trouble connecting right now. How else can I help you?",
       urgency: "low",
       possibleConditions: [],
-      nextSteps: ["Please consult a clinician if your symptoms persist or worsen."],
+      nextSteps: [],
       redFlags: [],
     };
   }
-
-  return geminiMedixHealthResponse(chunks.join("\n\n"));
 }
 
 export type ProcessUserInputArgs = HealthAgentInput & {
@@ -112,17 +120,23 @@ export async function processUserInput(input: ProcessUserInputArgs): Promise<Med
     };
   }
 
-  if (!input.skipTriage && combinedMessage && env.GEMINI_API_KEY?.trim()) {
-    const t = await geminiSymptomTriage({
-      message: combinedMessage,
-      bodyPart: input.bodyPart ?? null,
-    });
-    mergedFindings.push(
-      `Triage summary: ${t.message}`,
-      `Triage urgency: ${t.urgency}`,
-      `Triage considerations: ${t.possibleConditions.join(", ") || "none noted"}`,
-      ...(t.redFlags.length ? [`Triage red flags: ${t.redFlags.join("; ")}`] : []),
-    );
+  if (!input.skipTriage && combinedMessage) {
+    try {
+      const triagePrompt = `You are a medical triage AI. Analyze the following symptoms: "${combinedMessage}" ${input.bodyPart ? `for body part: ${input.bodyPart}` : ""}.
+      Return JSON only: { "message": string, "urgency": "low"|"medium"|"urgent", "redFlags": string[], "possibleConditions": string[], "nextSteps": string[] }`;
+      
+      const rawTriage = await safeGenerateAI(triagePrompt, "You are a medical triage assistant.", true);
+      const t = JSON.parse(rawTriage);
+      
+      mergedFindings.push(
+        `Triage summary: ${t.message}`,
+        `Triage urgency: ${t.urgency}`,
+        `Triage considerations: ${t.possibleConditions.join(", ") || "none noted"}`,
+        ...(t.redFlags.length ? [`Triage red flags: ${t.redFlags.join("; ")}`] : []),
+      );
+    } catch (e) {
+      console.error("Triage step failed in agent", e);
+    }
   }
 
   return await generateHealthResponse({

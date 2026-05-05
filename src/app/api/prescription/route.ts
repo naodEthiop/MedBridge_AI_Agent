@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-
-import { geminiAnalyzeImage } from "@/lib/backend/gemini";
+import { runImageAnalysis } from "@/lib/ai/aiService";
 
 export async function POST(request: Request) {
   try {
@@ -10,25 +9,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Prescription image is required." }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const base64Data = buffer.toString("base64");
-    const analysis = await geminiAnalyzeImage({
-      kind: "prescription",
-      mimeType: file.type || "image/jpeg",
-      base64Data,
-      hintText: `Filename: ${file.name}`,
-    });
+    const analysis = await runImageAnalysis(file);
+
+    if (!analysis.success) {
+      return NextResponse.json({ error: analysis.error, analysis: null }, { status: 502 });
+    }
 
     return NextResponse.json({
       analysis: {
-        detected: !!analysis.medicationName,
+        detected: analysis.findings.length > 0,
         confidence: analysis.confidence >= 0.75 ? "high" : analysis.confidence >= 0.55 ? "likely" : "possible",
-        medicine: analysis.medicationName ?? undefined,
+        medicine: analysis.possibleConditions[0] ?? analysis.findings[0],
         dosage: undefined,
         timing: undefined,
-        summary: analysis.summary,
-        usage: analysis.usage,
-        warnings: analysis.warnings,
+        summary: analysis.recommendation || analysis.findings.join(", "),
+        usage: "",
+        warnings: [],
       },
       isPrescription: true,
     });

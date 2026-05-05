@@ -4,7 +4,7 @@ import { recordAiMetric } from '@/lib/ai/aiMetrics';
 export async function trackAiRequest<T>(args: {
   patientId?: string;
   endpoint: string;
-  model: 'gemini' | 'cloudflare' | 'hybrid';
+  model: 'openai' | 'cloudflare' | 'hybrid';
   run: () => Promise<T>;
 }) {
   const started = Date.now();

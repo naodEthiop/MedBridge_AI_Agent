@@ -1,9 +1,9 @@
-export type ModelProvider = 'gemini' | 'cloudflare' | 'hybrid';
+export type ModelProvider = 'openai' | 'cloudflare' | 'hybrid';
 
 export function getModelRegistry() {
   return {
-    gemini: { version: process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash-lite' },
+    openai: { version: process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini' },
     cloudflare: { version: process.env.CLOUDFLARE_AI_MODEL?.trim() || 'cf-default' },
-    fallbackChain: ['gemini', 'cloudflare'] as const,
+    fallbackChain: ['openai', 'cloudflare'] as const,
   };
 }

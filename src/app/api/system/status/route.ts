@@ -9,7 +9,7 @@ export async function GET() {
     services: {
       supabase: hasSupabasePublicEnv,
       geoapify: Boolean(mapApiKey),
-      gemini: Boolean(env.GEMINI_API_KEY),
+      openai: Boolean(process.env.OPENAI_API_KEY),
     },
   });
 }

@@ -5,7 +5,7 @@ export type HealthSignal = "ok" | "fail";
 export type SystemHealthSnapshot = {
   auth: HealthSignal;
   mcp: HealthSignal;
-  gemini: HealthSignal;
+  openai: HealthSignal;
   edge: HealthSignal;
 };
 
@@ -17,7 +17,7 @@ export function logSystemHealth(status: SystemHealthSnapshot): void {
   emitEvent("system:health_check", {
     auth: status.auth,
     mcp: status.mcp,
-    gemini: status.gemini,
+    openai: status.openai,
     edge: status.edge,
     timestamp: new Date().toISOString(),
   });

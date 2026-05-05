@@ -1,19 +1,13 @@
 import { env } from "@/lib/env";
 import { analyzeImageFull } from "@/lib/ai/cloudflare";
 import type { MedicalImageResult } from "@/lib/ai/imageAnalysis";
-import type { MedicalResponseShape } from "@/lib/ai/gemini";
-import { generateGeminiResponse } from "@/lib/ai/geminiClient";
+import { safeGenerateAI } from "@/lib/ai/openaiClient";
+import type { RiskPrediction, DoctorCopilotReport } from "@/lib/types";
 import {
   processUserInput,
   type HealthAgentInput,
   type HealthAgentOutput,
 } from "@/lib/ai/agent";
-import {
-  geminiDoctorCopilotReport,
-  geminiRiskPrediction,
-  type DoctorCopilotReport,
-  type RiskPrediction,
-} from "@/lib/backend/gemini";
 import { analyzeClinicalState, calculateRiskTrajectory } from "@/lib/ai/clinicalReasoner";
 import { getEarlyWarning } from "@/lib/ai/earlyWarning";
 import { buildPatientMemory, summarizePatientMemory } from "@/lib/ai/patientMemory";
@@ -28,7 +22,6 @@ import { appendAuditTrail } from "@/lib/ai/auditTrail";
 import { trackAiRequest } from "@/lib/ai/aiObservability";
 import { generateExplanation } from "@/lib/ai/explainability";
 import { withFailureRecovery } from "@/lib/ai/failureHandler";
-import { getModelRegistry } from "@/lib/ai/modelRegistry";
 import { redactObject } from "@/lib/ai/privacyFilter";
 import { normalizeAiResponse } from "@/lib/ai/responseNormalizer";
 import { enforceSafety } from "@/lib/ai/safetyGuard";
@@ -57,7 +50,6 @@ export type AiServiceRequest =
     };
 
 export type AiServiceResponse =
-  | MedicalResponseShape
   | MedicalImageResult
   | HealthAgentOutput
   | RiskPrediction
@@ -91,13 +83,6 @@ async function refreshDigitalTwin(patientId: string, principal: RepositoryPrinci
   eventBus.emit("ai:system_health_ok", { patientId, timestamp: new Date(ts).toISOString() });
   return twin;
 }
-
-const triageFallback = {
-  diagnosis: "AI failed",
-  riskLevel: "unknown" as const,
-  confidence: 0,
-  recommendations: ["Retry"],
-};
 
 const TRIAGE_SYSTEM_PROMPT = `
 You are MedBridge AI, a conversational medical assistant.
@@ -157,11 +142,8 @@ export async function runSymptomTriage(input: {
   bodyPart?: string | null;
 }) {
   const userMessage = input.message.trim();
-
-  // STEP 1: ADD INTENT CLASSIFIER
   const intent = detectIntent(userMessage);
 
-  // STEP 2: HANDLE INTENTS BEFORE GEMINI
   if (intent === "identity") {
     return {
       message: "I am MedBridge AI, your medical assistant. I help you understand symptoms and guide you on possible next steps.",
@@ -189,37 +171,22 @@ export async function runSymptomTriage(input: {
     recommendations: ["Stay hydrated", "Monitor symptoms"],
   };
 
-  if (!env.GEMINI_API_KEY?.trim()) {
-    return AI_UNAVAILABLE_MESSAGE;
-  }
-
-  const prompt = `${TRIAGE_SYSTEM_PROMPT}
-
-CONTEXT:
-{
-  "userInput": "${userMessage}",
-  "intent": "${intent}",
-  "bodyPart": "${input.bodyPart ?? "none"}"
-}
-`;
-
   try {
-    const responseText = await generateGeminiResponse(prompt);
-    console.log("Gemini RAW:", responseText);
+    const responseText = await safeGenerateAI(userMessage, TRIAGE_SYSTEM_PROMPT, true);
+    console.log("OpenAI RAW:", responseText);
 
-    if (!responseText || responseText.length === 0 || responseText === "undefined") {
+    if (!responseText) {
       aiFailureCount++;
       if (aiFailureCount > 2) return AI_UNAVAILABLE_MESSAGE;
       return fallbackResponse;
     }
 
-    const cleaned = String(responseText).replace(/```json/i, "").replace(/```/g, "").trim();
     let parsed: any = null;
     try {
-      parsed = JSON.parse(cleaned);
-      console.log("Gemini PARSED:", parsed);
+      parsed = JSON.parse(responseText);
+      console.log("OpenAI PARSED:", parsed);
     } catch (parseError) {
-      console.error("Gemini Parse Error:", parseError, "Raw text:", cleaned);
+      console.error("OpenAI Parse Error:", parseError, "Raw text:", responseText);
     }
 
     if (!parsed || !parsed.message) {
@@ -228,16 +195,13 @@ CONTEXT:
       return fallbackResponse;
     }
 
-    // Success! Reset failure count
     aiFailureCount = 0;
 
-    // Force human-like response cleaning
     let cleanResponse = String(parsed.message)
       .replace(/I am not a doctor/gi, "")
       .replace(/cannot provide medical advice/gi, "")
       .trim();
 
-    // STEP 3: VARIATION / STOP LOOPING
     if (cleanResponse === "I understand. Let me help you with that.") {
       cleanResponse = intent === "symptom" 
         ? `I see you're mentioning ${userMessage}. Can you tell me more about the intensity?`
@@ -256,6 +220,9 @@ CONTEXT:
       isError: false,
     };
   } catch (error) {
+    if (error instanceof Error && error.message === "RATE_LIMIT_HIT") {
+       return { ...fallbackResponse, message: "Please wait a moment before sending another message." };
+    }
     console.error("Symptom triage error:", error);
     aiFailureCount++;
     if (aiFailureCount > 2) return AI_UNAVAILABLE_MESSAGE;
@@ -276,7 +243,7 @@ export async function runHealthAssistant(
   const result = await trackAiRequest({
     patientId: input.patientId,
     endpoint: "runHealthAssistant",
-    model: "gemini",
+    model: "openai",
     run: async () => processUserInput({
     ...input,
     message: [memoryContext ? `Longitudinal trend: ${memoryContext.trend}` : null, input.message ?? null].filter(Boolean).join("\n"),
@@ -287,8 +254,7 @@ export async function runHealthAssistant(
     await refreshDigitalTwin(input.patientId, input.repoPrincipal);
   }
   enforceSafety({ patientId: input.patientId, text: result.message, riskLevel: result.urgency });
-  const modelVersion = getModelRegistry().gemini.version;
-  await appendAuditTrail({ patientId: input.patientId, input: redactObject(input), output: redactObject(result), reasoningSummary: "health assistant longitudinal reasoning", modelVersion });
+  await appendAuditTrail({ patientId: input.patientId, input: redactObject(input), output: redactObject(result), reasoningSummary: "health assistant longitudinal reasoning", modelVersion: "gpt-4o-mini" });
   return result;
 }
 
@@ -300,10 +266,6 @@ export async function runRiskPrediction(input: {
   labsSummary: string;
   repoPrincipal: RepositoryPrincipal;
 }): Promise<RiskPrediction | { error: string }> {
-  if (!env.GEMINI_API_KEY?.trim()) {
-    return { error: "AI unavailable" };
-  }
-
   try {
     if (input.patientId) {
       const memory = await buildPatientMemory(input.patientId, input.repoPrincipal);
@@ -313,12 +275,19 @@ export async function runRiskPrediction(input: {
       if (warning) eventBus.emit("ai:early_warning", warning);
       await refreshDigitalTwin(input.patientId, input.repoPrincipal);
     }
+
+    const prompt = `Predict health risk for: ${JSON.stringify(input)}.
+    Return JSON only: { "risk_score": number, "risk_level": "low"|"medium"|"high"|"critical", "predicted_conditions": string[], "recommended_actions": string[], "escalation_required": boolean, "rationale": string }`;
+
     const prediction = await withFailureRecovery(
-      () => trackAiRequest({ patientId: input.patientId, endpoint: "runRiskPrediction", model: "gemini", run: () => geminiRiskPrediction(input) }),
+      () => trackAiRequest({ patientId: input.patientId, endpoint: "runRiskPrediction", model: "openai", run: async () => {
+          const raw = await safeGenerateAI(prompt, "You are a health risk prediction AI.", true);
+          return JSON.parse(raw);
+      }}),
       { patientId: input.patientId },
     );
     enforceSafety({ patientId: input.patientId, text: prediction.rationale, riskLevel: prediction.risk_level });
-    await appendAuditTrail({ patientId: input.patientId, input: redactObject(input), output: redactObject(prediction), reasoningSummary: "risk prediction trajectory", modelVersion: getModelRegistry().gemini.version });
+    await appendAuditTrail({ patientId: input.patientId, input: redactObject(input), output: redactObject(prediction), reasoningSummary: "risk prediction trajectory", modelVersion: "gpt-4o-mini" });
     return prediction;
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Risk prediction failed" };
@@ -333,10 +302,6 @@ export async function generateDoctorCopilotReport(input: {
   appointmentsSummary: string;
   repoPrincipal: RepositoryPrincipal;
 }): Promise<DoctorCopilotReport | { error: string }> {
-  if (!env.GEMINI_API_KEY?.trim()) {
-    return { error: "AI unavailable" };
-  }
-
   try {
     if (input.patientId) {
       const state = analyzeClinicalState(await buildPatientMemory(input.patientId, input.repoPrincipal));
@@ -348,13 +313,20 @@ export async function generateDoctorCopilotReport(input: {
       });
       await refreshDigitalTwin(input.patientId, input.repoPrincipal);
     }
+
+    const prompt = `Generate a doctor copilot report for: ${JSON.stringify(input)}.
+    Return JSON only: { "patientSummary": string, "abnormalities": string[], "differentialDiagnoses": string[], "treatmentRecommendations": string[], "doctorNotes": string, "takeaway": string }`;
+
     const report = await withFailureRecovery(
-      () => trackAiRequest({ patientId: input.patientId, endpoint: "generateDoctorCopilotReport", model: "gemini", run: () => geminiDoctorCopilotReport(input) }),
+      () => trackAiRequest({ patientId: input.patientId, endpoint: "generateDoctorCopilotReport", model: "openai", run: async () => {
+          const raw = await safeGenerateAI(prompt, "You are a doctor copilot report generator.", true);
+          return JSON.parse(raw);
+      }}),
       { patientId: input.patientId },
     );
     const explanation = generateExplanation({ result: report });
-    await appendAuditTrail({ patientId: input.patientId, input: redactObject(input), output: redactObject(report), reasoningSummary: explanation.summary, modelVersion: getModelRegistry().gemini.version });
-    void normalizeAiResponse({ data: { report }, model: "gemini", explanation, confidence: 0.78, riskLevel: "medium" });
+    await appendAuditTrail({ patientId: input.patientId, input: redactObject(input), output: redactObject(report), reasoningSummary: explanation.summary, modelVersion: "gpt-4o-mini" });
+    void normalizeAiResponse({ data: { report }, model: "openai", explanation, confidence: 0.78, riskLevel: "medium" });
     return report;
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Doctor copilot report failed" };
