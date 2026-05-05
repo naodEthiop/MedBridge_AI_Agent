@@ -3,7 +3,7 @@ import { DoctorAssistant } from "@/components/views/DoctorAssistant";
 
 export default function DoctorAssistantPage() {
   return (
-    <AppShell title="Doctor: AI Assistant" subtitle="Stitch screen: Doctor: AI Assistant">
+    <AppShell title="Doctor: AI Assistant" subtitle="">
       <div className="space-y-6">
         <p className="text-sm text-sahara-muted">
           Use the assistant to capture clinical context and follow up with the patient record.

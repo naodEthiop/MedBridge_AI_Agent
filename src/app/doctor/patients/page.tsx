@@ -35,7 +35,7 @@ export default function DoctorPatientsPage() {
   };
 
   return (
-    <AppShell title="Doctor: Patient List" subtitle="Stitch screen: Doctor: Patient List">
+    <AppShell title="Doctor: Patient List" subtitle="">
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>

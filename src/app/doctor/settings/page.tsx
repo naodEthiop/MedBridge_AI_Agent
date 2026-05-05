@@ -41,7 +41,7 @@ export default function DoctorSettingsPage() {
   }
 
   return (
-    <AppShell title="Doctor: Settings" subtitle="Stitch screen: Doctor Settings">
+    <AppShell title="Doctor: Settings" subtitle="">
       <Card className="max-w-3xl">
         <CardHeader>
           <h3 className="font-serif text-2xl">Profile and preferences</h3>

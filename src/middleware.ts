@@ -4,129 +4,40 @@ import type { NextRequest } from "next/server";
 import { readSessionFromCookieValue, SESSION_COOKIE } from "@/lib/auth/session-core";
 import { getAuthUserFromRequest } from "@/lib/server/authUser";
 
-function safeInternalPath(nextParam: string | null): string | null {
-  if (!nextParam || !nextParam.startsWith("/") || nextParam.startsWith("//")) return null;
-  try {
-    const u = new URL(nextParam, "http://local.invalid");
-    if (u.username || u.password) return null;
-    const path = u.pathname + u.search + u.hash;
-    if (!path.startsWith("/") || path.includes("//")) return null;
-    return path;
-  } catch {
-    return null;
-  }
-}
-
-function redirect(request: NextRequest, path: string, sessionResponse: NextResponse) {
-  const res = NextResponse.redirect(new URL(path, request.url));
-  const cookies = sessionResponse.headers.getSetCookie?.() ?? [];
-  for (const c of cookies) {
-    res.headers.append("Set-Cookie", c);
-  }
-  return res;
-}
-
-async function resolveSession(
-  request: NextRequest,
-  baseResponse: NextResponse,
-): Promise<{
-  user: { role: string; tenantId?: string; id?: string } | null;
-  response: NextResponse;
-  sealedInvalid: boolean;
-}> {
+async function resolveSession(request: NextRequest) {
   const sealed = request.cookies.get(SESSION_COOKIE)?.value;
   if (sealed) {
     const sessionUser = await readSessionFromCookieValue(sealed);
-    if (sessionUser) {
-      return { user: { role: sessionUser.role, tenantId: sessionUser.tenantId, id: sessionUser.id }, response: baseResponse, sealedInvalid: false };
-    }
-    return { user: null, response: baseResponse, sealedInvalid: true };
+    if (sessionUser) return { role: sessionUser.role, authenticated: true };
   }
-
   const authUser = await getAuthUserFromRequest(request);
-  if (authUser) {
-    return { user: { role: authUser.role, tenantId: (authUser as any).tenantId, id: authUser.id }, response: baseResponse, sealedInvalid: false };
-  }
-
-  return { user: null, response: baseResponse, sealedInvalid: false };
+  if (authUser) return { role: authUser.role, authenticated: true };
+  return { role: null, authenticated: false };
 }
 
 export async function middleware(request: NextRequest) {
-  console.log(`[Edge Middleware] Incoming request: ${request.method} ${request.url}`);
   const { pathname } = request.nextUrl;
-  let response = NextResponse.next({ request });
+  const session = await resolveSession(request);
 
-  if (pathname === "/login" || pathname.startsWith("/login/")) {
-    const { user, response: sessionResponse, sealedInvalid } = await resolveSession(request, response);
-    if (sealedInvalid || !user) {
-      return sessionResponse;
-    }
-
-    const nextPath = safeInternalPath(request.nextUrl.searchParams.get("next"));
-    if (nextPath) {
-      if (nextPath.startsWith("/doctor") && user.role === "doctor") {
-        return redirect(request, nextPath, sessionResponse);
-      }
-      if (nextPath.startsWith("/patient") && user.role === "patient") {
-        return redirect(request, nextPath, sessionResponse);
-      }
-      if (!nextPath.startsWith("/doctor") && !nextPath.startsWith("/patient")) {
-        return redirect(request, nextPath, sessionResponse);
-      }
-    }
-    const home = user.role === "doctor" ? "/doctor/dashboard" : "/patient";
-    return redirect(request, home, sessionResponse);
+  if (pathname === "/login" || pathname.startsWith("/login/") || pathname === "/auth/login" || pathname.startsWith("/auth/login/")) {
+    if (!session.authenticated) return NextResponse.next();
+    return NextResponse.redirect(new URL(session.role === "doctor" ? "/doctor" : "/patient", request.url));
   }
 
-  const { user, response: sessionResponse, sealedInvalid } = await resolveSession(request, response);
-
-  if (sealedInvalid) {
-    const login = new URL("/login", request.url);
-    login.searchParams.set("expired", "1");
-    return NextResponse.redirect(login);
+  if (!session.authenticated) {
+    return NextResponse.redirect(new URL(`/auth/login?next=${encodeURIComponent(pathname)}`, request.url));
   }
 
-  if (!user) {
-    const login = new URL("/login", request.url);
-    login.searchParams.set("next", pathname);
-    return NextResponse.redirect(login);
+  if (pathname.startsWith("/patient") && session.role !== "patient") {
+    return NextResponse.redirect(new URL("/doctor", request.url));
+  }
+  if (pathname.startsWith("/doctor") && session.role !== "doctor") {
+    return NextResponse.redirect(new URL("/patient", request.url));
   }
 
-  if (pathname.startsWith("/doctor") && user.role !== "doctor") {
-    return redirect(request, "/patient", sessionResponse);
-  }
-  if (pathname.startsWith("/patient") && user.role !== "patient") {
-    return redirect(request, "/doctor/dashboard", sessionResponse);
-  }
-
-  if (pathname.startsWith("/onboarding") && user.role !== "patient") {
-    return redirect(request, "/doctor/dashboard", sessionResponse);
-  }
-
-  if (user.tenantId) {
-    sessionResponse.headers.set("x-tenant-id", user.tenantId);
-    console.log(`[Edge Middleware] Attached x-tenant-id: ${user.tenantId}`);
-  }
-  if (user.id) {
-    sessionResponse.headers.set("x-user-id", user.id);
-    console.log(`[Edge Middleware] Attached x-user-id: ${user.id}`);
-  }
-
-  console.log(`[Edge Middleware] Forwarding request downstream`);
-  return sessionResponse;
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/login",
-    "/login/:path*",
-    "/patient",
-    "/patient/:path*",
-    "/doctor",
-    "/doctor/:path*",
-    "/provider",
-    "/provider/:path*",
-    "/onboarding",
-    "/onboarding/:path*",
-  ],
+  matcher: ["/login", "/login/:path*", "/auth/login", "/auth/login/:path*", "/patient", "/patient/:path*", "/doctor", "/doctor/:path*", "/onboarding", "/onboarding/:path*"],
 };
