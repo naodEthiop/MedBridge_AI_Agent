@@ -37,7 +37,7 @@ const patientNav: NavItem[] = [
 ];
 
 const doctorNav: NavItem[] = [
-  { href: "/doctor/dashboard", label: "Clinical Dashboard", icon: Activity },
+  { href: "/doctor", label: "Clinical Dashboard", icon: Activity },
   { href: "/doctor/patients", label: "Patient List", icon: Users },
   { href: "/doctor/assistant", label: "Assistant", icon: Search },
   { href: "/doctor/settings", label: "Settings", icon: Settings },
@@ -46,7 +46,7 @@ const doctorNav: NavItem[] = [
 
 function navActive(pathname: string, href: string) {
   if (pathname === href) return true;
-  if (href === "/patient" || href === "/doctor/dashboard") {
+  if (href === "/patient" || href === "/doctor") {
     return pathname === href;
   }
   return pathname.startsWith(`${href}/`);
@@ -82,14 +82,14 @@ export function AppShell(props: { title: string; subtitle?: string; children: Re
     return session.role === "doctor" ? doctorNav : patientNav;
   }, [session.loading, session.role]);
 
-  const homeHref = session.role === "doctor" ? "/doctor/dashboard" : "/patient";
+  const homeHref = session.role === "doctor" ? "/doctor" : "/patient";
   const settingsHref = session.role === "doctor" ? "/doctor/settings" : "/patient/settings";
   const helpHref = session.role === "doctor" ? "/doctor/assistant" : "/patient/symptom-checker";
   const isOnboarding = pathname.includes("onboarding");
 
   const showBack =
     (pathname.startsWith("/patient") && pathname !== "/patient") ||
-    (pathname.startsWith("/doctor") && pathname !== "/doctor" && pathname !== "/doctor/dashboard") ||
+    (pathname.startsWith("/doctor") && pathname !== "/doctor") ||
     pathname.startsWith("/provider") ||
     pathname.startsWith("/onboarding");
 

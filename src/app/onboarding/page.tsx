@@ -1,238 +1,392 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowRight, Shield } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRight, Shield, Loader2 } from "lucide-react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
-import { AppShell } from "@/components/layout/AppShell";
-import { useDashboardSummary } from "@/hooks/useDashboardSummary";
-import { triggerUiAction } from "@/lib/apiClient";
+// ─── Patient Form ─────────────────────────────────────────────────────────────
 
-type UserRole = "patient" | "doctor" | null;
-
-function PatientOnboarding() {
-  const summary = useDashboardSummary();
-  const [feedback, setFeedback] = useState<string | null>(null);
+function PatientForm({ onSuccess }: { onSuccess: (role: string) => void }) {
+  const [fullName, setFullName] = useState("");
+  const [age, setAge] = useState("");
+  const [gender, setGender] = useState<"female" | "male" | "other">("male");
+  const [phone, setPhone] = useState("");
+  const [medicalNotes, setMedicalNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaving(true);
+
+    try {
+      const res = await fetch("/api/onboarding/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          role: "patient",
+          fullName: fullName.trim(),
+          age: Number(age),
+          gender,
+          phone: phone.trim(),
+          medicalNotes: medicalNotes.trim() || undefined,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        setError(json.error ?? "Failed to save your profile. Please try again.");
+        setSaving(false);
+        return;
+      }
+
+      onSuccess("patient");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error. Please try again.");
+      setSaving(false);
+    }
+  }
 
   return (
-    <AppShell title="Patient Profile Setup" subtitle="Complete your profile to personalize MedBridge AI care guidance">
-      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-12">
-        <aside className="space-y-4 rounded-2xl border border-white/30 bg-white/60 p-6 shadow-xl backdrop-blur-md lg:col-span-4">
-          <h2 className="font-serif text-2xl text-sahara-fg">Profile completion</h2>
-          <p className="text-sm text-sahara-muted">
-            Add complete details once so triage, reminders, and risk signals stay accurate and non-redundant.
-          </p>
-          <div className="space-y-2 rounded-xl border border-sahara-border/40 bg-sahara-surface-low p-4">
-            <Shield className="size-5 text-sahara-primary" />
-            <p className="text-xs text-sahara-muted">
-              Protected with encryption at rest and in transit. Used only for your care workflow.
-            </p>
-          </div>
-        </aside>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="rounded-xl border border-red-300/40 bg-red-50 p-4 text-sm text-red-800">
+          {error}
+        </div>
+      )}
 
-        <section className="lg:col-span-8">
-          <form className="space-y-8 rounded-2xl border border-white/30 bg-white/70 p-8 shadow-2xl backdrop-blur-lg">
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <label className="md:col-span-2">
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Full legal name</span>
-                <input className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" placeholder="Enter full name" />
-              </label>
-              <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Date of birth</span>
-                <input type="date" className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" />
-              </label>
-              <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Sex</span>
-                <select className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3">
-                  <option>Female</option>
-                  <option>Male</option>
-                  <option>Intersex</option>
-                  <option>Prefer not to say</option>
-                </select>
-              </label>
-              <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Mobile phone</span>
-                <input className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" placeholder="+1" />
-              </label>
-              <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Emergency contact</span>
-                <input className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" placeholder="Name and relation" />
-              </label>
-              <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Height (cm)</span>
-                <input type="number" className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" placeholder="170" />
-              </label>
-              <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Weight (kg)</span>
-                <input type="number" className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" placeholder="70" />
-              </label>
-              <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Blood type</span>
-                <select className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3">
-                  <option>Unknown</option>
-                  <option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
-                </select>
-              </label>
-              <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Primary language</span>
-                <input className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" placeholder="English" />
-              </label>
-              <label className="md:col-span-2">
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Allergies and medication alerts</span>
-                <textarea className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" rows={3} placeholder="Penicillin allergy, latex sensitivity, current anticoagulants..." />
-              </label>
-              <label className="md:col-span-2">
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Chronic conditions and surgical history</span>
-                <textarea className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" rows={3} placeholder="Diabetes type 2, hypertension, appendectomy 2019..." />
-              </label>
-            </div>
+      <div className="grid gap-5 md:grid-cols-2">
+        <label className="space-y-2 md:col-span-2">
+          <span className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">
+            Full Name <span className="text-sahara-tertiary">*</span>
+          </span>
+          <input
+            id="patient-fullName"
+            className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+            placeholder="Your full name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+          />
+        </label>
 
-            <div className="flex flex-col gap-4 border-t border-sahara-border/40 pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-sahara-muted">This is a single comprehensive form to avoid repeated onboarding questions later.</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setSaving(true);
-                  setFeedback(null);
-                  triggerUiAction("onboarding_complete")
-                    .then((res) => {
-                      setFeedback(res.ok ? (res.data.message ?? "Profile saved successfully.") : "Unable to save profile right now.");
-                    })
-                    .finally(() => setSaving(false));
-                }}
-                disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-sahara-primary px-8 py-3 font-semibold text-white"
-              >
-                {saving ? "Saving..." : "Save and continue"}
-                <ArrowRight className="size-4" />
-              </button>
-            </div>
-            {feedback ? <p className="text-sm text-emerald-700">{feedback}</p> : null}
-          </form>
+        <label className="space-y-2">
+          <span className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">
+            Age <span className="text-sahara-tertiary">*</span>
+          </span>
+          <input
+            id="patient-age"
+            type="number"
+            min={1}
+            max={130}
+            className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+            placeholder="25"
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            required
+          />
+        </label>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <Link href="/patient" className="rounded-full bg-sahara-primary px-6 py-3 text-center text-sm font-semibold text-white">
-              Open patient dashboard ({summary.patientCount} patients)
-            </Link>
-            <Link href="/doctor" className="rounded-full bg-sahara-surface-low px-6 py-3 text-center text-sm font-semibold ring-1 ring-sahara-border/60">
-              Open doctor dashboard ({summary.doctorCount} doctors)
-            </Link>
-          </div>
-        </section>
+        <label className="space-y-2">
+          <span className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">
+            Gender <span className="text-sahara-tertiary">*</span>
+          </span>
+          <select
+            id="patient-gender"
+            className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+            value={gender}
+            onChange={(e) => setGender(e.target.value as "female" | "male" | "other")}
+          >
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+
+        <label className="space-y-2 md:col-span-2">
+          <span className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">
+            Phone Number <span className="text-sahara-tertiary">*</span>
+          </span>
+          <input
+            id="patient-phone"
+            type="tel"
+            className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+            placeholder="+1 555 000 0000"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
+        </label>
+
+        <label className="space-y-2 md:col-span-2">
+          <span className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">
+            Medical Notes{" "}
+            <span className="font-normal normal-case tracking-normal text-sahara-muted/60">(optional)</span>
+          </span>
+          <textarea
+            id="patient-medicalNotes"
+            rows={3}
+            className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+            placeholder="Existing conditions, allergies, current medications…"
+            value={medicalNotes}
+            onChange={(e) => setMedicalNotes(e.target.value)}
+          />
+        </label>
       </div>
-    </AppShell>
+
+      <button
+        id="patient-submit-btn"
+        type="submit"
+        disabled={saving}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sahara-primary py-4 text-sm font-bold uppercase tracking-widest text-white shadow-md shadow-sahara-primary/10 transition-all hover:opacity-90 disabled:opacity-60"
+      >
+        {saving ? (
+          <>
+            <Loader2 className="size-4 animate-spin" /> Saving profile…
+          </>
+        ) : (
+          <>
+            Complete & Go to Dashboard <ArrowRight className="size-4" />
+          </>
+        )}
+      </button>
+    </form>
   );
 }
 
-function DoctorOnboarding() {
-  const [feedback, setFeedback] = useState<string | null>(null);
+// ─── Doctor Form ──────────────────────────────────────────────────────────────
+
+function DoctorForm({ onSuccess }: { onSuccess: (role: string) => void }) {
+  const [fullName, setFullName] = useState("");
+  const [specialization, setSpecialization] = useState("");
+  const [hospital, setHospital] = useState("");
+  const [yearsOfExperience, setYearsOfExperience] = useState("");
+  const [licenseId, setLicenseId] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaving(true);
+
+    try {
+      const res = await fetch("/api/onboarding/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          role: "doctor",
+          fullName: fullName.trim(),
+          specialization: specialization.trim(),
+          hospital: hospital.trim(),
+          yearsOfExperience: Number(yearsOfExperience),
+          licenseId: licenseId.trim(),
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        setError(json.error ?? "Failed to save your profile. Please try again.");
+        setSaving(false);
+        return;
+      }
+
+      onSuccess("doctor");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error. Please try again.");
+      setSaving(false);
+    }
+  }
 
   return (
-    <AppShell title="Doctor Profile Setup" subtitle="Complete your credentials to access the physician dashboard">
-      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-12">
-        <aside className="space-y-4 rounded-2xl border border-white/30 bg-white/60 p-6 shadow-xl backdrop-blur-md lg:col-span-4">
-          <h2 className="font-serif text-2xl text-sahara-fg">Credentials verification</h2>
-          <p className="text-sm text-sahara-muted">
-            Verify your professional credentials to activate your clinician dashboard and access patient management tools.
-          </p>
-          <div className="space-y-2 rounded-xl border border-sahara-border/40 bg-sahara-surface-low p-4">
-            <Shield className="size-5 text-sahara-primary" />
-            <p className="text-xs text-sahara-muted">
-              Your credentials are verified and securely stored. Required for compliance and patient trust.
-            </p>
-          </div>
-        </aside>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="rounded-xl border border-red-300/40 bg-red-50 p-4 text-sm text-red-800">
+          {error}
+        </div>
+      )}
 
-        <section className="lg:col-span-8">
-          <form className="space-y-8 rounded-2xl border border-white/30 bg-white/70 p-8 shadow-2xl backdrop-blur-lg">
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <label className="md:col-span-2">
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Full legal name</span>
-                <input className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" placeholder="Enter full name" />
-              </label>
-              <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Medical specialty</span>
-                <input className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" placeholder="e.g., Cardiology, General Practice" />
-              </label>
-              <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Years of experience</span>
-                <input type="number" className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" placeholder="15" />
-              </label>
-              <label>
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">License number</span>
-                <input className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" placeholder="Medical license ID" />
-              </label>
-              <label className="md:col-span-2">
-                <span className="mb-2 block text-xs font-bold uppercase tracking-wide text-sahara-muted">Hospital or clinic name</span>
-                <input className="w-full rounded-lg border border-sahara-border bg-white px-4 py-3" placeholder="Your primary practice location" />
-              </label>
-            </div>
+      <div className="grid gap-5 md:grid-cols-2">
+        <label className="space-y-2 md:col-span-2">
+          <span className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">
+            Full Name <span className="text-sahara-tertiary">*</span>
+          </span>
+          <input
+            id="doctor-fullName"
+            className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+            placeholder="Dr. Jane Smith"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+          />
+        </label>
 
-            <div className="flex flex-col gap-4 border-t border-sahara-border/40 pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-sahara-muted">Your information helps patients identify and connect with verified clinicians.</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setSaving(true);
-                  setFeedback(null);
-                  triggerUiAction("onboarding_complete")
-                    .then((res) => {
-                      setFeedback(res.ok ? (res.data.message ?? "Profile saved successfully.") : "Unable to save profile right now.");
-                    })
-                    .finally(() => setSaving(false));
-                }}
-                disabled={saving}
-                className="inline-flex items-center gap-2 rounded-xl bg-sahara-primary px-8 py-3 font-semibold text-white"
-              >
-                {saving ? "Saving..." : "Activate dashboard"}
-                <ArrowRight className="size-4" />
-              </button>
-            </div>
-            {feedback ? <p className="text-sm text-emerald-700">{feedback}</p> : null}
-          </form>
+        <label className="space-y-2 md:col-span-2">
+          <span className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">
+            Specialization <span className="text-sahara-tertiary">*</span>
+          </span>
+          <input
+            id="doctor-specialization"
+            className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+            placeholder="e.g. Cardiology, General Practice"
+            value={specialization}
+            onChange={(e) => setSpecialization(e.target.value)}
+            required
+          />
+        </label>
 
-          <div className="mt-6">
-            <Link href="/doctor/dashboard" className="inline-block rounded-full bg-sahara-primary px-6 py-3 text-center text-sm font-semibold text-white">
-              Open doctor dashboard
-            </Link>
-          </div>
-        </section>
+        <label className="space-y-2 md:col-span-2">
+          <span className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">
+            Hospital / Clinic <span className="text-sahara-tertiary">*</span>
+          </span>
+          <input
+            id="doctor-hospital"
+            className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+            placeholder="City General Hospital"
+            value={hospital}
+            onChange={(e) => setHospital(e.target.value)}
+            required
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">
+            Years of Experience <span className="text-sahara-tertiary">*</span>
+          </span>
+          <input
+            id="doctor-yearsOfExperience"
+            type="number"
+            min={0}
+            max={80}
+            className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+            placeholder="10"
+            value={yearsOfExperience}
+            onChange={(e) => setYearsOfExperience(e.target.value)}
+            required
+          />
+        </label>
+
+        <label className="space-y-2">
+          <span className="block text-xs font-bold uppercase tracking-widest text-sahara-muted">
+            License ID <span className="text-sahara-tertiary">*</span>
+          </span>
+          <input
+            id="doctor-licenseId"
+            className="w-full rounded-xl border border-sahara-border/80 bg-white px-4 py-3 text-sahara-fg outline-none transition-all focus:border-sahara-primary focus:ring-2 focus:ring-sahara-primary/20"
+            placeholder="MD-123456"
+            value={licenseId}
+            onChange={(e) => setLicenseId(e.target.value)}
+            required
+          />
+        </label>
       </div>
-    </AppShell>
+
+      <button
+        id="doctor-submit-btn"
+        type="submit"
+        disabled={saving}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sahara-primary py-4 text-sm font-bold uppercase tracking-widest text-white shadow-md shadow-sahara-primary/10 transition-all hover:opacity-90 disabled:opacity-60"
+      >
+        {saving ? (
+          <>
+            <Loader2 className="size-4 animate-spin" /> Saving profile…
+          </>
+        ) : (
+          <>
+            Activate Dashboard <ArrowRight className="size-4" />
+          </>
+        )}
+      </button>
+    </form>
   );
 }
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [userRole, setUserRole] = useState<UserRole>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading } = useCurrentUser();
 
+  // After successful save, redirect to correct dashboard automatically
+  function handleSuccess(role: string) {
+    router.replace(role === "doctor" ? "/doctor" : "/patient");
+  }
+
+  // Redirect unauthenticated users
   useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.ok && data.role) {
-          setUserRole(data.role);
-        } else {
-          router.push("/login");
-        }
-      })
-      .catch(() => router.push("/login"))
-      .finally(() => setLoading(false));
-  }, [router]);
+    if (!loading && !user) {
+      router.replace("/login");
+    }
+  }, [loading, user, router]);
 
-  if (loading) {
+  // Redirect if no role selected yet
+  useEffect(() => {
+    if (!loading && user && !user.role) {
+      router.replace("/onboarding/role-selection");
+    }
+  }, [loading, user, router]);
+
+  // Redirect if already fully onboarded
+  useEffect(() => {
+    if (!loading && user?.onboardingComplete && user.role) {
+      router.replace(user.role === "doctor" ? "/doctor/dashboard" : "/patient");
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user || !user.role || user.onboardingComplete) {
     return (
-      <AppShell title="Loading" subtitle="">
-        <div className="mx-auto max-w-4xl text-center py-12">
-          <p className="text-sahara-muted">Setting up your profile...</p>
+      <div className="flex min-h-screen items-center justify-center bg-sahara-bg">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="size-8 animate-spin text-sahara-primary" />
+          <p className="text-sm text-sahara-muted">Loading your profile…</p>
         </div>
-      </AppShell>
+      </div>
     );
   }
 
-  return userRole === "doctor" ? <DoctorOnboarding /> : <PatientOnboarding />;
+  const isDoctor = user.role === "doctor";
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-sahara-bg px-4 py-16">
+      <div className="w-full max-w-2xl">
+        {/* Header */}
+        <div className="mb-10 text-center">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-sahara-primary">
+            Step 2 of 2
+          </p>
+          <h1 className="font-serif text-4xl font-light tracking-tight text-sahara-fg md:text-5xl">
+            {isDoctor ? "Your Professional Profile" : "Your Health Profile"}
+          </h1>
+          <p className="mt-4 text-sahara-muted">
+            {isDoctor
+              ? "Complete your credentials to activate your clinical dashboard."
+              : "Complete your profile to personalise your care experience."}
+          </p>
+        </div>
+
+        {/* Form card */}
+        <div className="rounded-2xl border border-sahara-border/40 bg-sahara-card p-8 shadow-ambient md:p-10">
+          {/* Security notice */}
+          <div className="mb-8 flex items-start gap-3 rounded-xl border border-sahara-border/40 bg-sahara-surface-low p-4">
+            <Shield className="mt-0.5 size-4 shrink-0 text-sahara-primary" />
+            <p className="text-xs text-sahara-muted">
+              Your data is encrypted at rest and in transit. Used only within your care workflow.
+            </p>
+          </div>
+
+          {isDoctor ? (
+            <DoctorForm onSuccess={handleSuccess} />
+          ) : (
+            <PatientForm onSuccess={handleSuccess} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

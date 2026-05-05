@@ -21,6 +21,8 @@ export type SessionUser = {
   email: string;
   role: UserRole;
   tenantId?: string;
+  fullName?: string;
+  onboardingComplete?: boolean;
   patientProfile?: PatientProfile;
   doctorProfile?: DoctorProfile;
 };

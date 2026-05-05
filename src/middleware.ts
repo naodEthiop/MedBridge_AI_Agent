@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { readSessionFromCookieValue, SESSION_COOKIE } from "@/lib/auth/session-core";
-import { getAuthUserFromRequest } from "@/lib/server/authUser";
+import { resolveSessionPrincipal } from "@/lib/server/sessionPrincipal";
 
 function safeInternalPath(nextParam: string | null): string | null {
   if (!nextParam || !nextParam.startsWith("/") || nextParam.startsWith("//")) return null;
@@ -17,103 +17,90 @@ function safeInternalPath(nextParam: string | null): string | null {
   }
 }
 
-function redirect(request: NextRequest, path: string, sessionResponse: NextResponse) {
-  const res = NextResponse.redirect(new URL(path, request.url));
-  const cookies = sessionResponse.headers.getSetCookie?.() ?? [];
-  for (const c of cookies) {
-    res.headers.append("Set-Cookie", c);
-  }
-  return res;
+function redirect(request: NextRequest, path: string): NextResponse {
+  return NextResponse.redirect(new URL(path, request.url));
 }
 
-async function resolveSession(
-  request: NextRequest,
-  baseResponse: NextResponse,
-): Promise<{
-  user: { role: string; tenantId?: string; id?: string } | null;
-  response: NextResponse;
+type ResolvedSession = {
+  authenticated: boolean;
+  role: string | null;
   sealedInvalid: boolean;
-}> {
+};
+
+async function resolveSession(request: NextRequest): Promise<ResolvedSession> {
+  // 1. Try sealed MedBridge session cookie
   const sealed = request.cookies.get(SESSION_COOKIE)?.value;
   if (sealed) {
     const sessionUser = await readSessionFromCookieValue(sealed);
     if (sessionUser) {
-      return { user: { role: sessionUser.role, tenantId: sessionUser.tenantId, id: sessionUser.id }, response: baseResponse, sealedInvalid: false };
+      return { authenticated: true, role: sessionUser.role ?? null, sealedInvalid: false };
     }
-    return { user: null, response: baseResponse, sealedInvalid: true };
+    // Sealed cookie present but invalid → force re-login
+    return { authenticated: false, role: null, sealedInvalid: true };
   }
 
-  const authUser = await getAuthUserFromRequest(request);
-  if (authUser) {
-    return { user: { role: authUser.role, tenantId: (authUser as any).tenantId, id: authUser.id }, response: baseResponse, sealedInvalid: false };
+  // 2. Try Supabase access token (Google OAuth or cookie-based session)
+  const authPrincipal = await resolveSessionPrincipal(request);
+  if (authPrincipal) {
+    return { authenticated: true, role: authPrincipal.role ?? null, sealedInvalid: false };
   }
 
-  return { user: null, response: baseResponse, sealedInvalid: false };
+  return { authenticated: false, role: null, sealedInvalid: false };
 }
 
 export async function middleware(request: NextRequest) {
-  console.log(`[Edge Middleware] Incoming request: ${request.method} ${request.url}`);
   const { pathname } = request.nextUrl;
-  let response = NextResponse.next({ request });
 
+  // ── /login — redirect authenticated users to dashboard ────────────────────
   if (pathname === "/login" || pathname.startsWith("/login/")) {
-    const { user, response: sessionResponse, sealedInvalid } = await resolveSession(request, response);
-    if (sealedInvalid || !user) {
-      return sessionResponse;
+    const { authenticated, role, sealedInvalid } = await resolveSession(request);
+    if (!authenticated || sealedInvalid) {
+      return NextResponse.next({ request });
     }
-
     const nextPath = safeInternalPath(request.nextUrl.searchParams.get("next"));
     if (nextPath) {
-      if (nextPath.startsWith("/doctor") && user.role === "doctor") {
-        return redirect(request, nextPath, sessionResponse);
-      }
-      if (nextPath.startsWith("/patient") && user.role === "patient") {
-        return redirect(request, nextPath, sessionResponse);
-      }
-      if (!nextPath.startsWith("/doctor") && !nextPath.startsWith("/patient")) {
-        return redirect(request, nextPath, sessionResponse);
-      }
+      if (nextPath.startsWith("/doctor") && role === "doctor") return redirect(request, nextPath);
+      if (nextPath.startsWith("/patient") && role === "patient") return redirect(request, nextPath);
+      if (!nextPath.startsWith("/doctor") && !nextPath.startsWith("/patient"))
+        return redirect(request, nextPath);
     }
-    const home = user.role === "doctor" ? "/doctor/dashboard" : "/patient";
-    return redirect(request, home, sessionResponse);
+    if (!role) return redirect(request, "/onboarding/role-selection");
+    return redirect(request, role === "doctor" ? "/doctor" : "/patient");
   }
 
-  const { user, response: sessionResponse, sealedInvalid } = await resolveSession(request, response);
+  // ── Resolve session for all protected routes ───────────────────────────────
+  const { authenticated, role, sealedInvalid } = await resolveSession(request);
 
+  // Expired sealed session → force re-login
   if (sealedInvalid) {
     const login = new URL("/login", request.url);
     login.searchParams.set("expired", "1");
     return NextResponse.redirect(login);
   }
 
-  if (!user) {
+  // Unauthenticated → send to login
+  if (!authenticated) {
     const login = new URL("/login", request.url);
     login.searchParams.set("next", pathname);
     return NextResponse.redirect(login);
   }
 
-  if (pathname.startsWith("/doctor") && user.role !== "doctor") {
-    return redirect(request, "/patient", sessionResponse);
-  }
-  if (pathname.startsWith("/patient") && user.role !== "patient") {
-    return redirect(request, "/doctor/dashboard", sessionResponse);
+  // ── /onboarding/* — any authenticated user may access ─────────────────────
+  if (pathname.startsWith("/onboarding")) {
+    return NextResponse.next({ request });
   }
 
-  if (pathname.startsWith("/onboarding") && user.role !== "patient") {
-    return redirect(request, "/doctor/dashboard", sessionResponse);
+  // ── Role-specific route guards ─────────────────────────────────────────────
+  if (pathname.startsWith("/doctor") && role !== "doctor") {
+    if (!role) return redirect(request, "/onboarding/role-selection");
+    return redirect(request, "/patient");
+  }
+  if (pathname.startsWith("/patient") && role !== "patient") {
+    if (!role) return redirect(request, "/onboarding/role-selection");
+    return redirect(request, "/doctor");
   }
 
-  if (user.tenantId) {
-    sessionResponse.headers.set("x-tenant-id", user.tenantId);
-    console.log(`[Edge Middleware] Attached x-tenant-id: ${user.tenantId}`);
-  }
-  if (user.id) {
-    sessionResponse.headers.set("x-user-id", user.id);
-    console.log(`[Edge Middleware] Attached x-user-id: ${user.id}`);
-  }
-
-  console.log(`[Edge Middleware] Forwarding request downstream`);
-  return sessionResponse;
+  return NextResponse.next({ request });
 }
 
 export const config = {

@@ -12,7 +12,7 @@ export function normalizeAppRole(value: string | null): AppRole {
 
 /** Canonical routes: doctor hub is `/doctor/dashboard` (see `src/app/doctor/page.tsx`). */
 export function postLoginPathForRole(role: AppRole) {
-  return role === "doctor" ? "/doctor/dashboard" : "/patient";
+  return role === "doctor" ? "/doctor" : "/patient";
 }
 
 export async function upsertUserRoleRow(

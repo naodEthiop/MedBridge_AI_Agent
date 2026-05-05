@@ -80,7 +80,6 @@ export async function POST(request: Request) {
       const { data: createData, error: createError } = await admin.auth.admin.createUser({
         email,
         password: data.password,
-        user_metadata: { role },
         email_confirm: true,
       });
       if (createError) {
@@ -92,7 +91,6 @@ export async function POST(request: Request) {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password: data.password,
-        options: { data: { role } }
       });
       if (signUpError) {
         return NextResponse.json({ error: signUpError.message }, { status: 400 });

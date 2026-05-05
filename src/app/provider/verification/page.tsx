@@ -11,7 +11,7 @@ export default function ProviderVerificationPage() {
   const [providerType, setProviderType] = useState<"physician" | "specialist">("physician");
 
   return (
-    <AppShell title="Provider Verification" subtitle="Stitch screen: Provider Verification">
+    <AppShell title="Provider Verification" subtitle="Submit and verify your professional credentials">
       <div className="space-y-10">
         <section className="mx-auto max-w-2xl">
           <div className="mb-8 flex items-center justify-between">

@@ -6,9 +6,18 @@ create extension if not exists pgcrypto;
 create table if not exists public.users (
   id uuid primary key default gen_random_uuid(),
   email text not null unique,
-  role text not null check (role in ('patient', 'doctor')),
-  created_at timestamptz not null default now()
+  role text check (role in ('patient', 'doctor')),          -- nullable: set after role-selection
+  full_name text,
+  onboarding_complete boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+
+-- Migration helpers (safe to run repeatedly on existing DBs)
+alter table public.users alter column role drop not null;
+alter table public.users add column if not exists full_name text;
+alter table public.users add column if not exists onboarding_complete boolean not null default false;
+alter table public.users add column if not exists updated_at timestamptz not null default now();
 create index if not exists idx_users_role on public.users (role);
 
 create table if not exists public.patients (
@@ -140,6 +149,14 @@ create index if not exists idx_messages_created_at on public.messages (created_a
 create index if not exists idx_messages_read on public.messages (read);
 
 alter table public.appointments add column if not exists urgency text not null default 'medium' check (urgency in ('low', 'medium', 'high', 'emergency'));
+
+-- Additional patient fields for onboarding
+alter table public.patients add column if not exists age integer;
+alter table public.patients add column if not exists medical_notes text;
+
+-- Additional doctor fields for onboarding
+alter table public.doctors add column if not exists experience_years integer;
+alter table public.doctors add column if not exists license_id text;
 
 -- Phase 3.6 realtime replication enablement
 ALTER PUBLICATION supabase_realtime ADD TABLE appointments;

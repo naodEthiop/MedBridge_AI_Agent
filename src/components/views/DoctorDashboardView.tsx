@@ -92,7 +92,7 @@ export function DoctorDashboardView() {
   };
 
   return (
-    <AppShell title="Doctor: Clinical Dashboard" subtitle="Stitch screen: Doctor: Clinical Dashboard">
+    <AppShell title="Doctor: Clinical Dashboard" subtitle="Your clinical workspace">
       <div className="space-y-10">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -248,7 +248,7 @@ export function DoctorDashboardView() {
                   return (
                     <div key={appointment.id}>
                       <p className="font-semibold">
-                        {format(new Date(appointment.startTime), "HH:mm")} · {patient?.fullName ?? appointment.patientId}
+                        {format(new Date(appointment.startTime), "HH:mm")} · {patient?.fullName ?? "Unknown Patient"}
                       </p>
                       <p className="text-sahara-muted">
                         {appointment.reason ?? "Scheduled appointment"} · {appointment.location ?? "TBD"}

@@ -24,7 +24,7 @@ export default function PatientDashboardPage() {
   const firstName = currentPatient?.fullName.split(" ")[0] ?? "there";
 
   return (
-    <AppShell title="Patient Dashboard" subtitle="Stitch screen: Patient Dashboard">
+    <AppShell title="Patient Dashboard" subtitle="Your personal health dashboard">
       <div className="space-y-8">
         <div>
           <h2 className="font-serif text-4xl italic leading-tight">Hi {firstName}, how are you feeling today?</h2>
@@ -128,7 +128,7 @@ export default function PatientDashboardPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setVisualFeedback("No previous visual analysis uploads found for this demo profile.")}
+                  onClick={() => setVisualFeedback("No previous visual analysis found. Upload a photo to get started.")}
                   className="rounded-xl border border-sahara-border px-5 py-3 text-sm font-semibold"
                 >
                   View History
@@ -162,12 +162,12 @@ export default function PatientDashboardPage() {
             </CardHeader>
             <CardContent className="grid gap-3">
               <div className="rounded-2xl border border-sahara-border/40 bg-white p-5">
-                <p className="font-semibold">Patient record</p>
-                <p className="text-xs text-sahara-muted">{currentPatient?.id ?? "No patient loaded"}</p>
+                <p className="font-semibold">Patient name</p>
+                <p className="text-xs text-sahara-muted">{currentPatient?.fullName ?? "No patient record loaded"}</p>
               </div>
               <div className="rounded-2xl border border-sahara-border/40 bg-white p-5">
                 <p className="font-semibold">Primary doctor</p>
-                <p className="text-xs text-sahara-muted">{currentDoctor?.email ?? "No doctor loaded"}</p>
+                <p className="text-xs text-sahara-muted">{currentDoctor?.fullName ?? currentDoctor?.email ?? "No doctor assigned"}</p>
               </div>
             </CardContent>
           </Card>

@@ -17,7 +17,7 @@ export default function CareFinderPage() {
   return (
     <AppShell
       title="Emergency & Care Finder"
-      subtitle="Stitch screen: Patient: Emergency & Care Finder"
+      subtitle="Find nearby care facilities and request emergency assistance"
     >
       <div className="space-y-10">
         {/* Emergency Section */}

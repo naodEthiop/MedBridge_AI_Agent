@@ -5,7 +5,7 @@ import { requireSessionPrincipal } from "@/lib/server/sessionPrincipal";
 
 /**
  * Strict session probe: succeeds only with a valid sealed session or Supabase access token.
- * Returns userId + tenantId for downstream tenancy checks (never silent defaults for auth state).
+ * Returns userId, role, fullName, onboardingComplete from public.users (DB single source of truth).
  */
 export async function GET(request: Request) {
   try {
@@ -16,6 +16,8 @@ export async function GET(request: Request) {
       userId: p.userId,
       tenantId: p.tenantId,
       role: p.role,
+      fullName: p.fullName,
+      onboardingComplete: p.onboardingComplete,
     });
   } catch (error) {
     if (error instanceof UnauthorizedError) {

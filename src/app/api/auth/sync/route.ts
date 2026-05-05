@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { createSessionCookie, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth/session-core";
 import type { SessionUser } from "@/lib/auth/types";
 import { getSupabaseServerClient } from "@/lib/db/supabaseServer";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { hasSupabasePublicEnv } from "@/lib/env";
 
 /**
@@ -27,11 +28,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid or expired session." }, { status: 401 });
   }
 
-  const meta = data.user.user_metadata as Record<string, unknown> | undefined;
-  const rawRole = meta?.role;
-  const role: SessionUser["role"] = rawRole === "doctor" ? "doctor" : "patient";
+  const admin = createSupabaseAdminClient();
+  let dbRole: "doctor" | "patient" | null = null;
+  if (admin) {
+    const { data: dbUser } = await admin
+      .from("users")
+      .select("role")
+      .eq("id", data.user.id)
+      .maybeSingle();
+    dbRole = dbUser?.role as "doctor" | "patient" | null;
+  }
+
+  const role: SessionUser["role"] = dbRole ?? "patient";
 
   const user: SessionUser = {
+    id: data.user.id,
     email: data.user.email.toLowerCase(),
     role,
   };

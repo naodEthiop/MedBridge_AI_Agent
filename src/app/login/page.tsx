@@ -140,7 +140,7 @@ function LoginPageContent() {
     // "Router action dispatched before initialization" in Next.js 16 dev).
     requestAnimationFrame(() => {
       startTransition(() => {
-        let dest = r === "doctor" ? "/doctor/dashboard" : "/patient";
+        let dest = r === "doctor" ? "/doctor" : "/patient";
         if (nextPath && nextPath.startsWith("/")) {
           if (nextPath.startsWith("/doctor") && r === "doctor") dest = nextPath;
           else if (nextPath.startsWith("/patient") && r === "patient") dest = nextPath;
