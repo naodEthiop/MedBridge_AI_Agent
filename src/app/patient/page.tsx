@@ -24,7 +24,7 @@ export default function PatientDashboardPage() {
   const firstName = currentPatient?.fullName.split(" ")[0] ?? "there";
 
   return (
-    <AppShell title="Patient Dashboard" subtitle="Stitch screen: Patient Dashboard">
+    <AppShell title="Patient Dashboard" subtitle="">
       <div className="space-y-8">
         <div>
           <h2 className="font-serif text-4xl italic leading-tight">Hi {firstName}, how are you feeling today?</h2>
